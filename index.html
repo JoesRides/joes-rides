@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joe's Rides | Premium Transportation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Orbitron:wght@800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-purple: #9d50bb;
+            --dark-bg: #0f172a;
+            --glass: rgba(15, 23, 42, 0.85);
+            --gradient: linear-gradient(45deg, #2563eb, #7c3aed);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('joesrideswithseltos.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .btn-call {
+            background: #22c55e;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+            transition: 0.3s;
+        }
+
+        .btn-call:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
+        }
+
+        .hero-section {
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 50px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Title updated with Orbitron font for a futuristic look */
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.2rem, 8vw, 4.5rem);
+            font-weight: 800;
+            margin-bottom: 15px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            background: linear-gradient(to bottom, #ffffff, var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            font-size: 1.4rem;
+            color: var(--neon-blue);
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 35px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            display: inline-block;
+            background: var(--gradient);
+            color: white;
+            border: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
+        }
+
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .info-card {
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .info-card h3 {
+            color: var(--neon-blue);
+            margin-top: 0;
+            text-transform: uppercase;
+            font-size: 1.2rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 60px 0 20px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .phone-link {
+            color: var(--neon-blue);
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="top-nav">
+            <a href="tel:5162091518" class="btn-call">📞 Call Now: 516.209.1518</a>
+        </div>
+
+        <section class="hero-section">
+            <div class="glass-panel">
+                <h1>Joe's Rides</h1>
+                <p class="tagline">Riding the Waves of the Future</p>
+                
+                <div class="cta-group">
+                    <a href="book.html" class="btn">Book Now</a>
+                    <a href="tracker.html" class="btn">Track Flight</a>
+                    <a href="story.html" class="btn">Our Story</a>
+                </div>
+            </div>
+        </section>
+
+        <div class="bottom-grid">
+            <div class="info-card">
+                <h3>Our Services</h3>
+                <ul>
+                    <li>JFK & LGA Airport Specialization</li>
+                    <li>Curbside & Inside Pickups</li>
+                    <li>Long Island / Tri-State Coverage</li>
+                    <li>AWD Luxury Fleet</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>Real-Time Support</h3>
+                <p>We monitor every flight to ensure our drivers are waiting exactly when you land. Call us anytime at <a href="tel:5162091518" class="phone-link">516.209.1518</a>.</p>
+            </div>
+
+            <div class="info-card">
+                <h3>Why Choose Us?</h3>
+                <p>30 years of professional driving experience. Over 250 loyal clients. Family-owned and operated since 2020.</p>
+            </div>
+        </div>
+
+        <footer class="footer">
+            &copy; 2026 Joe's Rides. Established 2020. All rights reserved.
+        </footer>
+    </div>
+
+</body>
+</html>

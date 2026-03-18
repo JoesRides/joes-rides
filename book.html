@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Ride | Joe's Rides</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-purple: #9d50bb;
+            --dark-bg: #0f172a;
+            --glass: rgba(15, 23, 42, 0.85);
+            --gradient: linear-gradient(45deg, #2563eb, #7c3aed);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('joesrideswithseltos.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            text-align: center;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            background: var(--gradient);
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 25px;
+            color: var(--neon-blue);
+            text-decoration: none;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="glass-panel">
+        <h1>Book Your Ride</h1>
+        <p class="tagline">Riding the Waves of the Future</p>
+        
+        <form id="bookingForm">
+            <div class="form-group">
+                <label>Pickup Location</label>
+                <input type="text" id="pickup" placeholder="Address or Airport Terminal" required>
+            </div>
+
+            <div class="form-group">
+                <label>Destination</label>
+                <input type="text" id="destination" placeholder="Where are we going?" required>
+            </div>
+
+            <div class="form-group">
+                <label>Date & Time</label>
+                <input type="datetime-local" id="datetime" required>
+            </div>
+
+            <div class="form-group">
+                <label>Passengers</label>
+                <select id="passengers">
+                    <option value="1">1 Passenger</option>
+                    <option value="2">2 Passengers</option>
+                    <option value="3">3 Passengers</option>
+                    <option value="4">4+ Passengers</option>
+                </select>
+            </div>
+
+            <button type="button" class="btn-submit" onclick="sendBooking()">Confirm via Text</button>
+        </form>
+
+        <a href="index.html" class="back-link">← Back to Home</a>
+    </div>
+</div>
+
+<script>
+    function sendBooking() {
+        const pickup = document.getElementById('pickup').value;
+        const destination = document.getElementById('destination').value;
+        const datetime = document.getElementById('datetime').value;
+        const passengers = document.getElementById('passengers').value;
+
+        if(!pickup || !destination || !datetime) {
+            alert("Please fill in all details.");
+            return;
+        }
+
+        const message = `Hi Joe's Rides! I'd like to book a trip.%0A%0A` +
+                        `Pickup: ${pickup}%0A` +
+                        `Drop-off: ${destination}%0A` +
+                        `Time: ${datetime}%0A` +
+                        `Passengers: ${passengers}`;
+
+        // Opens the user's text app pre-filled to your business number
+        window.location.href = `sms:+15162091518?body=${message}`;
+    }
+</script>
+
+</body>
+</html>

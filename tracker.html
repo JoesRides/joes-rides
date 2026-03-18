@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Tracker | Joe's Rides</title>
+    <style>
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-purple: #9d00ff;
+            --dark-bg: #05060a;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--dark-bg);
+            /* This links to your uploaded branding image */
+            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('joesrideswithseltos.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        .tracker-container {
+            /* Glassmorphism effect for readability */
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--neon-purple);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        h2 {
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--neon-blue);
+            color: white;
+        }
+
+        p {
+            font-size: 0.95rem;
+            color: #ddd;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid var(--neon-blue);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+            text-transform: uppercase;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        .track-btn {
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+            border-radius: 5px;
+        }
+
+        .track-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 25px;
+            color: #00d4ff;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .back-link:hover {
+            color: white;
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tracker-container">
+        <h2>✈️ Flight Tracker</h2>
+        <p>Riding the Waves of the Future.<br>Enter your flight number below to track your arrival in real-time.</p>
+        
+        <input type="text" id="flightInput" placeholder="e.g. DL1234 or AA56" />
+        
+        <button class="track-btn" onclick="trackFlight()">Track My Flight</button>
+
+        <a href="index.html" class="back-link">← Return to Joe's Rides Home</a>
+    </div>
+
+    <script>
+        function trackFlight() {
+            const flightNumber = document.getElementById('flightInput').value.trim();
+            if (flightNumber) {
+                const googleUrl = `https://www.google.com/search?q=flight+tracker+${encodeURIComponent(flightNumber)}`;
+                window.open(googleUrl, '_blank');
+            } else {
+                alert("Please enter a flight number first!");
+            }
+        }
+
+        document.getElementById('flightInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                trackFlight();
+            }
+        });
+    </script>
+
+</body>
+</html>
