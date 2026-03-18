@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Great American South Shore Dash | Joe's Rides</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --neon-blue: #00d4ff; --neon-purple: #9d50bb; --dark-bg: #0f172a; }
+        body { margin: 0; background: var(--dark-bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        
+        #game-container { position: relative; border: 4px solid var(--neon-purple); box-shadow: 0 0 20px var(--neon-purple); border-radius: 10px; background: #000; overflow: hidden; width: 100vw; max-width: 450px; height: 85vh; max-height: 600px; }
+        canvas { display: block; background: #050505; width: 100%; height: 100%; }
+
+        .ui { position: absolute; top: 10px; left: 10px; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; line-height: 1.4; pointer-events: none; z-index: 10; text-align: left; text-shadow: 1px 1px 2px #000; }
+        .stat-val { color: var(--neon-blue); }
+        .rank-badge { color: #facc15; font-weight: 800; }
+
+        #controls-hint { position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 0.6rem; color: rgba(255,255,255,0.4); pointer-events: none; }
+
+        #overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.98); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 20; padding: 20px; }
+        .brand-header { color: var(--neon-purple); font-family: 'Orbitron'; font-size: 0.8rem; margin-bottom: -5px; letter-spacing: 3px; }
+        h2 { font-family: 'Orbitron'; color: var(--neon-blue); margin: 0; text-transform: uppercase; letter-spacing: 1px; font-size: 1.5rem; line-height: 1.1; }
+        .congrats-sub { font-size: 0.85rem; color: #fff; margin: 15px 0; font-weight: 600; font-family: 'Orbitron'; line-height: 1.4; }
+        .rank-up-msg { font-size: 0.9rem; color: #facc15; margin: 10px 0; font-family: 'Orbitron'; text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+        button { background: linear-gradient(45deg, #2563eb, #7c3aed); color: white; border: none; padding: 15px 40px; font-family: 'Orbitron', sans-serif; font-size: 1rem; border-radius: 50px; cursor: pointer; box-shadow: 0 0 15px var(--neon-blue); margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="ui">
+            LVL: <span id="lvl" class="stat-val">1</span> | 
+            NITRO: <span id="nitroCount" style="color: #f472b6;">1</span><br>
+            RANK: <span id="rankLabel" class="rank-badge">Trainee</span><br>
+            MILES: <span id="miles" class="stat-val">0</span> (BEST: <span id="bestMiles" class="stat-val">0</span>)<br>
+            SCORE: <span id="score" class="stat-val">0</span> (BEST: <span id="bestScore" class="stat-val">0</span>)
+        </div>
+        
+        <canvas id="gameCanvas"></canvas>
+        <div id="controls-hint">TAP LEFT/RIGHT TO STEER • TAP CENTER FOR NITRO</div>
+
+        <div id="overlay">
+            <div class="brand-header">JOE'S RIDES</div>
+            <h2 id="msg">South Shore Dash</h2>
+            <div id="congrats-box" style="display:none;">
+                <p class="congrats-sub">Congratulations!<br>Thank you for choosing Joe's Rides.</p>
+                <div id="rankDisplay" class="rank-up-msg"></div>
+                <p id="stats-summary" style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 10px;"></p>
+            </div>
+            <p id="submsg" style="font-size: 0.7rem; color: #94a3b8; margin-top: 10px; max-width: 250px;">Est. 2020. Precision driving for the Long Island commute.</p>
+            <button id="startBtn">START TRIP</button>
+        </div>
+    </div>
+
+<script>
+window.onload = function() {
+    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score'), milesEl = document.getElementById('miles'), lvlEl = document.getElementById('lvl');
+    const bestScoreEl = document.getElementById('bestScore'), bestMilesEl = document.getElementById('bestMiles'), nitroEl = document.getElementById('nitroCount');
+    const rankLabel = document.getElementById('rankLabel'), rankDisplay = document.getElementById('rankDisplay');
+    const overlay = document.getElementById('overlay'), startBtn = document.getElementById('startBtn'), msg = document.getElementById('msg'), congratsBox = document.getElementById('congrats-box');
+
+    canvas.width = 450; canvas.height = 600;
+    let gameActive = false, score = 0, miles = 0, level = 1, speed = 2.5; 
+    let obstacles = [], passengers = [], pickups = [];
+    let airport = null, lineOffset = 0, frameCount = 0;
+    let nitros = 1, nitroActive = false, nitroTimer = 0, nitroSpawnCooldown = 1800;
+    
+    const player = { x: 205, y: 480, w: 40, h: 70 };
+    const laneWidth = 70, roadStartX = 85;
+    const trafficColors = ['#ef4444', '#3b82f6', '#94a3b8', '#a855f7', '#22c55e', '#fbbf24'];
+    const keys = {};
+
+    let savedBestScore = localStorage.getItem('dashBestScore') || 0;
+    let savedBestMiles = localStorage.getItem('dashBestMiles') || 0;
+    bestScoreEl.innerText = savedBestScore;
+    bestMilesEl.innerText = savedBestMiles;
+
+    function getRank(lvl) {
+        if (lvl >= 10) return "JOE'S ELITE";
+        if (lvl >= 7) return "EXECUTIVE TRANSPORTER";
+        if (lvl >= 4) return "PRO CHAUFFEUR";
+        if (lvl >= 2) return "CITY DRIVER";
+        return "TRAINEE";
+    }
+
+    function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
+
+    window.addEventListener('keydown', e => { 
+        keys[e.code] = true; 
+        if (e.code === 'Space' && nitros > 0 && !nitroActive && gameActive) activateNitro();
+    });
+    window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+    canvas.addEventListener('touchstart', e => {
+        if (!gameActive) return;
+        const rect = canvas.getBoundingClientRect();
+        const touchX = (e.touches[0].clientX - rect.left) * (canvas.width / rect.width);
+        if (touchX < canvas.width * 0.35) keys['ArrowLeft'] = true;
+        else if (touchX > canvas.width * 0.65) keys['ArrowRight'] = true;
+        else if (nitros > 0 && !nitroActive) activateNitro();
+    }, {passive: false});
+    canvas.addEventListener('touchend', () => { keys['ArrowLeft'] = false; keys['ArrowRight'] = false; });
+
+    function activateNitro() {
+        nitros--; nitroEl.innerText = nitros;
+        nitroActive = true; nitroTimer = 120;
+        const oldSpeed = speed; speed *= 2.5;
+        vibrate(50);
+        setTimeout(() => { nitroActive = false; speed = oldSpeed; }, 2000);
+    }
+
+    startBtn.addEventListener('click', function() {
+        if (!gameActive) {
+            if (msg.innerHTML === "CRASHED") { score = 0; level = 1; speed = 2.5; nitros = 1; }
+            miles = 0; nitroSpawnCooldown = 1800; obstacles = []; passengers = []; pickups = []; airport = null; player.x = 205;
+            lvlEl.innerText = level; scoreEl.innerText = score; milesEl.innerText = "0"; nitroEl.innerText = nitros;
+            rankLabel.innerText = getRank(level);
+            gameActive = true; overlay.style.display = 'none'; congratsBox.style.display = 'none';
+            vibrate(30); requestAnimationFrame(gameLoop);
+        }
+    });
+
+    function gameLoop() {
+        if (!gameActive) return;
+        frameCount++; update(); draw(); requestAnimationFrame(gameLoop);
+    }
+
+    function update() {
+        if (keys['ArrowLeft'] && player.x > roadStartX + 5) player.x -= 6;
+        if (keys['ArrowRight'] && player.x < roadStartX + (laneWidth * 4) - 45) player.x += 6;
+        lineOffset += speed; if (lineOffset > 40) lineOffset = 0;
+        miles += (speed / 150);
+        milesEl.innerText = Math.floor(miles);
+        if (!nitroActive && Math.floor(miles) > 0 && Math.floor(miles) % 15 === 0) speed += 0.003;
+
+        if (Math.floor(miles) >= 100 && !airport) { airport = { y: -250 }; obstacles = []; passengers = []; pickups = []; }
+
+        if (airport) {
+            airport.y += speed;
+            if (airport.y > 400) {
+                level++; nitros++; 
+                speed = 2.5 + (level * 0.5); 
+                gameActive = false;
+                msg.innerHTML = "TRIP COMPLETE";
+                rankDisplay.innerText = "RANK: " + getRank(level);
+                document.getElementById('stats-summary').innerText = "Current Score: " + score;
+                congratsBox.style.display = 'block';
+                startBtn.innerText = "START LEVEL " + level;
+                overlay.style.display = 'flex';
+                vibrate([50, 50, 50]);
+            }
+        }
+
+        let spawnChance = 0.006 + (level * 0.004); 
+        if (!airport && Math.random() < spawnChance) {
+            const lane = Math.floor(Math.random() * 4);
+            const typeRand = Math.random();
+            let w = 40, h = 70;
+            if (typeRand > 0.85) { w = 44; h = 85; } else if (typeRand > 0.70) { w = 42; h = 95; }
+            obstacles.push({ x: roadStartX + (lane * laneWidth) + (laneWidth - w)/2, y: -100, w: w, h: h, color: trafficColors[Math.floor(Math.random() * trafficColors.length)] });
+        }
+
+        if (nitroSpawnCooldown > 0) nitroSpawnCooldown--;
+        else if (!airport && Math.random() < 0.01) {
+            const lane = Math.floor(Math.random() * 4);
+            pickups.push({ x: roadStartX + (lane * laneWidth) + 25, y: -50, w: 20, h: 20 });
+            nitroSpawnCooldown = 1800 + Math.random() * 900;
+        }
+
+        if (!airport && Math.random() < 0.015) {
+            const lane = Math.floor(Math.random() * 4);
+            passengers.push({ x: roadStartX + (lane * laneWidth) + 20, y: -50, w: 30, h: 40 });
+        }
+
+        pickups.forEach((p, i) => {
+            p.y += speed; if (p.y > 600) pickups.splice(i, 1);
+            if (player.x < p.x + p.w && player.x + player.w > p.x && player.y < p.y + p.h && player.y + player.h > p.y) {
+                nitros++; nitroEl.innerText = nitros; pickups.splice(i, 1); vibrate(40);
+            }
+        });
+
+        passengers.forEach((p, i) => {
+            p.y += speed; if (p.y > 600) passengers.splice(i, 1);
+            if (player.x < p.x + p.w && player.x + player.w > p.x && player.y < p.y + p.h && player.y + player.h > p.y) {
+                score += 25; scoreEl.innerText = score; passengers.splice(i, 1);
+            }
+        });
+
+        obstacles.forEach((o, i) => { 
+            o.y += speed; if (o.y > 600) obstacles.splice(i, 1); 
+            if (!nitroActive && player.x < o.x + o.w && player.x + player.w > o.x && player.y < o.y + o.h && player.y + player.h > o.y) endTrip();
+        });
+        if (nitroActive) nitroTimer--;
+    }
+
+    function endTrip() {
+        gameActive = false; msg.innerHTML = "CRASHED"; vibrate(200);
+        if (score > savedBestScore) { savedBestScore = score; localStorage.setItem('dashBestScore', score); bestScoreEl.innerText = score; }
+        if (Math.floor(miles) > savedBestMiles) { savedBestMiles = Math.floor(miles); localStorage.setItem('dashBestMiles', savedBestMiles); bestMilesEl.innerText = savedBestMiles; }
+        startBtn.innerText = "RESTART"; overlay.style.display = 'flex';
+    }
+
+    // --- COSMETIC CHAUFFEUR CHANGE FUNCTION ---
+    function getPlayerColorAndUnderglow() {
+        let cosmetic = { color: '#000', stripe: null, glow: null, glowBlur: 15 };
+        
+        // CITY DRIVER (LVL 2) - Green Pulse Glow
+        if (level >= 2 && level < 4) {
+            const pulse = 10 + Math.sin(frameCount * 0.1) * 5;
+            cosmetic.glow = '#22c55e';
+            cosmetic.glowBlur = pulse;
+        }
+        // PRO CHAUFFEUR (LVL 4) - Racing Stripes
+        else if (level >= 4 && level < 7) {
+            cosmetic.stripe = '#fff';
+            cosmetic.glow = '#00d4ff'; // Keep subtle default blue
+        }
+        // EXECUTIVE TRANSPORTER (LVL 7) - Silver/White Flow Glow
+        else if (level >= 7 && level < 10) {
+            cosmetic.color = '#1e1e1e'; // Dark gray
+            cosmetic.stripe = '#94a3b8';
+            const pulse = 15 + Math.sin(frameCount * 0.1) * 7;
+            cosmetic.glow = '#e2e8f0';
+            cosmetic.glowBlur = pulse;
+        }
+        // JOE'S ELITE (LVL 10+) - Rainbow Nitro Glow
+        else if (level >= 10) {
+            cosmetic.color = '#000';
+            cosmetic.stripe = '#d1d5db';
+            const hue = frameCount % 360;
+            cosmetic.glow = `hsl(${hue}, 100%, 70%)`;
+            cosmetic.glowBlur = 20;
+        }
+        else {
+            cosmetic.glow = '#00d4ff'; // Trainee Default Blue
+        }
+
+        return cosmetic;
+    }
+
+    function draw() {
+        ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#022c22'; ctx.fillRect(0, 0, 75, 600); ctx.fillRect(375, 0, 75, 600);
+        ctx.fillStyle = '#475569'; ctx.fillRect(75, 0, 10, 600); ctx.fillRect(365, 0, 10, 600);
+        ctx.fillStyle = '#000'; ctx.fillRect(74, 0, 1, 600); ctx.fillRect(375, 0, 1, 600);
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.setLineDash([20, 20]); ctx.lineDashOffset = -lineOffset;
+        ctx.beginPath(); for(let i=1; i<4; i++) { ctx.moveTo(roadStartX + (i * laneWidth), 0); ctx.lineTo(roadStartX + (i * laneWidth), 600); }
+        ctx.stroke();
+
+        if (airport) {
+            ctx.fillStyle = 'rgba(0, 212, 255, 0.2)'; ctx.fillRect(85, airport.y, 280, 180);
+            ctx.fillStyle = 'white'; ctx.font = 'bold 14px Orbitron'; ctx.fillText("AIRPORT ARRIVAL", 150, airport.y + 90);
+        }
+
+        pickups.forEach(p => {
+            ctx.fillStyle = '#f472b6'; ctx.shadowBlur = 10; ctx.shadowColor = '#f472b6';
+            ctx.beginPath(); ctx.arc(p.x+10, p.y+10, 8, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = 'white'; ctx.font = 'bold 10px Orbitron'; ctx.fillText("N", p.x+6, p.y+14); ctx.shadowBlur = 0;
+        });
+
+        passengers.forEach(p => {
+            ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 2; const px = p.x + 15, py = p.y + 10;
+            ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(px, py+5); ctx.lineTo(px, py+20); ctx.stroke();
+            let wave = Math.sin(frameCount * 0.1) * 5;
+            ctx.beginPath(); ctx.moveTo(px-8, py+10+wave); ctx.lineTo(px, py+10); ctx.lineTo(px+8, py+10-wave); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(px, py+20); ctx.lineTo(px-5, py+30); ctx.moveTo(px, py+20); ctx.lineTo(px+5, py+30); ctx.stroke();
+        });
+
+        obstacles.forEach(o => {
+            ctx.fillStyle = o.color; ctx.fillRect(o.x, o.y, o.w, o.h);
+            ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(o.x + 4, o.y + 15, o.w - 8, 12);
+            ctx.fillStyle = '#991b1b'; ctx.fillRect(o.x + 2, o.y + o.h - 6, 6, 4); ctx.fillRect(o.x + o.w - 8, o.y + o.h - 6, 6, 4);
+        });
+
+        // --- UPDATED PLAYER DRAW WITH COSMETICS ---
+        const carStyle = getPlayerColorAndUnderglow();
+        
+        ctx.save();
+        if (nitroActive) {
+            // Priority Nitro Look
+            ctx.shadowBlur = 30; ctx.shadowColor = '#f472b6'; ctx.fillStyle = '#f472b6';
+            for(let i=0; i<3; i++) ctx.fillRect(player.x, player.y + (i*10) + 70, 40, 8);
+        } else if (carStyle.glow) {
+            // Rank Underglow
+            ctx.shadowBlur = carStyle.glowBlur; ctx.shadowColor = carStyle.glow;
+        }
+        
+        // Base Car Body
+        ctx.fillStyle = carStyle.color; 
+        ctx.fillRect(player.x, player.y, player.w, player.h);
+        
+        // Racing Stripes (Pro+)
+        if (carStyle.stripe) {
+            ctx.fillStyle = carStyle.stripe;
+            const stripeW = 8;
+            ctx.fillRect(player.x + (player.w/2) - (stripeW/2), player.y + 4, stripeW, 10); // Hood
+            ctx.fillRect(player.x + (player.w/2) - (stripeW/2), player.y + player.h - 14, stripeW, 10); // Rear Trunk
+        }
+        
+        // Window/Detail Details
+        ctx.shadowBlur = 0; 
+        ctx.fillStyle = '#fff'; ctx.fillRect(player.x+5, player.y, 8, 4); ctx.fillRect(player.x+27, player.y, 8, 4); // Headlights
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(player.x+5, player.y+15, player.w-10, 15); // Windshield
+        ctx.restore();
+    }
+};
+</script>
+</body>
+</html>
