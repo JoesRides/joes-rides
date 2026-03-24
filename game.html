@@ -3,310 +3,360 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Great American South Shore Dash | Joe's Rides</title>
+    <title>Ben's Bumper Buster | Master Core V5.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --neon-blue: #00d4ff; --neon-purple: #9d50bb; --dark-bg: #0f172a; }
-        body { margin: 0; background: var(--dark-bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        
-        #game-container { position: relative; border: 4px solid var(--neon-purple); box-shadow: 0 0 20px var(--neon-purple); border-radius: 10px; background: #000; overflow: hidden; width: 100vw; max-width: 450px; height: 85vh; max-height: 600px; }
-        canvas { display: block; background: #050505; width: 100%; height: 100%; }
-
-        .ui { position: absolute; top: 10px; left: 10px; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; line-height: 1.4; pointer-events: none; z-index: 10; text-align: left; text-shadow: 1px 1px 2px #000; }
-        .stat-val { color: var(--neon-blue); }
-        .rank-badge { color: #facc15; font-weight: 800; }
-
-        #controls-hint { position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 0.6rem; color: rgba(255,255,255,0.4); pointer-events: none; }
-
-        #overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.98); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 20; padding: 20px; }
-        .brand-header { color: var(--neon-purple); font-family: 'Orbitron'; font-size: 0.8rem; margin-bottom: -5px; letter-spacing: 3px; }
-        h2 { font-family: 'Orbitron'; color: var(--neon-blue); margin: 0; text-transform: uppercase; letter-spacing: 1px; font-size: 1.5rem; line-height: 1.1; }
-        .congrats-sub { font-size: 0.85rem; color: #fff; margin: 15px 0; font-weight: 600; font-family: 'Orbitron'; line-height: 1.4; }
-        .rank-up-msg { font-size: 0.9rem; color: #facc15; margin: 10px 0; font-family: 'Orbitron'; text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
-        button { background: linear-gradient(45deg, #2563eb, #7c3aed); color: white; border: none; padding: 15px 40px; font-family: 'Orbitron', sans-serif; font-size: 1rem; border-radius: 50px; cursor: pointer; box-shadow: 0 0 15px var(--neon-blue); margin-top: 10px; }
+        :root { --theme-color: #00d4ff; --neon-red: #ff3131; --neon-green: #39ff14; --pass-blue: #00f3ff; --heart-pink: #ff69b4; }
+        body { margin: 0; background: #000; color: white; font-family: 'Inter', sans-serif; overflow: hidden; touch-action: none; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        #game-container { position: relative; border: 4px solid #333; border-radius: 12px; background: #1a4a1a; overflow: hidden; width: 100vw; max-width: 450px; height: 90vh; max-height: 700px; box-shadow: 0 0 50px rgba(0,212,255,0.2); }
+        canvas { display: block; width: 100%; height: 100%; image-rendering: auto; }
+        #splash { position: absolute; inset: 0; background: #000; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1s ease; pointer-events: none; }
+        .splash-logo { font-family: 'Orbitron', sans-serif; font-size: 2.2rem; color: #00d4ff; text-shadow: 0 0 20px #00d4ff; text-align: center; line-height: 1.2; }
+        .dashboard { position: absolute; top: 15px; left: 15px; font-family: 'Orbitron', sans-serif; font-size: 0.6rem; pointer-events: none; z-index: 10; color: #000; font-weight: bold; background: rgba(255,255,255,0.85); padding: 8px; border-radius: 4px; border-left: 4px solid var(--theme-color); backdrop-filter: blur(4px); line-height: 1.4; }
+        .speedo-wrap { position: absolute; top: 15px; right: 15px; text-align: right; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 10; color: #000; background: rgba(255,255,255,0.85); padding: 5px; border-radius: 4px; backdrop-filter: blur(4px); }
+        #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.94); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 100; padding: 30px; }
+        .paint-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 15px 0; }
+        .swatch { width: 42px; height: 42px; border: 2px solid #fff; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+        .swatch.active { border-color: #00d4ff; transform: scale(1.1); box-shadow: 0 0 15px #00d4ff; }
+        #pit-stop-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.96); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 90; font-family: 'Orbitron', sans-serif; color: var(--theme-color); border: 4px solid var(--theme-color); margin: 20px; border-radius: 15px; padding: 20px; text-align: center; }
+        .score-row { display: flex; justify-content: space-between; width: 80%; font-size: 0.75rem; margin: 5px 0; color: #fff; }
+        #nitro-btn, #horn-btn { position: absolute; width: 80px; height: 80px; border-radius: 50%; border: 4px solid #fff; color: white; font-family: 'Orbitron', sans-serif; display: none; align-items: center; justify-content: center; z-index: 50; cursor: pointer; font-size: 0.8rem; }
+        #nitro-btn { bottom: 30px; right: 30px; background: rgba(239, 68, 68, 0.9); }
+        #horn-btn { bottom: 30px; left: 30px; background: rgba(37, 99, 235, 0.9); }
+        @media (pointer: coarse) { #nitro-btn, #horn-btn { display: flex; } }
+        .btn-main { background: #2563eb; color: white; border: none; padding: 18px 45px; font-family: 'Orbitron', sans-serif; border-radius: 8px; cursor: pointer; width: 85%; font-size: 1rem; letter-spacing: 2px; }
     </style>
 </head>
 <body>
-
     <div id="game-container">
-        <div class="ui">
-            LVL: <span id="lvl" class="stat-val">1</span> | 
-            NITRO: <span id="nitroCount" style="color: #f472b6;">1</span><br>
-            RANK: <span id="rankLabel" class="rank-badge">Trainee</span><br>
-            MILES: <span id="miles" class="stat-val">0</span> (BEST: <span id="bestMiles" class="stat-val">0</span>)<br>
-            SCORE: <span id="score" class="stat-val">0</span> (BEST: <span id="bestScore" class="stat-val">0</span>)
+        <div id="splash"><div class="splash-logo">BEN'S<br>BUMPER BUSTER</div><div style="font-family:'Orbitron'; font-size:0.7rem; color:#888; letter-spacing: 4px; margin-top:15px;">JOE'S RIDES • EST. 2020</div></div>
+        <div class="dashboard">
+            RANK: <span id="rankText" style="color:#2563eb">TRAINEE</span><br>
+            LEVEL: <span id="levelNum">1</span><br>
+            DEST: <span id="destName">Islip MacArthur</span><br>
+            MILES: <span id="miles">0</span><br>
+            SCORE: <span id="score">0</span><br>
+            PASSENGERS: <span id="passCount">0</span><br>
+            N2O: <span id="nitroCount">1</span>
         </div>
-        
+        <div class="speedo-wrap"><span id="speedDisplay" style="font-size: 1.2rem;">0</span><br><span>MPH</span></div>
+        <div id="pit-stop-ui">
+            <h2 style="color:var(--neon-green); margin:0;">MISSION COMPLETE</h2>
+            <h1 id="pit-dest" style="color:#fff; margin:10px 0; font-size: 1.4rem;"></h1>
+            <div class="score-row"><span>RANK:</span><span id="pit-rank"></span></div>
+            <div class="score-row"><span>CAREER MILES:</span><span id="pit-miles"></span></div>
+            <div class="score-row"><span>PASSENGERS:</span><span id="pit-pass"></span></div>
+            <div class="score-row" style="color:var(--neon-green)"><span>TOTAL SCORE:</span><span id="pit-total"></span></div>
+            <hr style="width:80%; border:1px solid #333; margin:10px 0;">
+            <div class="score-row" style="font-size:0.6rem; color:#888;"><span>ALL-TIME BEST:</span><span id="best-score">0</span></div>
+            <p style="margin-top:15px; font-size:0.6rem;">NEXT LEG STARTING IN...</p>
+            <h1 id="pit-timer" style="font-size: 2rem; color:var(--theme-color); margin:0;">15</h1>
+        </div>
         <canvas id="gameCanvas"></canvas>
-        <div id="controls-hint">TAP LEFT/RIGHT TO STEER • TAP CENTER FOR NITRO</div>
-
+        <div id="horn-btn">HORN</div>
+        <div id="nitro-btn">NITRO</div>
         <div id="overlay">
-            <div class="brand-header">JOE'S RIDES</div>
-            <h2 id="msg">South Shore Dash</h2>
-            <div id="congrats-box" style="display:none;">
-                <p class="congrats-sub">Congratulations!<br>Thank you for choosing Joe's Rides.</p>
-                <div id="rankDisplay" class="rank-up-msg"></div>
-                <p id="stats-summary" style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 10px;"></p>
+            <h2 id="msg" style="color:#00d4ff; font-family:'Orbitron'; margin-bottom:5px;">BEN'S BUMPER BUSTER</h2>
+            <div style="font-size:0.6rem; color:#888; margin-bottom: 10px; letter-spacing: 2px;">THE GREAT SOUTH SHORE DASH</div>
+            <div id="records-box" style="font-size:0.65rem; color:#fff; margin-bottom:15px; background:rgba(255,255,255,0.1); padding:10px; border-radius:5px; font-family:'Orbitron';">BEST: <span id="main-best-score">0</span> | MILES: <span id="main-best-miles">0</span></div>
+            <div class="paint-grid">
+                <div class="swatch active" style="background:#000" data-color="#000"></div>
+                <div class="swatch" style="background:#0081cc" data-color="#0081cc"></div>
+                <div class="swatch" style="background:#ef4444" data-color="#ef4444"></div>
+                <div class="swatch" style="background:#fbbf24" data-color="#fbbf24"></div>
             </div>
-            <p id="submsg" style="font-size: 0.7rem; color: #94a3b8; margin-top: 10px; max-width: 250px;">Est. 2020. Precision driving for the Long Island commute.</p>
-            <button id="startBtn">START TRIP</button>
+            <button id="startBtn" class="btn-main">ENGAGE ENGINE</button>
         </div>
     </div>
 
 <script>
-window.onload = function() {
     const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score'), milesEl = document.getElementById('miles'), lvlEl = document.getElementById('lvl');
-    const bestScoreEl = document.getElementById('bestScore'), bestMilesEl = document.getElementById('bestMiles'), nitroEl = document.getElementById('nitroCount');
-    const rankLabel = document.getElementById('rankLabel'), rankDisplay = document.getElementById('rankDisplay');
-    const overlay = document.getElementById('overlay'), startBtn = document.getElementById('startBtn'), msg = document.getElementById('msg'), congratsBox = document.getElementById('congrats-box');
+    const scoreEl = document.getElementById('score'), milesEl = document.getElementById('miles'), speedEl = document.getElementById('speedDisplay'), nitroCountEl = document.getElementById('nitroCount'), passCountEl = document.getElementById('passCount'), levelEl = document.getElementById('levelNum'), destEl = document.getElementById('destName'), rankEl = document.getElementById('rankText'), overlay = document.getElementById('overlay'), startBtn = document.getElementById('startBtn'), pitUI = document.getElementById('pit-stop-ui'), pitTimerEl = document.getElementById('pit-timer'), pitDestEl = document.getElementById('pit-dest'), nitroBtn = document.getElementById('nitro-btn'), hornBtn = document.getElementById('horn-btn'), splash = document.getElementById('splash');
+    const pitMiles = document.getElementById('pit-miles'), pitPass = document.getElementById('pit-pass'), pitTotal = document.getElementById('pit-total'), pitRank = document.getElementById('pit-rank');
+    const bestScoreEl = document.getElementById('best-score'), mainBestScoreEl = document.getElementById('main-best-score'), mainBestMilesEl = document.getElementById('main-best-miles');
 
-    canvas.width = 450; canvas.height = 600;
-    let gameActive = false, score = 0, miles = 0, level = 1, speed = 2.5; 
-    let obstacles = [], passengers = [], pickups = [];
-    let airport = null, lineOffset = 0, frameCount = 0;
-    let nitros = 1, nitroActive = false, nitroTimer = 0, nitroSpawnCooldown = 1800;
-    
-    const player = { x: 205, y: 480, w: 40, h: 70 };
-    const laneWidth = 70, roadStartX = 85;
-    const trafficColors = ['#ef4444', '#3b82f6', '#94a3b8', '#a855f7', '#22c55e', '#fbbf24'];
-    const keys = {};
+    const dpr = window.devicePixelRatio || 1;
+    const baseWidth = 450, baseHeight = 700;
+    canvas.width = baseWidth * dpr; canvas.height = baseHeight * dpr;
+    ctx.scale(dpr, dpr);
 
-    let savedBestScore = localStorage.getItem('dashBestScore') || 0;
-    let savedBestMiles = localStorage.getItem('dashBestMiles') || 0;
-    bestScoreEl.innerText = savedBestScore;
-    bestMilesEl.innerText = savedBestMiles;
+    ctx.fillStyle = '#1a4a1a'; ctx.fillRect(0,0,baseWidth,baseHeight);
+    setTimeout(() => { splash.style.opacity = '0'; }, 2000);
 
-    function getRank(lvl) {
-        if (lvl >= 10) return "JOE'S ELITE";
-        if (lvl >= 7) return "EXECUTIVE TRANSPORTER";
-        if (lvl >= 4) return "PRO CHAUFFEUR";
-        if (lvl >= 2) return "CITY DRIVER";
-        return "TRAINEE";
+    const airports = ["Islip MacArthur", "Republic Airport", "LaGuardia", "JFK"];
+    const trafficColors = ['#ef4444', '#fbbf24', '#7c3aed', '#fff'];
+
+    let gameActive = false, inPitStop = false, score = 0, totalMiles = 0, speed = 1.0, nitros = 1, level = 1, passengersCollected = 0;
+    let isNitroActive = false, obstacles = [], passengers = [], pickups = [], hearts = [], keys = {};
+    let lineOffset = 0, finishLineY = -2000, lastMileChecked = 0, playerColor = "#000", milesAtStartOfLevel = 0, lastSpawnY = 0;
+    let milesPerLevel = 50, originalSpeed = 1.0, currentLevelMaxSpeed = 1.0;
+    let onSidewalk = false, sidewalkTimer = 0, lastHornTime = 0, isInvincible = false, heartsSpawned = false;
+
+    const player = { x: 210, y: 520, w: 32, h: 64 };
+    let audioCtx, engineOsc, engineGain, penaltyOsc, penaltyGain;
+
+    function updateRank() {
+        let rank = "TRAINEE";
+        if(level >= 10) rank = "JOE'S ELITE";
+        else if(level >= 7) rank = "EXEC TRANSPORTER";
+        else if(level >= 4) rank = "PRO CHAUFFEUR";
+        else if(level >= 2) rank = "CITY DRIVER";
+        rankEl.innerText = rank;
+        return rank;
     }
 
-    function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
-
-    window.addEventListener('keydown', e => { 
-        keys[e.code] = true; 
-        if (e.code === 'Space' && nitros > 0 && !nitroActive && gameActive) activateNitro();
-    });
-    window.addEventListener('keyup', e => { keys[e.code] = false; });
-
-    canvas.addEventListener('touchstart', e => {
-        if (!gameActive) return;
-        const rect = canvas.getBoundingClientRect();
-        const touchX = (e.touches[0].clientX - rect.left) * (canvas.width / rect.width);
-        if (touchX < canvas.width * 0.35) keys['ArrowLeft'] = true;
-        else if (touchX > canvas.width * 0.65) keys['ArrowRight'] = true;
-        else if (nitros > 0 && !nitroActive) activateNitro();
-    }, {passive: false});
-    canvas.addEventListener('touchend', () => { keys['ArrowLeft'] = false; keys['ArrowRight'] = false; });
-
-    function activateNitro() {
-        nitros--; nitroEl.innerText = nitros;
-        nitroActive = true; nitroTimer = 120;
-        const oldSpeed = speed; speed *= 2.5;
-        vibrate(50);
-        setTimeout(() => { nitroActive = false; speed = oldSpeed; }, 2000);
+    function saveRecords() {
+        const bestS = localStorage.getItem('benBestScore') || 0;
+        const bestM = localStorage.getItem('benBestMiles') || 0;
+        if(score > parseInt(bestS)) localStorage.setItem('benBestScore', score);
+        if(totalMiles > parseInt(bestM)) localStorage.setItem('benBestMiles', Math.floor(totalMiles));
+        refreshRecordUI();
     }
 
-    startBtn.addEventListener('click', function() {
-        if (!gameActive) {
-            if (msg.innerHTML === "CRASHED") { score = 0; level = 1; speed = 2.5; nitros = 1; }
-            miles = 0; nitroSpawnCooldown = 1800; obstacles = []; passengers = []; pickups = []; airport = null; player.x = 205;
-            lvlEl.innerText = level; scoreEl.innerText = score; milesEl.innerText = "0"; nitroEl.innerText = nitros;
-            rankLabel.innerText = getRank(level);
-            gameActive = true; overlay.style.display = 'none'; congratsBox.style.display = 'none';
-            vibrate(30); requestAnimationFrame(gameLoop);
-        }
-    });
-
-    function gameLoop() {
-        if (!gameActive) return;
-        frameCount++; update(); draw(); requestAnimationFrame(gameLoop);
+    function refreshRecordUI() {
+        const s = localStorage.getItem('benBestScore') || 0;
+        const m = localStorage.getItem('benBestMiles') || 0;
+        mainBestScoreEl.innerText = s;
+        mainBestMilesEl.innerText = m;
+        bestScoreEl.innerText = s;
     }
 
-    function update() {
-        if (keys['ArrowLeft'] && player.x > roadStartX + 5) player.x -= 6;
-        if (keys['ArrowRight'] && player.x < roadStartX + (laneWidth * 4) - 45) player.x += 6;
-        lineOffset += speed; if (lineOffset > 40) lineOffset = 0;
-        miles += (speed / 150);
-        milesEl.innerText = Math.floor(miles);
-        if (!nitroActive && Math.floor(miles) > 0 && Math.floor(miles) % 15 === 0) speed += 0.003;
+    refreshRecordUI();
 
-        if (Math.floor(miles) >= 100 && !airport) { airport = { y: -250 }; obstacles = []; passengers = []; pickups = []; }
-
-        if (airport) {
-            airport.y += speed;
-            if (airport.y > 400) {
-                level++; nitros++; 
-                speed = 2.5 + (level * 0.5); 
-                gameActive = false;
-                msg.innerHTML = "TRIP COMPLETE";
-                rankDisplay.innerText = "RANK: " + getRank(level);
-                document.getElementById('stats-summary').innerText = "Current Score: " + score;
-                congratsBox.style.display = 'block';
-                startBtn.innerText = "START LEVEL " + level;
-                overlay.style.display = 'flex';
-                vibrate([50, 50, 50]);
-            }
+    function initAudio() {
+        if(!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            engineOsc = audioCtx.createOscillator(); engineGain = audioCtx.createGain();
+            engineOsc.type = 'sawtooth'; engineOsc.frequency.setValueAtTime(50, audioCtx.currentTime); 
+            engineGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            engineOsc.connect(engineGain); engineGain.connect(audioCtx.destination); engineOsc.start();
+            penaltyOsc = audioCtx.createOscillator(); penaltyGain = audioCtx.createGain();
+            penaltyOsc.type = 'square'; penaltyOsc.frequency.setValueAtTime(80, audioCtx.currentTime);
+            penaltyGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            penaltyOsc.connect(penaltyGain); penaltyGain.connect(audioCtx.destination); penaltyOsc.start();
         }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
 
-        let spawnChance = 0.006 + (level * 0.004); 
-        if (!airport && Math.random() < spawnChance) {
-            const lane = Math.floor(Math.random() * 4);
-            const typeRand = Math.random();
-            let w = 40, h = 70;
-            if (typeRand > 0.85) { w = 44; h = 85; } else if (typeRand > 0.70) { w = 42; h = 95; }
-            obstacles.push({ x: roadStartX + (lane * laneWidth) + (laneWidth - w)/2, y: -100, w: w, h: h, color: trafficColors[Math.floor(Math.random() * trafficColors.length)] });
-        }
-
-        if (nitroSpawnCooldown > 0) nitroSpawnCooldown--;
-        else if (!airport && Math.random() < 0.01) {
-            const lane = Math.floor(Math.random() * 4);
-            pickups.push({ x: roadStartX + (lane * laneWidth) + 25, y: -50, w: 20, h: 20 });
-            nitroSpawnCooldown = 1800 + Math.random() * 900;
-        }
-
-        if (!airport && Math.random() < 0.015) {
-            const lane = Math.floor(Math.random() * 4);
-            passengers.push({ x: roadStartX + (lane * laneWidth) + 20, y: -50, w: 30, h: 40 });
-        }
-
-        pickups.forEach((p, i) => {
-            p.y += speed; if (p.y > 600) pickups.splice(i, 1);
-            if (player.x < p.x + p.w && player.x + player.w > p.x && player.y < p.y + p.h && player.y + player.h > p.y) {
-                nitros++; nitroEl.innerText = nitros; pickups.splice(i, 1); vibrate(40);
-            }
+    function playWinFanfare() {
+        const now = audioCtx.currentTime;
+        engineGain.gain.setTargetAtTime(0, now, 0.1);
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            osc.type = 'square'; osc.frequency.setValueAtTime(freq, now + (i * 0.15));
+            g.gain.setValueAtTime(0.1, now + (i * 0.15));
+            g.gain.exponentialRampToValueAtTime(0.0001, now + (i * 0.15) + 0.6);
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.start(now + (i * 0.15)); osc.stop(now + (i * 0.15) + 0.6);
         });
+    }
 
-        passengers.forEach((p, i) => {
-            p.y += speed; if (p.y > 600) passengers.splice(i, 1);
-            if (player.x < p.x + p.w && player.x + player.w > p.x && player.y < p.y + p.h && player.y + player.h > p.y) {
-                score += 25; scoreEl.innerText = score; passengers.splice(i, 1);
-            }
+    function playHorn() {
+        if(!audioCtx || audioCtx.currentTime - lastHornTime < 0.5) return;
+        lastHornTime = audioCtx.currentTime;
+        [400, 480].forEach(f => {
+            let o = audioCtx.createOscillator(); let g = audioCtx.createGain();
+            o.type = 'sawtooth'; o.connect(g); g.connect(audioCtx.destination);
+            o.frequency.setValueAtTime(f, audioCtx.currentTime);
+            g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+            o.start(); o.stop(audioCtx.currentTime + 0.4);
         });
+    }
+
+    function playDing() {
+        let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.1, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+    }
+
+    function triggerNitro() {
+        if (nitros > 0 && !isNitroActive && !inPitStop && gameActive && !isInvincible) {
+            nitros--; nitroCountEl.innerText = nitros; isNitroActive = true;
+            originalSpeed = speed; speed = originalSpeed * 2.5;
+            setTimeout(() => { if(!isInvincible) speed = originalSpeed; isNitroActive = false; }, 3000);
+        }
+    }
+
+    function drawCar(x, y, color, isPlayer) {
+        if (isPlayer) {
+            ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fillRect(x+4, y+4, 32, 64);
+            ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(x, y, 32, 64, 6); ctx.fill();
+            if(isInvincible) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); ctx.globalAlpha = 0.8; }
+            ctx.fillStyle = "#1a1a1a"; ctx.fillRect(x+8, y+2, 16, 4);
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 10; ctx.shadowColor = "#fff";
+            ctx.fillRect(x+2, y+5, 6, 2); ctx.fillRect(x+24, y+5, 6, 2);
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "#111"; ctx.fillRect(x+3, y+20, 2, 30); ctx.fillRect(x+27, y+20, 2, 30);
+            ctx.fillStyle = "#ff3131"; ctx.shadowBlur = 12; ctx.shadowColor = "#ff3131";
+            ctx.fillRect(x+2, y+60, 28, 2); ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = '#39ff14'; ctx.font = 'bold 11px Orbitron, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.fillText("B", x+16, y+20);
+            ctx.fillText("E", x+16, y+32);
+            ctx.fillText("N", x+16, y+44);
+            ctx.globalAlpha = 1.0;
+        } else {
+            ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(x+4, y+4, 28, 60);
+            let bodyGrad = ctx.createLinearGradient(x+2, y, x+2, y+60);
+            bodyGrad.addColorStop(0, color); bodyGrad.addColorStop(0.5, "#fff3"); bodyGrad.addColorStop(1, color); 
+            ctx.fillStyle = bodyGrad; ctx.beginPath(); ctx.roundRect(x+2, y, 28, 60, 5); ctx.fill();
+            ctx.fillStyle = "#1a1a1a"; ctx.fillRect(x+6, y+10, 20, 10);
+            ctx.fillStyle = "#fff"; ctx.shadowBlur = 8; ctx.shadowColor = "#fff";
+            ctx.fillRect(x+4, y+2, 4, 3); ctx.fillRect(x+22, y+2, 4, 3);
+            ctx.shadowBlur = 0; ctx.fillStyle = "#ff3131"; ctx.fillRect(x+4, y+55, 6, 3); ctx.fillRect(x+20, y+55, 6, 3);
+        }
+    }
+
+    function spawnVictoryHearts() {
+        if(heartsSpawned) return;
+        hearts = [];
+        for(let i=0; i<12; i++) {
+            hearts.push({
+                x: 98 + (Math.floor(Math.random() * 4) * 72),
+                y: -100 - (i * 450), 
+                collected: false
+            });
+        }
+        heartsSpawned = true;
+    }
+
+    function update(dt) {
+        if(inPitStop || !gameActive) return;
+        engineOsc.frequency.setTargetAtTime(50 + (speed * 12), audioCtx.currentTime, 0.1);
+        let steer = 0;
+        if (keys['ArrowLeft'] || keys['KeyA']) steer = -1;
+        if (keys['ArrowRight'] || keys['KeyD']) steer = 1;
+        player.x = Math.max(20, Math.min(400, player.x + steer * 5.5));
+
+        const roadStart = 80, roadEnd = 370;
+        if (player.x < roadStart || (player.x + player.w) > roadEnd) {
+            if (!onSidewalk) { score = Math.max(0, score - 4); penaltyGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.05); onSidewalk = true; }
+            sidewalkTimer += dt; if (sidewalkTimer >= 1000) { score = Math.max(0, score - 3); sidewalkTimer = 0; }
+        } else { onSidewalk = false; sidewalkTimer = 0; penaltyGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); }
+
+        totalMiles += (speed / 180); let curM = Math.floor(totalMiles);
+        let milesInLevel = totalMiles - milesAtStartOfLevel;
+        let milesLeft = milesPerLevel - milesInLevel;
+
+        if (milesLeft <= 1 && milesLeft > 0) {
+            isInvincible = true;
+            obstacles = []; 
+            spawnVictoryHearts();
+            speed = Math.max(0.05, speed * 0.998); 
+        } else {
+            isInvincible = false;
+        }
+
+        if (curM > lastMileChecked) { score += 10; lastMileChecked = curM; }
+        milesEl.innerText = curM; speedEl.innerText = Math.floor(speed * 35); scoreEl.innerText = score;
+        lineOffset = (lineOffset + speed * 4) % 40;
+
+        if (milesLeft <= 0.05 && finishLineY < -1000) finishLineY = -150;
+        if (finishLineY > -1000) {
+            finishLineY += speed * 2;
+            if (finishLineY > 550 && !inPitStop) {
+                inPitStop = true; speed = 0;
+                playWinFanfare(); saveRecords();
+                pitUI.style.display = 'flex';
+                const destIdx = (level - 1) % airports.length;
+                pitDestEl.innerText = airports[destIdx].toUpperCase();
+                pitMiles.innerText = curM; pitPass.innerText = passengersCollected; pitTotal.innerText = score;
+                pitRank.innerText = updateRank();
+                let tl = 15;
+                let timer = setInterval(() => {
+                    tl--; pitTimerEl.innerText = tl;
+                    if(tl <= 0) {
+                        clearInterval(timer); inPitStop = false; pitUI.style.display = 'none';
+                        engineGain.gain.setTargetAtTime(0.04, audioCtx.currentTime, 0.1);
+                        level++; levelEl.innerText = level; updateRank();
+                        currentLevelMaxSpeed = 1.0 + (level * 0.15); speed = currentLevelMaxSpeed; 
+                        milesAtStartOfLevel = totalMiles;
+                        finishLineY = -2000; destEl.innerText = airports[level % airports.length];
+                        isInvincible = false; heartsSpawned = false; hearts = []; // CLEAR FOR NEXT LEVEL
+                    }
+                }, 1000);
+            }
+        }
+
+        if (finishLineY < -500 && !isInvincible) {
+            lastSpawnY += speed * 2;
+            if(lastSpawnY > 300) { obstacles.push({x: 98 + (Math.floor(Math.random() * 4) * 72), y: -100, color: trafficColors[Math.floor(Math.random()*trafficColors.length)], speedMult: 1.1 + (Math.random() * 0.6)}); lastSpawnY = 0; }
+        }
 
         obstacles.forEach((o, i) => { 
-            o.y += speed; if (o.y > 600) obstacles.splice(i, 1); 
-            if (!nitroActive && player.x < o.x + o.w && player.x + player.w > o.x && player.y < o.y + o.h && player.y + player.h > o.y) endTrip();
+            o.y += speed * o.speedMult; 
+            if(o.y > 750) obstacles.splice(i, 1); 
+            if(!isInvincible && player.x < o.x+28 && player.x+player.w > o.x+2 && player.y < o.y+55 && player.y+player.h > o.y+5) { 
+                gameActive = false; saveRecords(); overlay.style.display = 'flex'; document.getElementById('msg').innerText = "WRECKED!"; 
+            } 
         });
-        if (nitroActive) nitroTimer--;
-    }
 
-    function endTrip() {
-        gameActive = false; msg.innerHTML = "CRASHED"; vibrate(200);
-        if (score > savedBestScore) { savedBestScore = score; localStorage.setItem('dashBestScore', score); bestScoreEl.innerText = score; }
-        if (Math.floor(miles) > savedBestMiles) { savedBestMiles = Math.floor(miles); localStorage.setItem('dashBestMiles', savedBestMiles); bestMilesEl.innerText = savedBestMiles; }
-        startBtn.innerText = "RESTART"; overlay.style.display = 'flex';
-    }
+        hearts.forEach((h, i) => {
+            h.y += speed * 2.2;
+            if(!h.collected && player.x < h.x+20 && player.x+player.w > h.x-20 && player.y < h.y+20 && player.y+player.h > h.y-20) {
+                h.collected = true; score += 2; playDing();
+            }
+        });
 
-    // --- COSMETIC CHAUFFEUR CHANGE FUNCTION ---
-    function getPlayerColorAndUnderglow() {
-        let cosmetic = { color: '#000', stripe: null, glow: null, glowBlur: 15 };
-        
-        // CITY DRIVER (LVL 2) - Green Pulse Glow
-        if (level >= 2 && level < 4) {
-            const pulse = 10 + Math.sin(frameCount * 0.1) * 5;
-            cosmetic.glow = '#22c55e';
-            cosmetic.glowBlur = pulse;
-        }
-        // PRO CHAUFFEUR (LVL 4) - Racing Stripes
-        else if (level >= 4 && level < 7) {
-            cosmetic.stripe = '#fff';
-            cosmetic.glow = '#00d4ff'; // Keep subtle default blue
-        }
-        // EXECUTIVE TRANSPORTER (LVL 7) - Silver/White Flow Glow
-        else if (level >= 7 && level < 10) {
-            cosmetic.color = '#1e1e1e'; // Dark gray
-            cosmetic.stripe = '#94a3b8';
-            const pulse = 15 + Math.sin(frameCount * 0.1) * 7;
-            cosmetic.glow = '#e2e8f0';
-            cosmetic.glowBlur = pulse;
-        }
-        // JOE'S ELITE (LVL 10+) - Rainbow Nitro Glow
-        else if (level >= 10) {
-            cosmetic.color = '#000';
-            cosmetic.stripe = '#d1d5db';
-            const hue = frameCount % 360;
-            cosmetic.glow = `hsl(${hue}, 100%, 70%)`;
-            cosmetic.glowBlur = 20;
-        }
-        else {
-            cosmetic.glow = '#00d4ff'; // Trainee Default Blue
-        }
-
-        return cosmetic;
+        passengers.forEach((p, i) => { p.y += speed * 2.2; if(player.x < p.x+15 && player.x+player.w > p.x-15 && player.y < p.y+15 && player.y+player.h > p.y-15) { passengersCollected++; passCountEl.innerText = passengersCollected; score += 5; playDing(); passengers.splice(i, 1); if(passengersCollected % 5 === 0) pickups.push({x: 115 + (Math.floor(Math.random() * 4) * 72), y: -100}); } });
+        pickups.forEach((pk, i) => { pk.y += speed * 2.2; if(player.x < pk.x+16 && player.x+player.w > pk.x-16 && player.y < pk.y+16 && player.y+player.h > pk.y-16) { nitros++; nitroCountEl.innerText = nitros; pickups.splice(i, 1); } });
+        if(Math.random() < 0.008 && !isInvincible) passengers.push({x: 115 + (Math.floor(Math.random() * 4) * 72), y: -100});
     }
 
     function draw() {
-        ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#022c22'; ctx.fillRect(0, 0, 75, 600); ctx.fillRect(375, 0, 75, 600);
-        ctx.fillStyle = '#475569'; ctx.fillRect(75, 0, 10, 600); ctx.fillRect(365, 0, 10, 600);
-        ctx.fillStyle = '#000'; ctx.fillRect(74, 0, 1, 600); ctx.fillRect(375, 0, 1, 600);
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.setLineDash([20, 20]); ctx.lineDashOffset = -lineOffset;
-        ctx.beginPath(); for(let i=1; i<4; i++) { ctx.moveTo(roadStartX + (i * laneWidth), 0); ctx.lineTo(roadStartX + (i * laneWidth), 600); }
-        ctx.stroke();
+        ctx.fillStyle = '#1a4a1a'; ctx.fillRect(0,0,baseWidth,baseHeight);
+        ctx.fillStyle = '#999'; ctx.fillRect(50, 0, 30, baseHeight); ctx.fillRect(370, 0, 30, baseHeight);
+        ctx.fillStyle = '#222'; ctx.fillRect(80, 0, 290, baseHeight);
+        ctx.strokeStyle = '#fff5'; ctx.lineWidth = 2; ctx.setLineDash([20,20]); ctx.lineDashOffset = -lineOffset;
+        ctx.beginPath(); for(let i=1; i<4; i++) { ctx.moveTo(80+i*72, 0); ctx.lineTo(80+i*72, baseHeight); } ctx.stroke();
+        ctx.setLineDash([]);
+        
+        obstacles.forEach(o => drawCar(o.x, o.y, o.color, false));
+        drawCar(player.x, player.y, playerColor, true); 
 
-        if (airport) {
-            ctx.fillStyle = 'rgba(0, 212, 255, 0.2)'; ctx.fillRect(85, airport.y, 280, 180);
-            ctx.fillStyle = 'white'; ctx.font = 'bold 14px Orbitron'; ctx.fillText("AIRPORT ARRIVAL", 150, airport.y + 90);
-        }
-
-        pickups.forEach(p => {
-            ctx.fillStyle = '#f472b6'; ctx.shadowBlur = 10; ctx.shadowColor = '#f472b6';
-            ctx.beginPath(); ctx.arc(p.x+10, p.y+10, 8, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = 'white'; ctx.font = 'bold 10px Orbitron'; ctx.fillText("N", p.x+6, p.y+14); ctx.shadowBlur = 0;
+        hearts.forEach(h => {
+            if(h.collected) return;
+            ctx.fillStyle = '#ff69b4'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff69b4';
+            ctx.beginPath();
+            let topCurveHeight = 10;
+            ctx.moveTo(h.x, h.y + topCurveHeight);
+            ctx.bezierCurveTo(h.x, h.y, h.x - 15, h.y, h.x - 15, h.y + topCurveHeight);
+            ctx.bezierCurveTo(h.x - 15, h.y + 25, h.x, h.y + 30, h.x, h.y + 40);
+            ctx.bezierCurveTo(h.x, h.y + 30, h.x + 15, h.y + 25, h.x + 15, h.y + topCurveHeight);
+            ctx.bezierCurveTo(h.x + 15, h.y, h.x, h.y, h.x, h.y + topCurveHeight);
+            ctx.fill(); ctx.shadowBlur = 0;
         });
 
-        passengers.forEach(p => {
-            ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 2; const px = p.x + 15, py = p.y + 10;
-            ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(px, py+5); ctx.lineTo(px, py+20); ctx.stroke();
-            let wave = Math.sin(frameCount * 0.1) * 5;
-            ctx.beginPath(); ctx.moveTo(px-8, py+10+wave); ctx.lineTo(px, py+10); ctx.lineTo(px+8, py+10-wave); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(px, py+20); ctx.lineTo(px-5, py+30); ctx.moveTo(px, py+20); ctx.lineTo(px+5, py+30); ctx.stroke();
+        passengers.forEach(p => { 
+            ctx.fillStyle = '#00f3ff'; ctx.shadowBlur = 10; ctx.shadowColor = '#00f3ff';
+            ctx.beginPath(); ctx.arc(p.x, p.y-22, 5, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y-17); ctx.lineTo(p.x, p.y-5);
+            ctx.moveTo(p.x-6, p.y-13); ctx.lineTo(p.x+6, p.y-13); ctx.moveTo(p.x, p.y-5); ctx.lineTo(p.x-5, p.y+5); ctx.moveTo(p.x, p.y-5); ctx.lineTo(p.x+5, p.y+5);
+            ctx.stroke(); ctx.shadowBlur = 0;
         });
 
-        obstacles.forEach(o => {
-            ctx.fillStyle = o.color; ctx.fillRect(o.x, o.y, o.w, o.h);
-            ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(o.x + 4, o.y + 15, o.w - 8, 12);
-            ctx.fillStyle = '#991b1b'; ctx.fillRect(o.x + 2, o.y + o.h - 6, 6, 4); ctx.fillRect(o.x + o.w - 8, o.y + o.h - 6, 6, 4);
+        pickups.forEach(pk => { 
+            ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(pk.x, pk.y, 14, 0, Math.PI*2); ctx.fill(); 
+            ctx.fillStyle="#fff"; ctx.font="bold 8px Orbitron, sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+            ctx.fillText("N2O", pk.x, pk.y);
         });
-
-        // --- UPDATED PLAYER DRAW WITH COSMETICS ---
-        const carStyle = getPlayerColorAndUnderglow();
-        
-        ctx.save();
-        if (nitroActive) {
-            // Priority Nitro Look
-            ctx.shadowBlur = 30; ctx.shadowColor = '#f472b6'; ctx.fillStyle = '#f472b6';
-            for(let i=0; i<3; i++) ctx.fillRect(player.x, player.y + (i*10) + 70, 40, 8);
-        } else if (carStyle.glow) {
-            // Rank Underglow
-            ctx.shadowBlur = carStyle.glowBlur; ctx.shadowColor = carStyle.glow;
-        }
-        
-        // Base Car Body
-        ctx.fillStyle = carStyle.color; 
-        ctx.fillRect(player.x, player.y, player.w, player.h);
-        
-        // Racing Stripes (Pro+)
-        if (carStyle.stripe) {
-            ctx.fillStyle = carStyle.stripe;
-            const stripeW = 8;
-            ctx.fillRect(player.x + (player.w/2) - (stripeW/2), player.y + 4, stripeW, 10); // Hood
-            ctx.fillRect(player.x + (player.w/2) - (stripeW/2), player.y + player.h - 14, stripeW, 10); // Rear Trunk
-        }
-        
-        // Window/Detail Details
-        ctx.shadowBlur = 0; 
-        ctx.fillStyle = '#fff'; ctx.fillRect(player.x+5, player.y, 8, 4); ctx.fillRect(player.x+27, player.y, 8, 4); // Headlights
-        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(player.x+5, player.y+15, player.w-10, 15); // Windshield
-        ctx.restore();
     }
-};
+
+    function gameLoop(timestamp) {
+        if(gameActive) { let dt = timestamp - lastTime; if(dt > 100) dt = 16; lastTime = timestamp; update(dt); draw(); requestAnimationFrame(gameLoop); }
+    }
+
+    let lastTime = 0;
+    startBtn.onclick = () => { initAudio(); gameActive = true; overlay.style.display = 'none'; score = 0; totalMiles = 0; level = 1; currentLevelMaxSpeed = 1.0; speed = 1.0; nitros = 1; passengersCollected = 0; obstacles = []; passengers = []; pickups = []; hearts = []; heartsSpawned = false; levelEl.innerText = level; destEl.innerText = airports[0]; updateRank(); milesAtStartOfLevel = 0; isInvincible = false; lastTime = performance.now(); requestAnimationFrame(gameLoop); refreshRecordUI(); };
+    window.addEventListener('keydown', e => { keys[e.code] = true; if(e.code === 'Space') triggerNitro(); if(e.code === 'ArrowUp') playHorn(); });
+    window.addEventListener('keyup', e => keys[e.code] = false);
+    nitroBtn.onclick = (e) => { e.preventDefault(); triggerNitro(); };
+    hornBtn.onclick = (e) => { e.preventDefault(); playHorn(); };
+    document.querySelectorAll('.swatch').forEach(s => { s.onclick = () => { document.querySelector('.swatch.active').classList.remove('active'); s.classList.add('active'); playerColor = s.dataset.color; } });
 </script>
 </body>
 </html>
