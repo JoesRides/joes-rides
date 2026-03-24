@@ -20,10 +20,17 @@
         .swatch.active { border-color: #00d4ff; transform: scale(1.1); box-shadow: 0 0 15px #00d4ff; }
         #pit-stop-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.96); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 90; font-family: 'Orbitron', sans-serif; color: var(--theme-color); border: 4px solid var(--theme-color); margin: 20px; border-radius: 15px; padding: 20px; text-align: center; }
         .score-row { display: flex; justify-content: space-between; width: 80%; font-size: 0.75rem; margin: 5px 0; color: #fff; }
-        #nitro-btn, #horn-btn { position: absolute; width: 80px; height: 80px; border-radius: 50%; border: 4px solid #fff; color: white; font-family: 'Orbitron', sans-serif; display: none; align-items: center; justify-content: center; z-index: 50; cursor: pointer; font-size: 0.8rem; }
-        #nitro-btn { bottom: 30px; right: 30px; background: rgba(239, 68, 68, 0.9); }
-        #horn-btn { bottom: 30px; left: 30px; background: rgba(37, 99, 235, 0.9); }
-        @media (pointer: coarse) { #nitro-btn, #horn-btn { display: flex; } }
+        
+        /* REFINED MOBILE CONTROLS */
+        #nitro-btn, #horn-btn { position: absolute; width: 65px; height: 65px; border-radius: 50%; border: 3px solid #fff; color: white; font-family: 'Orbitron', sans-serif; display: none; align-items: center; justify-content: center; z-index: 50; cursor: pointer; font-size: 0.7rem; }
+        #nitro-btn { bottom: 25px; right: 25px; background: rgba(239, 68, 68, 0.9); }
+        #horn-btn { bottom: 25px; left: 25px; background: rgba(37, 99, 235, 0.9); }
+        
+        /* STEERING ZONE */
+        #steer-zone { position: absolute; bottom: 100px; left: 25px; width: 140px; height: 50px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 25px; display: none; z-index: 50; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: 0.5rem; color: #fff; pointer-events: auto; }
+        #steer-knob { position: absolute; width: 40px; height: 40px; background: #fff; border-radius: 50%; left: 50px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+        @media (pointer: coarse) { #nitro-btn, #horn-btn, #steer-zone { display: flex; } }
         .btn-main { background: #2563eb; color: white; border: none; padding: 18px 45px; font-family: 'Orbitron', sans-serif; border-radius: 8px; cursor: pointer; width: 85%; font-size: 1rem; letter-spacing: 2px; }
     </style>
 </head>
@@ -53,8 +60,11 @@
             <h1 id="pit-timer" style="font-size: 2rem; color:var(--theme-color); margin:0;">15</h1>
         </div>
         <canvas id="gameCanvas"></canvas>
+        
+        <div id="steer-zone">STEER<div id="steer-knob"></div></div>
         <div id="horn-btn">HORN</div>
         <div id="nitro-btn">NITRO</div>
+
         <div id="overlay">
             <h2 id="msg" style="color:#00d4ff; font-family:'Orbitron'; margin-bottom:5px;">BEN'S BUMPER BUSTER</h2>
             <div style="font-size:0.6rem; color:#888; margin-bottom: 10px; letter-spacing: 2px;">THE GREAT SOUTH SHORE DASH</div>
@@ -74,6 +84,7 @@
     const scoreEl = document.getElementById('score'), milesEl = document.getElementById('miles'), speedEl = document.getElementById('speedDisplay'), nitroCountEl = document.getElementById('nitroCount'), passCountEl = document.getElementById('passCount'), levelEl = document.getElementById('levelNum'), destEl = document.getElementById('destName'), rankEl = document.getElementById('rankText'), overlay = document.getElementById('overlay'), startBtn = document.getElementById('startBtn'), pitUI = document.getElementById('pit-stop-ui'), pitTimerEl = document.getElementById('pit-timer'), pitDestEl = document.getElementById('pit-dest'), nitroBtn = document.getElementById('nitro-btn'), hornBtn = document.getElementById('horn-btn'), splash = document.getElementById('splash');
     const pitMiles = document.getElementById('pit-miles'), pitPass = document.getElementById('pit-pass'), pitTotal = document.getElementById('pit-total'), pitRank = document.getElementById('pit-rank');
     const bestScoreEl = document.getElementById('best-score'), mainBestScoreEl = document.getElementById('main-best-score'), mainBestMilesEl = document.getElementById('main-best-miles');
+    const steerZone = document.getElementById('steer-zone'), steerKnob = document.getElementById('steer-knob');
 
     const dpr = window.devicePixelRatio || 1;
     const baseWidth = 450, baseHeight = 700;
@@ -91,6 +102,7 @@
     let lineOffset = 0, finishLineY = -2000, lastMileChecked = 0, playerColor = "#000", milesAtStartOfLevel = 0, lastSpawnY = 0;
     let milesPerLevel = 50, originalSpeed = 1.0, currentLevelMaxSpeed = 1.0;
     let onSidewalk = false, sidewalkTimer = 0, lastHornTime = 0, isInvincible = false, heartsSpawned = false;
+    let touchSteer = 0; // -1 to 1
 
     const player = { x: 210, y: 520, w: 32, h: 64 };
     let audioCtx, engineOsc, engineGain, penaltyOsc, penaltyGain;
@@ -181,6 +193,22 @@
         }
     }
 
+    // MOBILE TOUCH STEERING LOGIC
+    steerZone.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = steerZone.getBoundingClientRect();
+        let pos = (touch.clientX - rect.left) / rect.width;
+        pos = Math.max(0.1, Math.min(0.9, pos));
+        steerKnob.style.left = (pos * rect.width - 20) + 'px';
+        touchSteer = (pos - 0.5) * 2; // Map to -1 to 1
+    }, {passive: false});
+
+    steerZone.addEventListener('touchend', () => {
+        touchSteer = 0;
+        steerKnob.style.left = '50px';
+    });
+
     function drawCar(x, y, color, isPlayer) {
         if (isPlayer) {
             ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fillRect(x+4, y+4, 32, 64);
@@ -193,11 +221,8 @@
             ctx.fillStyle = "#111"; ctx.fillRect(x+3, y+20, 2, 30); ctx.fillRect(x+27, y+20, 2, 30);
             ctx.fillStyle = "#ff3131"; ctx.shadowBlur = 12; ctx.shadowColor = "#ff3131";
             ctx.fillRect(x+2, y+60, 28, 2); ctx.shadowBlur = 0;
-            
             ctx.fillStyle = '#39ff14'; ctx.font = 'bold 11px Orbitron, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-            ctx.fillText("B", x+16, y+20);
-            ctx.fillText("E", x+16, y+32);
-            ctx.fillText("N", x+16, y+44);
+            ctx.fillText("B", x+16, y+20); ctx.fillText("E", x+16, y+32); ctx.fillText("N", x+16, y+44);
             ctx.globalAlpha = 1.0;
         } else {
             ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(x+4, y+4, 28, 60);
@@ -215,11 +240,7 @@
         if(heartsSpawned) return;
         hearts = [];
         for(let i=0; i<12; i++) {
-            hearts.push({
-                x: 98 + (Math.floor(Math.random() * 4) * 72),
-                y: -100 - (i * 450), 
-                collected: false
-            });
+            hearts.push({ x: 98 + (Math.floor(Math.random() * 4) * 72), y: -100 - (i * 450), collected: false });
         }
         heartsSpawned = true;
     }
@@ -230,7 +251,9 @@
         let steer = 0;
         if (keys['ArrowLeft'] || keys['KeyA']) steer = -1;
         if (keys['ArrowRight'] || keys['KeyD']) steer = 1;
-        player.x = Math.max(20, Math.min(400, player.x + steer * 5.5));
+        if (touchSteer !== 0) steer = touchSteer;
+
+        player.x = Math.max(20, Math.min(400, player.x + steer * 6.0));
 
         const roadStart = 80, roadEnd = 370;
         if (player.x < roadStart || (player.x + player.w) > roadEnd) {
@@ -243,13 +266,9 @@
         let milesLeft = milesPerLevel - milesInLevel;
 
         if (milesLeft <= 1 && milesLeft > 0) {
-            isInvincible = true;
-            obstacles = []; 
-            spawnVictoryHearts();
+            isInvincible = true; obstacles = []; spawnVictoryHearts();
             speed = Math.max(0.05, speed * 0.998); 
-        } else {
-            isInvincible = false;
-        }
+        } else { isInvincible = false; }
 
         if (curM > lastMileChecked) { score += 10; lastMileChecked = curM; }
         milesEl.innerText = curM; speedEl.innerText = Math.floor(speed * 35); scoreEl.innerText = score;
@@ -259,13 +278,10 @@
         if (finishLineY > -1000) {
             finishLineY += speed * 2;
             if (finishLineY > 550 && !inPitStop) {
-                inPitStop = true; speed = 0;
-                playWinFanfare(); saveRecords();
+                inPitStop = true; speed = 0; playWinFanfare(); saveRecords();
                 pitUI.style.display = 'flex';
-                const destIdx = (level - 1) % airports.length;
-                pitDestEl.innerText = airports[destIdx].toUpperCase();
-                pitMiles.innerText = curM; pitPass.innerText = passengersCollected; pitTotal.innerText = score;
-                pitRank.innerText = updateRank();
+                pitDestEl.innerText = airports[(level - 1) % airports.length].toUpperCase();
+                pitMiles.innerText = curM; pitPass.innerText = passengersCollected; pitTotal.innerText = score; pitRank.innerText = updateRank();
                 let tl = 15;
                 let timer = setInterval(() => {
                     tl--; pitTimerEl.innerText = tl;
@@ -274,9 +290,9 @@
                         engineGain.gain.setTargetAtTime(0.04, audioCtx.currentTime, 0.1);
                         level++; levelEl.innerText = level; updateRank();
                         currentLevelMaxSpeed = 1.0 + (level * 0.15); speed = currentLevelMaxSpeed; 
-                        milesAtStartOfLevel = totalMiles;
-                        finishLineY = -2000; destEl.innerText = airports[level % airports.length];
-                        isInvincible = false; heartsSpawned = false; hearts = []; // CLEAR FOR NEXT LEVEL
+                        milesAtStartOfLevel = totalMiles; finishLineY = -2000;
+                        destEl.innerText = airports[level % airports.length];
+                        isInvincible = false; heartsSpawned = false; hearts = [];
                     }
                 }, 1000);
             }
@@ -295,11 +311,9 @@
             } 
         });
 
-        hearts.forEach((h, i) => {
+        hearts.forEach((h) => {
             h.y += speed * 2.2;
-            if(!h.collected && player.x < h.x+20 && player.x+player.w > h.x-20 && player.y < h.y+20 && player.y+player.h > h.y-20) {
-                h.collected = true; score += 2; playDing();
-            }
+            if(!h.collected && player.x < h.x+20 && player.x+player.w > h.x-20 && player.y < h.y+20 && player.y+player.h > h.y-20) { h.collected = true; score += 2; playDing(); }
         });
 
         passengers.forEach((p, i) => { p.y += speed * 2.2; if(player.x < p.x+15 && player.x+player.w > p.x-15 && player.y < p.y+15 && player.y+player.h > p.y-15) { passengersCollected++; passCountEl.innerText = passengersCollected; score += 5; playDing(); passengers.splice(i, 1); if(passengersCollected % 5 === 0) pickups.push({x: 115 + (Math.floor(Math.random() * 4) * 72), y: -100}); } });
@@ -312,37 +326,28 @@
         ctx.fillStyle = '#999'; ctx.fillRect(50, 0, 30, baseHeight); ctx.fillRect(370, 0, 30, baseHeight);
         ctx.fillStyle = '#222'; ctx.fillRect(80, 0, 290, baseHeight);
         ctx.strokeStyle = '#fff5'; ctx.lineWidth = 2; ctx.setLineDash([20,20]); ctx.lineDashOffset = -lineOffset;
-        ctx.beginPath(); for(let i=1; i<4; i++) { ctx.moveTo(80+i*72, 0); ctx.lineTo(80+i*72, baseHeight); } ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.beginPath(); for(let i=1; i<4; i++) { ctx.moveTo(80+i*72, 0); ctx.lineTo(80+i*72, baseHeight); } ctx.stroke(); ctx.setLineDash([]);
         
         obstacles.forEach(o => drawCar(o.x, o.y, o.color, false));
         drawCar(player.x, player.y, playerColor, true); 
 
         hearts.forEach(h => {
             if(h.collected) return;
-            ctx.fillStyle = '#ff69b4'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff69b4';
-            ctx.beginPath();
-            let topCurveHeight = 10;
-            ctx.moveTo(h.x, h.y + topCurveHeight);
-            ctx.bezierCurveTo(h.x, h.y, h.x - 15, h.y, h.x - 15, h.y + topCurveHeight);
-            ctx.bezierCurveTo(h.x - 15, h.y + 25, h.x, h.y + 30, h.x, h.y + 40);
-            ctx.bezierCurveTo(h.x, h.y + 30, h.x + 15, h.y + 25, h.x + 15, h.y + topCurveHeight);
-            ctx.bezierCurveTo(h.x + 15, h.y, h.x, h.y, h.x, h.y + topCurveHeight);
-            ctx.fill(); ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ff69b4'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff69b4'; ctx.beginPath();
+            ctx.moveTo(h.x, h.y + 10); ctx.bezierCurveTo(h.x, h.y, h.x - 15, h.y, h.x - 15, h.y + 10);
+            ctx.bezierCurveTo(h.x - 15, h.y + 25, h.x, h.y + 30, h.x, h.y + 40); ctx.bezierCurveTo(h.x, h.y + 30, h.x + 15, h.y + 25, h.x + 15, h.y + 10);
+            ctx.bezierCurveTo(h.x + 15, h.y, h.x, h.y, h.x, h.y + 10); ctx.fill(); ctx.shadowBlur = 0;
         });
 
         passengers.forEach(p => { 
-            ctx.fillStyle = '#00f3ff'; ctx.shadowBlur = 10; ctx.shadowColor = '#00f3ff';
-            ctx.beginPath(); ctx.arc(p.x, p.y-22, 5, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#00f3ff'; ctx.shadowBlur = 10; ctx.shadowColor = '#00f3ff'; ctx.beginPath(); ctx.arc(p.x, p.y-22, 5, 0, Math.PI*2); ctx.fill();
             ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y-17); ctx.lineTo(p.x, p.y-5);
-            ctx.moveTo(p.x-6, p.y-13); ctx.lineTo(p.x+6, p.y-13); ctx.moveTo(p.x, p.y-5); ctx.lineTo(p.x-5, p.y+5); ctx.moveTo(p.x, p.y-5); ctx.lineTo(p.x+5, p.y+5);
-            ctx.stroke(); ctx.shadowBlur = 0;
+            ctx.moveTo(p.x-6, p.y-13); ctx.lineTo(p.x+6, p.y-13); ctx.moveTo(p.x, p.y-5); ctx.lineTo(p.x-5, p.y+5); ctx.moveTo(p.x, p.y-5); ctx.lineTo(p.x+5, p.y+5); ctx.stroke(); ctx.shadowBlur = 0;
         });
 
         pickups.forEach(pk => { 
             ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(pk.x, pk.y, 14, 0, Math.PI*2); ctx.fill(); 
-            ctx.fillStyle="#fff"; ctx.font="bold 8px Orbitron, sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
-            ctx.fillText("N2O", pk.x, pk.y);
+            ctx.fillStyle="#fff"; ctx.font="bold 8px Orbitron, sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("N2O", pk.x, pk.y);
         });
     }
 
