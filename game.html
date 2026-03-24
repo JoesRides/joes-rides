@@ -21,16 +21,11 @@
         #pit-stop-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.96); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 90; font-family: 'Orbitron', sans-serif; color: var(--theme-color); border: 4px solid var(--theme-color); margin: 20px; border-radius: 15px; padding: 20px; text-align: center; }
         .score-row { display: flex; justify-content: space-between; width: 80%; font-size: 0.75rem; margin: 5px 0; color: #fff; }
         
-        /* REFINED MOBILE CONTROLS */
-        #nitro-btn, #horn-btn { position: absolute; width: 65px; height: 65px; border-radius: 50%; border: 3px solid #fff; color: white; font-family: 'Orbitron', sans-serif; display: none; align-items: center; justify-content: center; z-index: 50; cursor: pointer; font-size: 0.7rem; }
-        #nitro-btn { bottom: 25px; right: 25px; background: rgba(239, 68, 68, 0.9); }
-        #horn-btn { bottom: 25px; left: 25px; background: rgba(37, 99, 235, 0.9); }
-        
-        /* STEERING ZONE */
-        #steer-zone { position: absolute; bottom: 100px; left: 25px; width: 140px; height: 50px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 25px; display: none; z-index: 50; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-size: 0.5rem; color: #fff; pointer-events: auto; }
-        #steer-knob { position: absolute; width: 40px; height: 40px; background: #fff; border-radius: 50%; left: 50px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        #nitro-btn, #horn-btn { position: absolute; width: 65px; height: 65px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); font-family: 'Orbitron', sans-serif; display: none; align-items: center; justify-content: center; z-index: 50; cursor: pointer; font-size: 0.6rem; backdrop-filter: blur(2px); }
+        #nitro-btn { bottom: 25px; right: 25px; background: rgba(239, 68, 68, 0.4); }
+        #horn-btn { bottom: 25px; left: 25px; background: rgba(37, 99, 235, 0.4); }
 
-        @media (pointer: coarse) { #nitro-btn, #horn-btn, #steer-zone { display: flex; } }
+        @media (pointer: coarse) { #nitro-btn, #horn-btn { display: flex; } }
         .btn-main { background: #2563eb; color: white; border: none; padding: 18px 45px; font-family: 'Orbitron', sans-serif; border-radius: 8px; cursor: pointer; width: 85%; font-size: 1rem; letter-spacing: 2px; }
     </style>
 </head>
@@ -60,11 +55,8 @@
             <h1 id="pit-timer" style="font-size: 2rem; color:var(--theme-color); margin:0;">15</h1>
         </div>
         <canvas id="gameCanvas"></canvas>
-        
-        <div id="steer-zone">STEER<div id="steer-knob"></div></div>
         <div id="horn-btn">HORN</div>
         <div id="nitro-btn">NITRO</div>
-
         <div id="overlay">
             <h2 id="msg" style="color:#00d4ff; font-family:'Orbitron'; margin-bottom:5px;">BEN'S BUMPER BUSTER</h2>
             <div style="font-size:0.6rem; color:#888; margin-bottom: 10px; letter-spacing: 2px;">THE GREAT SOUTH SHORE DASH</div>
@@ -84,7 +76,6 @@
     const scoreEl = document.getElementById('score'), milesEl = document.getElementById('miles'), speedEl = document.getElementById('speedDisplay'), nitroCountEl = document.getElementById('nitroCount'), passCountEl = document.getElementById('passCount'), levelEl = document.getElementById('levelNum'), destEl = document.getElementById('destName'), rankEl = document.getElementById('rankText'), overlay = document.getElementById('overlay'), startBtn = document.getElementById('startBtn'), pitUI = document.getElementById('pit-stop-ui'), pitTimerEl = document.getElementById('pit-timer'), pitDestEl = document.getElementById('pit-dest'), nitroBtn = document.getElementById('nitro-btn'), hornBtn = document.getElementById('horn-btn'), splash = document.getElementById('splash');
     const pitMiles = document.getElementById('pit-miles'), pitPass = document.getElementById('pit-pass'), pitTotal = document.getElementById('pit-total'), pitRank = document.getElementById('pit-rank');
     const bestScoreEl = document.getElementById('best-score'), mainBestScoreEl = document.getElementById('main-best-score'), mainBestMilesEl = document.getElementById('main-best-miles');
-    const steerZone = document.getElementById('steer-zone'), steerKnob = document.getElementById('steer-knob');
 
     const dpr = window.devicePixelRatio || 1;
     const baseWidth = 450, baseHeight = 700;
@@ -102,10 +93,10 @@
     let lineOffset = 0, finishLineY = -2000, lastMileChecked = 0, playerColor = "#000", milesAtStartOfLevel = 0, lastSpawnY = 0;
     let milesPerLevel = 50, originalSpeed = 1.0, currentLevelMaxSpeed = 1.0;
     let onSidewalk = false, sidewalkTimer = 0, lastHornTime = 0, isInvincible = false, heartsSpawned = false;
-    let touchSteer = 0; // -1 to 1
+    let touchSteer = 0; 
 
     const player = { x: 210, y: 520, w: 32, h: 64 };
-    let audioCtx, engineOsc, engineGain, penaltyOsc, penaltyGain;
+    let audioCtx, penaltyOsc, penaltyGain, musicTimer;
 
     function updateRank() {
         let rank = "TRAINEE";
@@ -113,8 +104,7 @@
         else if(level >= 7) rank = "EXEC TRANSPORTER";
         else if(level >= 4) rank = "PRO CHAUFFEUR";
         else if(level >= 2) rank = "CITY DRIVER";
-        rankEl.innerText = rank;
-        return rank;
+        rankEl.innerText = rank; return rank;
     }
 
     function saveRecords() {
@@ -126,11 +116,8 @@
     }
 
     function refreshRecordUI() {
-        const s = localStorage.getItem('benBestScore') || 0;
-        const m = localStorage.getItem('benBestMiles') || 0;
-        mainBestScoreEl.innerText = s;
-        mainBestMilesEl.innerText = m;
-        bestScoreEl.innerText = s;
+        const s = localStorage.getItem('benBestScore') || 0, m = localStorage.getItem('benBestMiles') || 0;
+        mainBestScoreEl.innerText = s; mainBestMilesEl.innerText = m; bestScoreEl.innerText = s;
     }
 
     refreshRecordUI();
@@ -138,29 +125,47 @@
     function initAudio() {
         if(!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            engineOsc = audioCtx.createOscillator(); engineGain = audioCtx.createGain();
-            engineOsc.type = 'sawtooth'; engineOsc.frequency.setValueAtTime(50, audioCtx.currentTime); 
-            engineGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
-            engineOsc.connect(engineGain); engineGain.connect(audioCtx.destination); engineOsc.start();
             penaltyOsc = audioCtx.createOscillator(); penaltyGain = audioCtx.createGain();
             penaltyOsc.type = 'square'; penaltyOsc.frequency.setValueAtTime(80, audioCtx.currentTime);
             penaltyGain.gain.setValueAtTime(0, audioCtx.currentTime);
             penaltyOsc.connect(penaltyGain); penaltyGain.connect(audioCtx.destination); penaltyOsc.start();
+            startMusic();
         }
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
+    // 8-BIT MUSIC ENGINE (Spy Hunter Style)
+    function startMusic() {
+        let step = 0;
+        const bass = [55, 55, 65, 55, 82, 55, 73, 55]; // A1, C2, E2, D2 relative drive
+        const lead = [220, 0, 220, 247, 261, 0, 261, 293];
+        
+        musicTimer = setInterval(() => {
+            if(!gameActive || inPitStop) return;
+            playTone(bass[step % bass.length], 0.1, 'square', 0.05);
+            if(step % 2 === 0 && lead[step % lead.length] > 0) {
+                playTone(lead[step % lead.length], 0.1, 'sawtooth', 0.03);
+            }
+            step++;
+        }, 150);
+    }
+
+    function playTone(freq, dur, type, vol) {
+        const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        g.gain.setValueAtTime(vol, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+        osc.connect(g); g.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + dur);
+    }
+
     function playWinFanfare() {
         const now = audioCtx.currentTime;
-        engineGain.gain.setTargetAtTime(0, now, 0.1);
         const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((freq, i) => {
             const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
             osc.type = 'square'; osc.frequency.setValueAtTime(freq, now + (i * 0.15));
-            g.gain.setValueAtTime(0.1, now + (i * 0.15));
-            g.gain.exponentialRampToValueAtTime(0.0001, now + (i * 0.15) + 0.6);
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(now + (i * 0.15)); osc.stop(now + (i * 0.15) + 0.6);
+            g.gain.setValueAtTime(0.1, now + (i * 0.15)); g.gain.exponentialRampToValueAtTime(0.0001, now + (i * 0.15) + 0.6);
+            osc.connect(g); g.connect(audioCtx.destination); osc.start(now + (i * 0.15)); osc.stop(now + (i * 0.15) + 0.6);
         });
     }
 
@@ -170,44 +175,43 @@
         [400, 480].forEach(f => {
             let o = audioCtx.createOscillator(); let g = audioCtx.createGain();
             o.type = 'sawtooth'; o.connect(g); g.connect(audioCtx.destination);
-            o.frequency.setValueAtTime(f, audioCtx.currentTime);
-            g.gain.setValueAtTime(0.12, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-            o.start(); o.stop(audioCtx.currentTime + 0.4);
+            o.frequency.setValueAtTime(f, audioCtx.currentTime); g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4); o.start(); o.stop(audioCtx.currentTime + 0.4);
         });
+    }
+
+    function playNitroSFX() {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.5);
+        g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.connect(g); g.connect(audioCtx.destination); osc.start(); osc.stop(now + 0.5);
     }
 
     function playDing() {
         let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
         osc.connect(g); g.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        g.gain.setValueAtTime(0.1, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime); g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2); osc.start(); osc.stop(audioCtx.currentTime + 0.2);
     }
 
     function triggerNitro() {
         if (nitros > 0 && !isNitroActive && !inPitStop && gameActive && !isInvincible) {
             nitros--; nitroCountEl.innerText = nitros; isNitroActive = true;
+            playNitroSFX();
             originalSpeed = speed; speed = originalSpeed * 2.5;
             setTimeout(() => { if(!isInvincible) speed = originalSpeed; isNitroActive = false; }, 3000);
         }
     }
 
-    // MOBILE TOUCH STEERING LOGIC
-    steerZone.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = steerZone.getBoundingClientRect();
-        let pos = (touch.clientX - rect.left) / rect.width;
-        pos = Math.max(0.1, Math.min(0.9, pos));
-        steerKnob.style.left = (pos * rect.width - 20) + 'px';
-        touchSteer = (pos - 0.5) * 2; // Map to -1 to 1
-    }, {passive: false});
-
-    steerZone.addEventListener('touchend', () => {
-        touchSteer = 0;
-        steerKnob.style.left = '50px';
+    canvas.addEventListener('touchstart', (e) => {
+        if(!gameActive) return;
+        const touchX = e.touches[0].clientX;
+        if(touchX < window.innerWidth / 2) touchSteer = -1;
+        else touchSteer = 1;
     });
+    canvas.addEventListener('touchend', () => { touchSteer = 0; });
 
     function drawCar(x, y, color, isPlayer) {
         if (isPlayer) {
@@ -217,13 +221,11 @@
             ctx.fillStyle = "#1a1a1a"; ctx.fillRect(x+8, y+2, 16, 4);
             ctx.fillStyle = "#fff"; ctx.shadowBlur = 10; ctx.shadowColor = "#fff";
             ctx.fillRect(x+2, y+5, 6, 2); ctx.fillRect(x+24, y+5, 6, 2);
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = "#111"; ctx.fillRect(x+3, y+20, 2, 30); ctx.fillRect(x+27, y+20, 2, 30);
+            ctx.shadowBlur = 0; ctx.fillStyle = "#111"; ctx.fillRect(x+3, y+20, 2, 30); ctx.fillRect(x+27, y+20, 2, 30);
             ctx.fillStyle = "#ff3131"; ctx.shadowBlur = 12; ctx.shadowColor = "#ff3131";
             ctx.fillRect(x+2, y+60, 28, 2); ctx.shadowBlur = 0;
             ctx.fillStyle = '#39ff14'; ctx.font = 'bold 11px Orbitron, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-            ctx.fillText("B", x+16, y+20); ctx.fillText("E", x+16, y+32); ctx.fillText("N", x+16, y+44);
-            ctx.globalAlpha = 1.0;
+            ctx.fillText("B", x+16, y+20); ctx.fillText("E", x+16, y+32); ctx.fillText("N", x+16, y+44); ctx.globalAlpha = 1.0;
         } else {
             ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(x+4, y+4, 28, 60);
             let bodyGrad = ctx.createLinearGradient(x+2, y, x+2, y+60);
@@ -237,23 +239,19 @@
     }
 
     function spawnVictoryHearts() {
-        if(heartsSpawned) return;
-        hearts = [];
-        for(let i=0; i<12; i++) {
-            hearts.push({ x: 98 + (Math.floor(Math.random() * 4) * 72), y: -100 - (i * 450), collected: false });
-        }
+        if(heartsSpawned) return; hearts = [];
+        for(let i=0; i<12; i++) { hearts.push({ x: 98 + (Math.floor(Math.random() * 4) * 72), y: -100 - (i * 450), collected: false }); }
         heartsSpawned = true;
     }
 
     function update(dt) {
         if(inPitStop || !gameActive) return;
-        engineOsc.frequency.setTargetAtTime(50 + (speed * 12), audioCtx.currentTime, 0.1);
         let steer = 0;
         if (keys['ArrowLeft'] || keys['KeyA']) steer = -1;
         if (keys['ArrowRight'] || keys['KeyD']) steer = 1;
         if (touchSteer !== 0) steer = touchSteer;
 
-        player.x = Math.max(20, Math.min(400, player.x + steer * 6.0));
+        player.x = Math.max(20, Math.min(400, player.x + steer * 6.5));
 
         const roadStart = 80, roadEnd = 370;
         if (player.x < roadStart || (player.x + player.w) > roadEnd) {
@@ -266,8 +264,7 @@
         let milesLeft = milesPerLevel - milesInLevel;
 
         if (milesLeft <= 1 && milesLeft > 0) {
-            isInvincible = true; obstacles = []; spawnVictoryHearts();
-            speed = Math.max(0.05, speed * 0.998); 
+            isInvincible = true; obstacles = []; spawnVictoryHearts(); speed = Math.max(0.05, speed * 0.998); 
         } else { isInvincible = false; }
 
         if (curM > lastMileChecked) { score += 10; lastMileChecked = curM; }
@@ -287,7 +284,6 @@
                     tl--; pitTimerEl.innerText = tl;
                     if(tl <= 0) {
                         clearInterval(timer); inPitStop = false; pitUI.style.display = 'none';
-                        engineGain.gain.setTargetAtTime(0.04, audioCtx.currentTime, 0.1);
                         level++; levelEl.innerText = level; updateRank();
                         currentLevelMaxSpeed = 1.0 + (level * 0.15); speed = currentLevelMaxSpeed; 
                         milesAtStartOfLevel = totalMiles; finishLineY = -2000;
@@ -311,11 +307,7 @@
             } 
         });
 
-        hearts.forEach((h) => {
-            h.y += speed * 2.2;
-            if(!h.collected && player.x < h.x+20 && player.x+player.w > h.x-20 && player.y < h.y+20 && player.y+player.h > h.y-20) { h.collected = true; score += 2; playDing(); }
-        });
-
+        hearts.forEach((h) => { h.y += speed * 2.2; if(!h.collected && player.x < h.x+20 && player.x+player.w > h.x-20 && player.y < h.y+20 && player.y+player.h > h.y-20) { h.collected = true; score += 2; playDing(); } });
         passengers.forEach((p, i) => { p.y += speed * 2.2; if(player.x < p.x+15 && player.x+player.w > p.x-15 && player.y < p.y+15 && player.y+player.h > p.y-15) { passengersCollected++; passCountEl.innerText = passengersCollected; score += 5; playDing(); passengers.splice(i, 1); if(passengersCollected % 5 === 0) pickups.push({x: 115 + (Math.floor(Math.random() * 4) * 72), y: -100}); } });
         pickups.forEach((pk, i) => { pk.y += speed * 2.2; if(player.x < pk.x+16 && player.x+player.w > pk.x-16 && player.y < pk.y+16 && player.y+player.h > pk.y-16) { nitros++; nitroCountEl.innerText = nitros; pickups.splice(i, 1); } });
         if(Math.random() < 0.008 && !isInvincible) passengers.push({x: 115 + (Math.floor(Math.random() * 4) * 72), y: -100});
