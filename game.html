@@ -1,342 +1,832 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ben's Bumper Buster | Master Core V5.2 Verified</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root { --theme-color: #00d4ff; --neon-red: #ff3131; --neon-green: #39ff14; --pass-blue: #00f3ff; --heart-pink: #ff69b4; }
-        body { margin: 0; background: #000; color: white; font-family: 'Inter', sans-serif; overflow: hidden; touch-action: none; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        #game-container { position: relative; border: 4px solid #333; border-radius: 12px; background: #1a4a1a; overflow: hidden; width: 100vw; max-width: 450px; height: 90vh; max-height: 700px; box-shadow: 0 0 50px rgba(0,212,255,0.2); }
-        canvas { display: block; width: 100%; height: 100%; image-rendering: auto; }
-        #splash { position: absolute; inset: 0; background: #000; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 1s ease; pointer-events: none; }
-        .splash-logo { font-family: 'Orbitron', sans-serif; font-size: 2.2rem; color: #00d4ff; text-shadow: 0 0 20px #00d4ff; text-align: center; line-height: 1.2; }
-        .dashboard { position: absolute; top: 15px; left: 15px; font-family: 'Orbitron', sans-serif; font-size: 0.6rem; pointer-events: none; z-index: 10; color: #000; font-weight: bold; background: rgba(255,255,255,0.85); padding: 8px; border-radius: 4px; border-left: 4px solid var(--theme-color); backdrop-filter: blur(4px); line-height: 1.4; }
-        .speedo-wrap { position: absolute; top: 15px; right: 15px; text-align: right; font-family: 'Orbitron', sans-serif; pointer-events: none; z-index: 10; color: #000; background: rgba(255,255,255,0.85); padding: 5px; border-radius: 4px; backdrop-filter: blur(4px); }
-        #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.94); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 100; padding: 30px; }
-        .paint-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 15px 0; }
-        .swatch { width: 42px; height: 42px; border: 2px solid #fff; border-radius: 10px; cursor: pointer; transition: 0.2s; }
-        .swatch.active { border-color: #00d4ff; transform: scale(1.1); box-shadow: 0 0 15px #00d4ff; }
-        #pit-stop-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.96); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 90; font-family: 'Orbitron', sans-serif; color: var(--theme-color); border: 4px solid var(--theme-color); margin: 20px; border-radius: 15px; padding: 20px; text-align: center; }
-        .score-row { display: flex; justify-content: space-between; width: 80%; font-size: 0.75rem; margin: 5px 0; color: #fff; }
-        #nitro-btn, #horn-btn { position: absolute; width: 65px; height: 65px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); font-family: 'Orbitron', sans-serif; display: none; align-items: center; justify-content: center; z-index: 50; cursor: pointer; font-size: 0.6rem; backdrop-filter: blur(2px); touch-action: manipulation; }
-        #nitro-btn { bottom: 25px; right: 25px; background: rgba(239, 68, 68, 0.4); }
-        #horn-btn { bottom: 25px; left: 25px; background: rgba(37, 99, 235, 0.4); }
-        @media (pointer: coarse) { #nitro-btn, #horn-btn { display: flex; } }
-        .btn-main { background: #2563eb; color: white; border: none; padding: 18px 45px; font-family: 'Orbitron', sans-serif; border-radius: 8px; cursor: pointer; width: 85%; font-size: 1rem; letter-spacing: 2px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Joe's Taxi</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;800;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--cyan:#00d4ff;--red:#ff3131;--green:#39ff14;--pink:#ff69b4;--gold:#ffd700;--bg:#0a0a0f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:#000;color:#fff;font-family:'Rajdhani',sans-serif;overflow:hidden;touch-action:none;height:100%;width:100%}
+body{display:flex;align-items:center;justify-content:center}
+#gc{position:relative;border:2px solid #1a1a2e;border-radius:16px;background:#111118;overflow:hidden;width:100vw;max-width:440px;height:100svh;max-height:780px;box-shadow:0 0 60px rgba(0,212,255,.15)}
+canvas{display:block;width:100%;height:100%}
+
+#hud{position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:10}
+#hud-top{display:flex;align-items:stretch;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);border-bottom:1px solid rgba(0,212,255,.2)}
+.h-spd{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 10px;border-right:1px solid rgba(0,212,255,.15);min-width:58px}
+.h-spd-n{font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:var(--cyan);line-height:1}
+.h-spd-l{font-size:.5rem;color:#555;letter-spacing:2px;margin-top:1px}
+.h-ctr{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px}
+.h-dest-l{font-size:.44rem;color:#444;letter-spacing:3px}
+.h-dest-n{font-family:'Orbitron',sans-serif;font-size:.65rem;color:#fff;font-weight:700;text-align:center;line-height:1.1}
+.h-biome{font-size:.42rem;letter-spacing:2px;margin-top:1px;opacity:.85}
+.h-scr{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 10px;border-left:1px solid rgba(0,212,255,.15);min-width:62px}
+.h-scr-n{font-family:'Orbitron',sans-serif;font-size:1.05rem;font-weight:900;color:var(--gold);line-height:1}
+.h-scr-l{font-size:.44rem;color:#555;letter-spacing:2px}
+#pbw{position:absolute;left:0;right:0;top:52px;height:4px;background:rgba(255,255,255,.05);z-index:10;pointer-events:none}
+#pb{height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));width:0%;transition:width .3s;box-shadow:0 0 6px var(--cyan)}
+
+#hud-bot{display:flex;justify-content:space-around;align-items:center;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);border-top:1px solid rgba(0,212,255,.12);padding:6px 0 max(6px,env(safe-area-inset-bottom));position:absolute;bottom:0;left:0;right:0;pointer-events:none;z-index:10}
+.hs{display:flex;flex-direction:column;align-items:center}
+.hs-v{font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;line-height:1}
+.hs-k{font-size:.42rem;color:#444;letter-spacing:2px;margin-top:1px}
+.c-lvl{color:var(--cyan)}.c-rank{color:#999;font-size:.55rem!important}.c-mi{color:#fff}.c-pass{color:var(--pink)}.c-n2o{color:var(--red)}
+
+#biome-banner{position:absolute;top:60px;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:.58rem;font-weight:700;letter-spacing:3px;padding:4px 14px;border-radius:20px;pointer-events:none;z-index:11;opacity:0;transition:opacity .5s;white-space:nowrap}
+#biome-banner.show{opacity:1}
+
+#lvl-ann{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;text-align:center;pointer-events:none;z-index:50;opacity:0;transition:opacity .3s;line-height:1.3;white-space:pre-line}
+#lvl-ann.show{opacity:1}
+
+#combo-disp{position:absolute;top:70px;right:10px;font-family:'Orbitron',sans-serif;font-size:.68rem;font-weight:900;color:var(--gold);pointer-events:none;z-index:12;opacity:0;transition:opacity .3s;text-shadow:0 0 10px var(--gold)}
+#combo-disp.show{opacity:1}
+
+#nflash{position:absolute;inset:0;background:rgba(255,51,49,.1);pointer-events:none;z-index:8;opacity:0;transition:opacity .15s}
+#nflash.on{opacity:1}
+
+#splash{position:absolute;inset:0;background:#000;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s}
+.sp-logo{font-family:'Orbitron',sans-serif;font-size:3rem;font-weight:900;color:var(--gold);text-shadow:0 0 30px var(--gold),0 0 60px rgba(255,215,0,.3);line-height:1}
+.sp-taxi{font-family:'Orbitron',sans-serif;font-size:1.4rem;font-weight:700;color:var(--cyan);letter-spacing:10px;margin-top:6px}
+.sp-sub{font-size:.72rem;color:#333;letter-spacing:5px;margin-top:14px}
+
+#overlay{position:absolute;inset:0;background:rgba(0,0,0,.94);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;z-index:100;padding:14px 16px 20px;backdrop-filter:blur(4px);overflow-y:auto}
+#msg{font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:var(--gold);text-shadow:0 0 20px var(--gold);margin-bottom:2px;margin-top:8px}
+.ov-sub{font-size:.6rem;color:#444;letter-spacing:4px;margin-bottom:10px}
+#rec-box{font-size:.58rem;color:#999;background:rgba(255,255,255,.05);padding:7px 16px;border-radius:8px;font-family:'Orbitron',sans-serif;margin-bottom:12px;border:1px solid rgba(255,255,255,.07)}
+.vc-label{font-size:.5rem;color:#444;letter-spacing:3px;margin-bottom:8px}
+.vc-wrap{display:flex;gap:12px;margin-bottom:12px;width:100%}
+.vc{flex:1;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:14px;padding:10px 6px 8px;cursor:pointer;transition:.2s;text-align:center}
+.vc:active{transform:scale(.97)}
+.vc.sel{border-color:var(--gold);background:rgba(255,215,0,.07);box-shadow:0 0 18px rgba(255,215,0,.2)}
+.vc canvas{width:52px;height:76px;display:block;margin:0 auto 6px}
+.vc-name{font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:900;color:var(--gold);letter-spacing:2px}
+.vc-type{font-size:.46rem;color:#555;letter-spacing:2px;margin-top:1px}
+.vc-attrs{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.ar{display:flex;align-items:center;gap:4px}
+.al{width:34px;text-align:left;color:#555;font-size:.42rem;letter-spacing:1px}
+.ab{flex:1;height:3px;background:rgba(255,255,255,.07);border-radius:2px}
+.af{height:100%;border-radius:2px}
+.paint-lbl{font-size:.48rem;color:#444;letter-spacing:3px;margin-bottom:5px}
+.paint-grid{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;justify-content:center}
+.sw{width:30px;height:30px;border:2px solid rgba(255,255,255,.18);border-radius:7px;cursor:pointer;transition:.2s}
+.sw.active{border-color:var(--gold);transform:scale(1.18);box-shadow:0 0 10px var(--gold)}
+.sw:active{transform:scale(.95)}
+.btn-go{background:linear-gradient(135deg,#b8860b,#ffd700);color:#000;border:none;padding:14px 0;width:88%;font-family:'Orbitron',sans-serif;border-radius:12px;cursor:pointer;font-size:.88rem;font-weight:900;letter-spacing:3px;box-shadow:0 4px 28px rgba(255,215,0,.3);transition:.15s}
+.btn-go:active{transform:scale(.97)}
+
+#pit{position:absolute;inset:0;background:rgba(0,0,0,.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:90;font-family:'Orbitron',sans-serif;padding:22px;text-align:center;backdrop-filter:blur(8px)}
+.pit-ttl{font-size:.62rem;letter-spacing:4px;margin-bottom:5px}
+#pit-dest{font-size:1.15rem;font-weight:900;color:#fff;margin-bottom:12px}
+.pit-stats{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 16px;width:88%;margin-bottom:10px}
+.sr{display:flex;justify-content:space-between;font-size:.6rem;color:#888;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sr:last-child{border-bottom:none}
+.sr.hi{color:var(--green);font-size:.7rem}
+.pit-nl{font-size:.5rem;color:#333;letter-spacing:3px;margin-top:8px}
+#pit-tmr{font-size:2.4rem;font-weight:900;color:var(--cyan);margin:0;line-height:1.1}
+
+/* TOUCH STEER ZONES */
+#steer-l,#steer-r{position:absolute;bottom:58px;top:58px;width:36%;z-index:30;touch-action:none;display:flex;align-items:center;justify-content:center;pointer-events:all}
+#steer-l{left:0}
+#steer-r{right:0}
+.steer-arrow{font-size:2rem;color:rgba(255,255,255,.05);pointer-events:none;user-select:none;font-family:sans-serif}
+
+/* ACTION BUTTONS */
+#touch-btns{position:absolute;bottom:62px;left:0;right:0;display:flex;justify-content:space-between;padding:0 12px;z-index:40;pointer-events:none}
+.t-btn{width:70px;height:70px;border-radius:50%;border:2px solid rgba(255,255,255,.22);color:rgba(255,255,255,.88);font-family:'Orbitron',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:.46rem;font-weight:700;letter-spacing:.5px;touch-action:manipulation;pointer-events:all;user-select:none;-webkit-user-select:none;transition:.12s;gap:2px}
+#btn-horn{background:rgba(37,99,235,.35);box-shadow:0 0 20px rgba(37,99,235,.2)}
+#btn-nitro{background:rgba(239,68,68,.35);box-shadow:0 0 20px rgba(239,68,68,.2)}
+#btn-horn:active{background:rgba(37,99,235,.65);transform:scale(.91)}
+#btn-nitro:active{background:rgba(239,68,68,.65);transform:scale(.91)}
+.btn-icon{font-size:1.4rem;line-height:1}
+</style>
 </head>
 <body>
-    <div id="game-container">
-        <div id="splash"><div class="splash-logo">BEN'S<br>BUMPER BUSTER</div><div style="font-family:'Orbitron'; font-size:0.7rem; color:#888; letter-spacing: 4px; margin-top:15px;">JOE'S RIDES • EST. 2020</div></div>
-        <div class="dashboard">
-            RANK: <span id="rankText" style="color:#2563eb">TRAINEE</span><br>
-            LEVEL: <span id="levelNum">1</span><br>
-            DEST: <span id="destName">Islip MacArthur</span><br>
-            MILES: <span id="miles">0</span><br>
-            SCORE: <span id="score">0</span><br>
-            PASSENGERS: <span id="passCount">0</span><br>
-            N2O: <span id="nitroCount">1</span>
-        </div>
-        <div class="speedo-wrap"><span id="speedDisplay" style="font-size: 1.2rem;">0</span><br><span>MPH</span></div>
-        <div id="pit-stop-ui">
-            <h2 style="color:var(--neon-green); margin:0;">MISSION COMPLETE</h2>
-            <h1 id="pit-dest" style="color:#fff; margin:10px 0; font-size: 1.4rem;"></h1>
-            <div class="score-row"><span>RANK:</span><span id="pit-rank"></span></div>
-            <div class="score-row"><span>CAREER MILES:</span><span id="pit-miles"></span></div>
-            <div class="score-row"><span>PASSENGERS:</span><span id="pit-pass"></span></div>
-            <div class="score-row" style="color:var(--neon-green)"><span>TOTAL SCORE:</span><span id="pit-total"></span></div>
-            <hr style="width:80%; border:1px solid #333; margin:10px 0;">
-            <div class="score-row" style="font-size:0.6rem; color:#888;"><span>ALL-TIME BEST:</span><span id="best-score">0</span></div>
-            <p style="margin-top:15px; font-size:0.6rem;">NEXT LEG STARTING IN...</p>
-            <h1 id="pit-timer" style="font-size: 2rem; color:var(--theme-color); margin:0;">15</h1>
-        </div>
-        <canvas id="gameCanvas"></canvas>
-        <div id="horn-btn">HORN</div>
-        <div id="nitro-btn">NITRO</div>
-        <div id="overlay">
-            <h2 id="msg" style="color:#00d4ff; font-family:'Orbitron'; margin-bottom:5px;">BEN'S BUMPER BUSTER</h2>
-            <div style="font-size:0.6rem; color:#888; margin-bottom: 10px; letter-spacing: 2px;">THE GREAT SOUTH SHORE DASH</div>
-            <div id="records-box" style="font-size:0.65rem; color:#fff; margin-bottom:15px; background:rgba(255,255,255,0.1); padding:10px; border-radius:5px; font-family:'Orbitron';">BEST: <span id="main-best-score">0</span> | MILES: <span id="main-best-miles">0</span></div>
-            <div class="paint-grid">
-                <div class="swatch active" style="background:#000" data-color="#000"></div>
-                <div class="swatch" style="background:#0081cc" data-color="#0081cc"></div>
-                <div class="swatch" style="background:#ef4444" data-color="#ef4444"></div>
-                <div class="swatch" style="background:#fbbf24" data-color="#fbbf24"></div>
-            </div>
-            <button id="startBtn" class="btn-main">ENGAGE ENGINE</button>
-        </div>
+<div id="gc">
+
+<div id="splash">
+  <div class="sp-logo">JOE'S</div>
+  <div class="sp-taxi">TAXI</div>
+  <div class="sp-sub">THE GREAT SOUTH SHORE DASH</div>
+</div>
+
+<div id="hud">
+  <div id="hud-top">
+    <div class="h-spd"><div class="h-spd-n" id="speedDisplay">0</div><div class="h-spd-l">MPH</div></div>
+    <div class="h-ctr">
+      <div class="h-dest-l">DESTINATION</div>
+      <div class="h-dest-n" id="destName">–</div>
+      <div class="h-biome" id="biomeLbl"></div>
     </div>
+    <div class="h-scr"><div class="h-scr-n" id="score">0</div><div class="h-scr-l">SCORE</div></div>
+  </div>
+  <div id="pbw"><div id="pb"></div></div>
+</div>
+
+<div id="hud-bot">
+  <div class="hs"><div class="hs-v c-lvl" id="levelNum">1</div><div class="hs-k">LEVEL</div></div>
+  <div class="hs"><div class="hs-v c-rank" id="rankText">ROOKIE</div><div class="hs-k">RANK</div></div>
+  <div class="hs"><div class="hs-v c-mi" id="miles">0</div><div class="hs-k">MILES</div></div>
+  <div class="hs"><div class="hs-v c-pass" id="passCount">0</div><div class="hs-k">PASS.</div></div>
+  <div class="hs"><div class="hs-v c-n2o" id="nitroCount">1</div><div class="hs-k">N2O</div></div>
+</div>
+
+<div id="biome-banner"></div>
+<div id="lvl-ann"></div>
+<div id="combo-disp"></div>
+<div id="nflash"></div>
+
+<div id="pit">
+  <div class="pit-ttl" id="pit-ttl-txt">✦ FARE DELIVERED ✦</div>
+  <div id="pit-dest"></div>
+  <div class="pit-stats">
+    <div class="sr"><span>RANK</span><span id="pit-rank"></span></div>
+    <div class="sr"><span>CAREER MILES</span><span id="pit-miles"></span></div>
+    <div class="sr"><span>PASSENGERS</span><span id="pit-pass"></span></div>
+    <div class="sr"><span>BEST COMBO</span><span id="pit-combo"></span></div>
+    <div class="sr hi"><span>TOTAL SCORE</span><span id="pit-total"></span></div>
+  </div>
+  <div class="sr" style="font-size:.5rem;color:#333;font-family:'Orbitron';width:88%;justify-content:space-between;margin-bottom:8px">
+    <span>ALL-TIME BEST</span><span id="best-score">0</span>
+  </div>
+  <div class="pit-nl">NEXT FARE IN</div>
+  <div id="pit-tmr">15</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="steer-l"><div class="steer-arrow">◀</div></div>
+<div id="steer-r"><div class="steer-arrow">▶</div></div>
+<div id="touch-btns">
+  <div class="t-btn" id="btn-horn"><div class="btn-icon">📯</div>HORN</div>
+  <div class="t-btn" id="btn-nitro"><div class="btn-icon">🚀</div>NITRO</div>
+</div>
+
+<div id="overlay">
+  <div id="msg">JOE'S TAXI</div>
+  <div class="ov-sub">THE GREAT SOUTH SHORE DASH</div>
+  <div id="rec-box">BEST: <span id="main-best-score">0</span>&nbsp;|&nbsp;MILES: <span id="main-best-miles">0</span></div>
+  <div class="vc-label">CHOOSE YOUR TAXI</div>
+  <div class="vc-wrap">
+    <div class="vc sel" id="card-joe" onclick="selectVehicle('joe')">
+      <canvas id="prev-joe" width="52" height="76"></canvas>
+      <div class="vc-name">JOE</div><div class="vc-type">SUV TAXI</div>
+      <div class="vc-attrs">
+        <div class="ar"><span class="al">SPEED</span><div class="ab"><div class="af" style="width:75%;background:var(--cyan)"></div></div></div>
+        <div class="ar"><span class="al">HANDLE</span><div class="ab"><div class="af" style="width:55%;background:var(--green)"></div></div></div>
+        <div class="ar"><span class="al">NITRO</span><div class="ab"><div class="af" style="width:90%;background:var(--red)"></div></div></div>
+      </div>
+    </div>
+    <div class="vc" id="card-will" onclick="selectVehicle('will')">
+      <canvas id="prev-will" width="52" height="76"></canvas>
+      <div class="vc-name">WILL</div><div class="vc-type">MINIVAN TAXI</div>
+      <div class="vc-attrs">
+        <div class="ar"><span class="al">SPEED</span><div class="ab"><div class="af" style="width:55%;background:var(--cyan)"></div></div></div>
+        <div class="ar"><span class="al">HANDLE</span><div class="ab"><div class="af" style="width:88%;background:var(--green)"></div></div></div>
+        <div class="ar"><span class="al">NITRO</span><div class="ab"><div class="af" style="width:60%;background:var(--red)"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="paint-lbl">PAINT JOB</div>
+  <div class="paint-grid">
+    <div class="sw active" style="background:#f5c518" data-color="#f5c518"></div>
+    <div class="sw" style="background:#111" data-color="#111"></div>
+    <div class="sw" style="background:#0081cc" data-color="#0081cc"></div>
+    <div class="sw" style="background:#ef4444" data-color="#ef4444"></div>
+    <div class="sw" style="background:#10b981" data-color="#10b981"></div>
+    <div class="sw" style="background:#a855f7" data-color="#a855f7"></div>
+    <div class="sw" style="background:#f97316" data-color="#f97316"></div>
+    <div class="sw" style="background:#e2e8f0" data-color="#e2e8f0"></div>
+  </div>
+  <button class="btn-go" id="startBtn">DISPATCH!</button>
+</div>
+</div>
 
 <script>
-    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score'), milesEl = document.getElementById('miles'), speedEl = document.getElementById('speedDisplay'), nitroCountEl = document.getElementById('nitroCount'), passCountEl = document.getElementById('passCount'), levelEl = document.getElementById('levelNum'), destEl = document.getElementById('destName'), rankEl = document.getElementById('rankText'), overlay = document.getElementById('overlay'), startBtn = document.getElementById('startBtn'), pitUI = document.getElementById('pit-stop-ui'), pitTimerEl = document.getElementById('pit-timer'), pitDestEl = document.getElementById('pit-dest'), nitroBtn = document.getElementById('nitro-btn'), hornBtn = document.getElementById('horn-btn'), splash = document.getElementById('splash');
-    const pitMiles = document.getElementById('pit-miles'), pitPass = document.getElementById('pit-pass'), pitTotal = document.getElementById('pit-total'), pitRank = document.getElementById('pit-rank');
-    const bestScoreEl = document.getElementById('best-score'), mainBestScoreEl = document.getElementById('main-best-score'), mainBestMilesEl = document.getElementById('main-best-miles');
+// ── CANVAS SETUP ──────────────────────────────────────────────────────────────
+const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d');
+const W=440,H=780,dpr=Math.min(window.devicePixelRatio||1,2);
+canvas.width=W*dpr; canvas.height=H*dpr; ctx.scale(dpr,dpr);
+ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H);
 
-    const dpr = window.devicePixelRatio || 1;
-    const baseWidth = 450, baseHeight = 700;
-    canvas.width = baseWidth * dpr; canvas.height = baseHeight * dpr;
-    ctx.scale(dpr, dpr);
+const $=id=>document.getElementById(id);
+const scoreEl=$('score'),milesEl=$('miles'),speedEl=$('speedDisplay'),nitroCountEl=$('nitroCount');
+const passCountEl=$('passCount'),levelEl=$('levelNum'),destEl=$('destName'),rankEl=$('rankText');
+const overlay=$('overlay'),startBtn=$('startBtn'),pitUI=$('pit');
+const biomeLbl=$('biomeLbl'),biomeBanner=$('biome-banner'),lvlAnn=$('lvl-ann'),comboDisp=$('combo-disp');
+const pb=$('pb'),nflash=$('nflash'),splash=$('splash');
+const mainBestEl=$('main-best-score'),mainBestMiEl=$('main-best-miles'),bestScoreEl=$('best-score');
 
-    ctx.fillStyle = '#1a4a1a'; ctx.fillRect(0,0,baseWidth,baseHeight);
-    setTimeout(() => { splash.style.opacity = '0'; }, 2000);
+setTimeout(()=>{splash.style.opacity='0';setTimeout(()=>splash.style.display='none',900);},2200);
 
-    const airports = ["Islip MacArthur", "Republic Airport", "LaGuardia", "JFK"];
-    const trafficColors = ['#ef4444', '#fbbf24', '#7c3aed', '#fff'];
+// ── BIOMES ────────────────────────────────────────────────────────────────────
+const BIOMES=[
+  {id:'day',    name:'CITY DAY',       icon:'🌆', night:false,
+   sky0:'#2a5f9a',sky1:'#5a8fc0', road:'#22222e', side:'#8a7a6a',
+   line:'rgba(255,255,255,.18)',shoulder:'rgba(255,200,0,.4)',
+   fog:null, snow:false, sand:false, storm:false, neon:false, dawn:false,
+   buildings:true, stars:false, sunGlow:false,
+   music:[523,587,659,698,784,698,659,587]},
+  {id:'night',  name:'NIGHT CITY',     icon:'🌃', night:true,
+   sky0:'#020208',sky1:'#05051a', road:'#0a0a16', side:'#30303e',
+   line:'rgba(255,255,255,.35)',shoulder:'rgba(255,180,0,.5)',
+   fog:null, snow:false, sand:false, storm:false, neon:false, dawn:false,
+   buildings:true, stars:true, sunGlow:false,
+   music:[220,247,261,293,330,293,261,247]},
+  {id:'blizzard',name:'BLIZZARD',      icon:'❄️',  night:false,
+   sky0:'#9ab4c8',sky1:'#c5d8e8', road:'#607080', side:'#c0ced8',
+   line:'rgba(255,255,255,.55)',shoulder:'rgba(200,220,255,.6)',
+   fog:'rgba(200,220,240,.2)', snow:true, sand:false, storm:false, neon:false, dawn:false,
+   buildings:false, stars:false, sunGlow:false,
+   music:[392,440,494,523,587,523,494,440]},
+  {id:'desert', name:'DESERT RUN',     icon:'🏜️',  night:false,
+   sky0:'#c06020',sky1:'#e89848', road:'#b89058', side:'#c8a868',
+   line:'rgba(255,255,200,.45)',shoulder:'rgba(200,150,50,.6)',
+   fog:'rgba(220,170,70,.07)', snow:false, sand:true, storm:false, neon:false, dawn:false,
+   buildings:false, stars:false, sunGlow:true,
+   music:[392,330,294,330,392,440,392,330]},
+  {id:'storm',  name:'MIDNIGHT STORM', icon:'⛈️',  night:true,
+   sky0:'#010106',sky1:'#020210', road:'#060612', side:'#1c1c2c',
+   line:'rgba(255,255,255,.4)',shoulder:'rgba(100,150,255,.5)',
+   fog:'rgba(15,15,50,.2)', snow:false, sand:false, storm:true, neon:false, dawn:false,
+   buildings:true, stars:false, sunGlow:false,
+   music:[196,220,196,165,196,220,247,220]},
+  {id:'dawn',   name:'GOLDEN DAWN',    icon:'🌅',  night:false,
+   sky0:'#e04010',sky1:'#ff9030', road:'#1c1e2e', side:'#906040',
+   line:'rgba(255,200,100,.42)',shoulder:'rgba(255,160,0,.52)',
+   fog:'rgba(255,130,50,.07)', snow:false, sand:false, storm:false, neon:false, dawn:true,
+   buildings:true, stars:false, sunGlow:true,
+   music:[523,659,784,698,659,587,523,494]},
+  {id:'neon',   name:'NEON STRIP',     icon:'💜',  night:true,
+   sky0:'#04000e',sky1:'#0a0020', road:'#080018', side:'#180030',
+   line:'rgba(180,0,255,.55)',shoulder:'rgba(0,255,200,.42)',
+   fog:'rgba(90,0,180,.1)', snow:false, sand:false, storm:false, neon:true, dawn:false,
+   buildings:true, stars:true, sunGlow:false,
+   music:[659,698,784,880,784,698,659,587]},
+  {id:'fog',    name:'FOG COAST',      icon:'🌫️',  night:false,
+   sky0:'#6a7880',sky1:'#909ea8', road:'#38484e', side:'#6a7880',
+   line:'rgba(255,255,255,.3)',shoulder:'rgba(200,220,200,.4)',
+   fog:'rgba(180,200,210,.3)', snow:false, sand:false, storm:false, neon:false, dawn:false,
+   buildings:true, stars:false, sunGlow:false,
+   music:[440,494,523,440,392,330,294,330]},
+];
+function getBiome(lvl){ return BIOMES[(lvl-1)%BIOMES.length]; }
 
-    let gameActive = false, inPitStop = false, score = 0, totalMiles = 0, speed = 1.0, nitros = 1, level = 1, passengersCollected = 0;
-    let isNitroActive = false, obstacles = [], passengers = [], pickups = [], hearts = [], keys = {};
-    let lineOffset = 0, finishLineY = -2000, lastMileChecked = 0, playerColor = "#000", milesAtStartOfLevel = 0, lastSpawnY = 0;
-    let milesPerLevel = 50, originalSpeed = 1.0, currentLevelMaxSpeed = 1.0;
-    let onSidewalk = false, sidewalkTimer = 0, lastHornTime = 0, isInvincible = false, heartsSpawned = false;
-    let touchSteer = 0; 
+// ── VEHICLES ──────────────────────────────────────────────────────────────────
+const VEH={
+  joe:{w:34,h:64,speedBonus:.18,steer:5.8,nitroMult:3.0,nitroDur:3000},
+  will:{w:38,h:72,speedBonus:0,steer:8.2,nitroMult:2.2,nitroDur:2200}
+};
+let selVeh='joe',playerColor='#f5c518';
 
-    const player = { x: 210, y: 520, w: 32, h: 64 };
-    let audioCtx, penaltyOsc, penaltyGain, musicTimer;
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const AIRPORTS=["Islip MacArthur","Republic Airport","LaGuardia","JFK","Farmingdale","Deer Park","Bayshore","Amityville"];
+const TFC_COLORS=['#ef4444','#fbbf24','#7c3aed','#e5e7eb','#f97316','#06b6d4','#84cc16'];
+let gameActive=false,inPitStop=false,score=0,totalMiles=0,spd=1.0,nitros=1,level=1,passCollected=0;
+let isNitroActive=false,obstacles=[],passengers=[],pickups=[],hearts=[],keys={};
+let lineOff=0,finishY=-2000,lastMileCheck=0,milesAtStart=0,lastSpawnY=0;
+let milesPerLvl=10,origSpd=1.0,maxSpd=1.0;
+let onSide=false,sideTimer=0,lastHornT=0,isInvincible=false,heartsSpawned=false;
+let touchSteer=0,parts=[],floats=[],snowflakes=[],sandDrifts=[],rainDrops=[],stars=[],buildings=[];
+let combo=0,comboTimer=0,bestCombo=0;
+let lightAlpha=0,lightTimer=0;
+let biome=BIOMES[0];
+let player={x:203,y:550,w:34,h:64};
+let audioCtx,penOsc,penGain,engOsc;
 
-    function updateRank() {
-        let rank = "TRAINEE";
-        if(level >= 10) rank = "JOE'S ELITE";
-        else if(level >= 7) rank = "EXEC TRANSPORTER";
-        else if(level >= 4) rank = "PRO CHAUFFEUR";
-        else if(level >= 2) rank = "CITY DRIVER";
-        rankEl.innerText = rank; return rank;
+function milesForLvl(l){ return Math.round(10*Math.pow(1.5,l-1)); }
+
+// ── VEHICLE SELECT ────────────────────────────────────────────────────────────
+function selectVehicle(v){
+  selVeh=v;
+  $('card-joe').classList.toggle('sel',v==='joe');
+  $('card-will').classList.toggle('sel',v==='will');
+  renderPreviews();
+}
+function renderPreviews(){
+  ['joe','will'].forEach(v=>{
+    const pc=$('prev-'+v),px=pc.getContext('2d');
+    px.clearRect(0,0,52,76);
+    const col=selVeh===v?playerColor:'#777';
+    v==='joe'?drawSUV(px,2,2,col,'JOE',false,false,false):drawMinivan(px,1,1,col,'WILL',false,false,false);
+  });
+}
+
+// ── AUDIO ─────────────────────────────────────────────────────────────────────
+function initAudio(){
+  if(!audioCtx){
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    penOsc=audioCtx.createOscillator(); penGain=audioCtx.createGain();
+    penOsc.type='sine'; penOsc.frequency.value=55; penGain.gain.value=0;
+    penOsc.connect(penGain); penGain.connect(audioCtx.destination); penOsc.start();
+    engOsc=audioCtx.createOscillator();
+    const eg=audioCtx.createGain(),lp=audioCtx.createBiquadFilter();
+    lp.type='lowpass'; lp.frequency.value=130; eg.gain.value=0.012;
+    engOsc.type='sawtooth'; engOsc.frequency.value=80;
+    engOsc.connect(lp); lp.connect(eg); eg.connect(audioCtx.destination); engOsc.start();
+  }
+  if(audioCtx.state==='suspended') audioCtx.resume();
+}
+function engUpd(){ if(engOsc) engOsc.frequency.setTargetAtTime(55+spd*60,audioCtx.currentTime,.3); }
+function tone(freq,dur,type,vol){
+  if(!audioCtx) return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=type; o.frequency.value=freq; g.gain.value=vol;
+  g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);
+  o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+dur);
+}
+let musicStep=0,musicTimer;
+function startMusic(){
+  if(musicTimer) clearInterval(musicTimer); musicStep=0;
+  const mel=biome.music,bass=[131,131,165,131,196,131,175,131];
+  musicTimer=setInterval(()=>{
+    if(!gameActive||inPitStop) return;
+    const m=mel[musicStep%mel.length];
+    if(m>0) tone(m,.18,'triangle',.024);
+    if(musicStep%2===0) tone(bass[(musicStep/2)%bass.length],.2,'sine',.027);
+    musicStep++;
+  },195);
+}
+function fanfare(){
+  const now=audioCtx.currentTime;
+  [523,659,784,1047,784,1047,1319].forEach((f,i)=>{
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type='triangle'; o.frequency.value=f;
+    g.gain.setValueAtTime(.08,now+i*.13); g.gain.exponentialRampToValueAtTime(.0001,now+i*.13+.5);
+    o.connect(g); g.connect(audioCtx.destination); o.start(now+i*.13); o.stop(now+i*.13+.6);
+  });
+}
+function horn(){
+  if(!audioCtx||audioCtx.currentTime-lastHornT<.6) return;
+  lastHornT=audioCtx.currentTime;
+  [370,440].forEach(f=>{
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain(),lp=audioCtx.createBiquadFilter();
+    lp.type='lowpass'; lp.frequency.value=900; o.type='sawtooth'; o.frequency.value=f;
+    g.gain.setValueAtTime(.07,audioCtx.currentTime);
+    g.gain.setValueAtTime(.07,audioCtx.currentTime+.25);
+    g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+.45);
+    o.connect(lp); lp.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+.46);
+  });
+}
+function nitroSFX(){
+  const now=audioCtx.currentTime,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  const lp=audioCtx.createBiquadFilter(); lp.type='bandpass'; lp.frequency.value=300; lp.Q.value=1;
+  o.type='sawtooth'; o.frequency.setValueAtTime(80,now); o.frequency.exponentialRampToValueAtTime(600,now+.4);
+  g.gain.setValueAtTime(.12,now); g.gain.exponentialRampToValueAtTime(.001,now+.6);
+  o.connect(lp); lp.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(now+.6);
+}
+function pickup(big){ const fs=big?[880,1108,1318]:[660,880],now=audioCtx.currentTime; fs.forEach((f,i)=>{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(.07,now+i*.06); g.gain.exponentialRampToValueAtTime(.0001,now+i*.06+.3); o.connect(g); g.connect(audioCtx.destination); o.start(now+i*.06); o.stop(now+i*.06+.3); }); }
+function crash(){ const now=audioCtx.currentTime,buf=audioCtx.createBuffer(1,audioCtx.sampleRate*.4,audioCtx.sampleRate),d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(audioCtx.sampleRate*.08)); const src=audioCtx.createBufferSource(),g=audioCtx.createGain(); g.gain.setValueAtTime(.3,now); g.gain.exponentialRampToValueAtTime(.001,now+.4); src.buffer=buf; src.connect(g); g.connect(audioCtx.destination); src.start(now); }
+function comboSnd(n){ const fs=[880,1046,1319,1568,2093]; tone(fs[Math.min(n-1,4)],.15,'sine',.06); }
+function lvlUpSnd(){ const now=audioCtx.currentTime; [784,988,1175,1568].forEach((f,i)=>{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(.07,now+i*.1); g.gain.exponentialRampToValueAtTime(.0001,now+i*.1+.4); o.connect(g); g.connect(audioCtx.destination); o.start(now+i*.1); o.stop(now+i*.1+.5); }); }
+
+// ── PARTICLES ─────────────────────────────────────────────────────────────────
+function spawnPart(x,y,col,n=6){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=1+Math.random()*3.5; parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,col,r:2+Math.random()*2}); } }
+function spawnFloat(x,y,txt,col){ floats.push({x,y,txt,col,life:1,vy:-1.5}); }
+
+// ── COMBO ─────────────────────────────────────────────────────────────────────
+function addCombo(){
+  combo++; comboTimer=180; if(combo>bestCombo) bestCombo=combo;
+  if(combo>1){ comboSnd(combo); comboDisp.textContent=`x${combo} COMBO!`; comboDisp.classList.add('show'); const b=combo*2; score+=b; spawnFloat(player.x+player.w/2,player.y-10,`COMBO +${b}`,`hsl(${combo*30},100%,65%)`); }
+}
+function breakCombo(){ combo=0; comboDisp.classList.remove('show'); }
+
+// ── BIOME INIT ────────────────────────────────────────────────────────────────
+function initBiome(){
+  biome=getBiome(level);
+  biomeLbl.textContent=biome.icon+' '+biome.name;
+  biomeLbl.style.color=biome.night?'#88aaff':'#ffdd88';
+  biomeBanner.textContent=biome.icon+' '+biome.name;
+  biomeBanner.style.background=biome.night?'rgba(0,0,40,.85)':'rgba(40,20,0,.85)';
+  biomeBanner.style.color=biome.night?'#aaccff':'#ffcc44';
+  biomeBanner.style.border=`1px solid ${biome.night?'rgba(100,150,255,.3)':'rgba(255,180,0,.3)'}`;
+  biomeBanner.classList.add('show');
+  setTimeout(()=>biomeBanner.classList.remove('show'),2300);
+
+  buildings=[]; stars=[]; snowflakes=[]; sandDrifts=[]; rainDrops=[];
+  lightAlpha=0; lightTimer=0;
+
+  if(biome.buildings){
+    for(let i=0;i<14;i++){
+      const left=i<7,x=left?2+Math.random()*68:362+Math.random()*68;
+      const w=14+Math.random()*28,h=50+Math.random()*180;
+      const hue=biome.neon?(280+Math.random()*80):(biome.dawn?(20+Math.random()*30):(210+Math.random()*40));
+      const col=biome.night||biome.neon?`hsl(${hue},30%,${7+Math.random()*8}%)`:`hsl(${20+Math.random()*20},18%,${40+Math.random()*22}%)`;
+      const wins=[];
+      for(let wy=0;wy<10;wy++) for(let wx=0;wx<3;wx++) wins.push({dx:2+wx*5,dy:5+wy*12,lit:Math.random()<(biome.night||biome.neon?.72:.08)});
+      buildings.push({x,y:-Math.random()*H*1.2,w,h,col,wins});
     }
+  }
+  if(biome.stars) for(let i=0;i<90;i++) stars.push({x:Math.random()*W,y:Math.random()*H*.55,r:.5+Math.random()*1.2,t:Math.random()*Math.PI*2});
+  if(biome.snow) for(let i=0;i<70;i++) snowflakes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.7,vy:.6+Math.random()*1.6,r:1+Math.random()*2.5,a:.4+Math.random()*.6});
+  if(biome.sand) for(let i=0;i<10;i++) sandDrifts.push({x:Math.random()*W,y:Math.random()*H,r:6+Math.random()*22,vx:.2+Math.random()*.7,a:.08+Math.random()*.14});
+  if(biome.storm) for(let i=0;i<90;i++) rainDrops.push({x:Math.random()*W,y:Math.random()*H,vy:8+Math.random()*7,len:7+Math.random()*14});
+}
 
-    function saveRecords() {
-        const bestS = localStorage.getItem('benBestScore') || 0;
-        const bestM = localStorage.getItem('benBestMiles') || 0;
-        if(score > parseInt(bestS)) localStorage.setItem('benBestScore', score);
-        if(totalMiles > parseInt(bestM)) localStorage.setItem('benBestMiles', Math.floor(totalMiles));
-        refreshRecordUI();
-    }
+// ── ENV UPDATE ────────────────────────────────────────────────────────────────
+function updEnv(dt,norm){
+  buildings.forEach(b=>{ b.y+=spd*1.1*norm; if(b.y>H+b.h) b.y=-b.h-Math.random()*300; });
+  if(biome.snow) snowflakes.forEach(s=>{ s.x+=s.vx+spd*.25; s.y+=s.vy*norm; if(s.y>H){s.y=-5;s.x=Math.random()*W;} });
+  if(biome.sand) sandDrifts.forEach(s=>{ s.x+=(s.vx+spd*.35)*norm; s.y+=spd*.5*norm; if(s.x>W+s.r){s.x=-s.r;s.y=Math.random()*H;} if(s.y>H+s.r){s.y=-s.r;} });
+  if(biome.storm){ rainDrops.forEach(r=>{ r.y+=r.vy*norm; r.x-=.6*norm; if(r.y>H){r.y=-10;r.x=Math.random()*W;} }); lightTimer-=dt; if(lightTimer<=0&&Math.random()<.004){ lightTimer=3000+Math.random()*5000; lightAlpha=.38; setTimeout(()=>lightAlpha=0,110); setTimeout(()=>{lightAlpha=.28;setTimeout(()=>lightAlpha=0,80);},170); } }
+  stars.forEach(s=>{ s.t=(s.t+.018)%(Math.PI*2); });
+  if(comboTimer>0){ comboTimer-=dt; if(comboTimer<=0) breakCombo(); }
+}
 
-    function refreshRecordUI() {
-        const s = localStorage.getItem('benBestScore') || 0, m = localStorage.getItem('benBestMiles') || 0;
-        mainBestScoreEl.innerText = s; mainBestMilesEl.innerText = m; bestScoreEl.innerText = s;
-    }
+// ── ENV DRAW ──────────────────────────────────────────────────────────────────
+function drawEnv(){
+  // Sky
+  const sg=ctx.createLinearGradient(0,0,0,H*.38);
+  sg.addColorStop(0,biome.sky0); sg.addColorStop(1,biome.sky1);
+  ctx.fillStyle=sg; ctx.fillRect(0,0,W,H*.38);
 
-    refreshRecordUI();
+  // Sun / glow
+  if(biome.sunGlow){
+    const sg2=ctx.createRadialGradient(W*.7,H*.1,10,W*.7,H*.1,160);
+    const sunCol=biome.dawn?'rgba(255,140,30,.35)':'rgba(255,200,50,.25)';
+    sg2.addColorStop(0,sunCol); sg2.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sg2; ctx.fillRect(0,0,W,H*.4);
+  }
 
-    function initAudio() {
-        if(!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            penaltyOsc = audioCtx.createOscillator(); penaltyGain = audioCtx.createGain();
-            penaltyOsc.type = 'square'; penaltyOsc.frequency.setValueAtTime(80, audioCtx.currentTime);
-            penaltyGain.gain.setValueAtTime(0, audioCtx.currentTime);
-            penaltyOsc.connect(penaltyGain); penaltyGain.connect(audioCtx.destination); penaltyOsc.start();
-            startMusic();
+  // Stars
+  if(biome.stars){
+    stars.forEach(s=>{ const tw=.55+.45*Math.sin(s.t); ctx.globalAlpha=tw*.9; ctx.fillStyle=biome.neon?`hsl(${280+s.t*30},100%,80%)`:'#fff'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); });
+    ctx.globalAlpha=1;
+  }
+
+  // Lightning
+  if(lightAlpha>0){ ctx.fillStyle=`rgba(200,210,255,${lightAlpha})`; ctx.fillRect(0,0,W,H); }
+
+  // Neon sky glow at top
+  if(biome.neon){
+    const ng=ctx.createLinearGradient(0,0,W,0);
+    ng.addColorStop(0,'rgba(255,0,200,.06)'); ng.addColorStop(.5,'rgba(100,0,255,.08)'); ng.addColorStop(1,'rgba(0,200,255,.06)');
+    ctx.fillStyle=ng; ctx.fillRect(0,0,W,H*.4);
+  }
+
+  // Buildings
+  buildings.forEach(b=>{
+    ctx.fillStyle=b.col; ctx.fillRect(b.x,b.y,b.w,b.h);
+    b.wins.forEach(w=>{
+      if(!w.lit) return;
+      if(biome.neon) ctx.fillStyle=`hsla(${280+w.dx*10},100%,65%,.8)`;
+      else if(biome.night||biome.storm) ctx.fillStyle=`rgba(255,${200+Math.floor(w.dy*.5)},80,.82)`;
+      else ctx.fillStyle='rgba(150,200,255,.12)';
+      ctx.fillRect(b.x+w.dx,b.y+w.dy,4,4);
+    });
+  });
+
+  // Sidewalks
+  ctx.fillStyle=biome.side; ctx.fillRect(0,H*.35,82,H*.65); ctx.fillRect(358,H*.35,82,H*.65);
+  // Full sidewalk bg
+  ctx.fillStyle=biome.side; ctx.fillRect(0,0,82,H); ctx.fillRect(358,0,82,H);
+  ctx.fillStyle='rgba(255,255,255,.055)'; ctx.fillRect(78,0,4,H); ctx.fillRect(358,0,4,H);
+
+  // Road
+  ctx.fillStyle=biome.road; ctx.fillRect(82,0,276,H);
+
+  // Snow / sand tint on road
+  if(biome.snow){ ctx.fillStyle='rgba(210,228,245,.07)'; ctx.fillRect(82,0,276,H); ctx.fillStyle='rgba(70,85,100,.38)'; ctx.fillRect(125,0,22,H); ctx.fillRect(200,0,22,H); ctx.fillRect(275,0,22,H); }
+  if(biome.sand){ ctx.fillStyle='rgba(200,170,90,.11)'; ctx.fillRect(82,0,276,H); }
+
+  // Lane lines
+  ctx.strokeStyle=biome.line; ctx.lineWidth=2; ctx.setLineDash([22,18]); ctx.lineDashOffset=-lineOff;
+  ctx.beginPath(); for(let i=1;i<3;i++){ ctx.moveTo(82+i*92,0); ctx.lineTo(82+i*92,H); } ctx.stroke(); ctx.setLineDash([]);
+
+  // Shoulders
+  ctx.strokeStyle=biome.shoulder; ctx.lineWidth=2; ctx.setLineDash([30,10]); ctx.lineDashOffset=-lineOff;
+  ctx.beginPath(); ctx.moveTo(83,0); ctx.lineTo(83,H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(357,0); ctx.lineTo(357,H); ctx.stroke(); ctx.setLineDash([]);
+
+  // Snowflakes
+  if(biome.snow){ snowflakes.forEach(s=>{ ctx.globalAlpha=s.a; ctx.fillStyle='#eef4ff'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1; }
+
+  // Sand
+  if(biome.sand){ sandDrifts.forEach(s=>{ ctx.globalAlpha=s.a; ctx.fillStyle='#c8a030'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1; }
+
+  // Rain
+  if(biome.storm){ ctx.strokeStyle='rgba(120,140,200,.32)'; ctx.lineWidth=1; rainDrops.forEach(r=>{ ctx.beginPath(); ctx.moveTo(r.x,r.y); ctx.lineTo(r.x-2,r.y+r.len); ctx.stroke(); }); }
+
+  // Fog overlay
+  if(biome.fog){ const fg=ctx.createLinearGradient(0,0,0,H); fg.addColorStop(0,biome.fog); fg.addColorStop(.45,'transparent'); fg.addColorStop(1,biome.fog); ctx.fillStyle=fg; ctx.fillRect(0,0,W,H); }
+
+  // Darkness overlay for deep-night biomes
+  if(biome.night){ const darkness=biome.id==='storm'?.62:biome.id==='neon'?.58:.42; ctx.fillStyle=`rgba(0,0,10,${darkness})`; ctx.fillRect(0,0,W,H); }
+}
+
+// ── HEADLIGHTS ────────────────────────────────────────────────────────────────
+function drawHeadlights(){
+  if(!biome.night) return;
+  const cx=player.x+player.w/2,cy=player.y;
+  // Widen cone for neon biome
+  const spread=biome.neon?80:60,reach=biome.id==='storm'?160:200;
+  [-12,12].forEach(off=>{
+    const hx=cx+off;
+    const g=ctx.createRadialGradient(hx,cy,3,hx,cy-reach*.6,reach);
+    g.addColorStop(0,'rgba(255,252,200,.22)'); g.addColorStop(.6,'rgba(255,240,170,.06)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.moveTo(hx,cy); ctx.lineTo(hx-spread,cy-reach); ctx.lineTo(hx+spread,cy-reach); ctx.closePath(); ctx.fill();
+  });
+  if(biome.neon){
+    const pg=ctx.createRadialGradient(cx,cy,0,cx,cy,100);
+    pg.addColorStop(0,'rgba(160,0,255,.18)'); pg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=pg; ctx.beginPath(); ctx.arc(cx,cy-50,100,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// ── VEHICLE DRAWING ───────────────────────────────────────────────────────────
+function drawSUV(c,x,y,col,lbl,inv,nitroOn,hlOn){
+  const w=34,h=64;
+  c.fillStyle='rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x+w/2,y+h+5,w/2+2,5,0,0,Math.PI*2); c.fill();
+  c.fillStyle=col; c.beginPath(); c.roundRect(x,y,w,h,5); c.fill();
+  if(inv){ c.strokeStyle=`hsla(${Date.now()/8%360},100%,70%,.9)`; c.lineWidth=3; c.stroke(); }
+  c.fillStyle='rgba(0,0,0,.42)'; c.fillRect(x+3,y+2,w-6,14);
+  c.fillStyle=hlOn?'rgba(200,240,255,.6)':'rgba(160,220,255,.48)'; c.beginPath(); c.roundRect(x+4,y+3,w-8,11,2); c.fill();
+  c.fillStyle='rgba(160,220,255,.28)'; c.fillRect(x+2,y+17,4,14); c.fillRect(x+w-6,y+17,4,14);
+  c.fillStyle='#b0b0b0'; c.fillRect(x+4,y+h-10,w-8,4);
+  c.fillStyle='#777'; for(let i=0;i<4;i++) c.fillRect(x+5+i*6,y+h-10,3,4);
+  c.fillStyle=hlOn?'#ffffe0':'#ffffcc'; c.shadowBlur=hlOn?22:10; c.shadowColor=hlOn?'#ffffa0':'#fff';
+  c.fillRect(x+1,y+h-6,8,4); c.fillRect(x+w-9,y+h-6,8,4); c.shadowBlur=0;
+  c.fillStyle='#ff3131'; c.shadowBlur=8; c.shadowColor='#ff3131';
+  c.fillRect(x+1,y+2,w-2,3); c.shadowBlur=0;
+  c.fillStyle='#181818'; c.fillRect(x-4,y+16,5,16); c.fillRect(x+w-1,y+16,5,16); c.fillRect(x-4,y+40,5,16); c.fillRect(x+w-1,y+40,5,16);
+  c.fillStyle='#444'; c.fillRect(x-3,y+18,3,12); c.fillRect(x+w,y+18,3,12); c.fillRect(x-3,y+42,3,12); c.fillRect(x+w,y+42,3,12);
+  c.fillStyle='rgba(0,0,0,.48)'; c.fillRect(x+2,y+30,w-4,6);
+  const sw=(w-4)/6; for(let i=0;i<6;i++) if(i%2===0){ c.fillStyle='rgba(255,215,0,.9)'; c.fillRect(x+2+i*sw,y+30,sw,6); }
+  c.fillStyle='#39ff14'; c.shadowBlur=7; c.shadowColor='#39ff14';
+  c.font='bold 9px Orbitron,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(lbl,x+w/2,y+22); c.shadowBlur=0;
+}
+
+function drawMinivan(c,x,y,col,lbl,inv,nitroOn,hlOn){
+  const w=38,h=72;
+  c.fillStyle='rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x+w/2,y+h+5,w/2+2,5,0,0,Math.PI*2); c.fill();
+  c.fillStyle=col; c.beginPath(); c.roundRect(x,y+6,w,h-6,5); c.fill();
+  c.fillStyle=col; c.beginPath(); c.moveTo(x+3,y+6); c.lineTo(x+w-3,y+6); c.lineTo(x+w-1,y+16); c.lineTo(x+1,y+16); c.closePath(); c.fill();
+  if(inv){ c.strokeStyle=`hsla(${Date.now()/8%360},100%,70%,.9)`; c.lineWidth=3; c.stroke(); }
+  c.fillStyle=hlOn?'rgba(200,240,255,.58)':'rgba(160,220,255,.48)'; c.beginPath(); c.moveTo(x+4,y+7); c.lineTo(x+w-4,y+7); c.lineTo(x+w-2,y+20); c.lineTo(x+2,y+20); c.closePath(); c.fill();
+  c.fillStyle='rgba(0,0,0,.32)'; c.fillRect(x+2,y+6,w-4,12);
+  c.strokeStyle='rgba(0,0,0,.38)'; c.lineWidth=1.5; c.beginPath(); c.moveTo(x+w-12,y+26); c.lineTo(x+w-12,y+58); c.stroke();
+  c.fillStyle='rgba(160,220,255,.38)'; c.fillRect(x+3,y+22,w-16,14); c.fillRect(x+w-10,y+22,7,14);
+  c.fillStyle='rgba(255,255,255,.28)'; c.fillRect(x+w-11,y+38,6,2);
+  c.fillStyle='rgba(0,0,0,.48)'; c.fillRect(x+2,y+36,w-4,6);
+  const sw=(w-4)/7; for(let i=0;i<7;i++) if(i%2===0){ c.fillStyle='rgba(255,215,0,.9)'; c.fillRect(x+2+i*sw,y+36,sw,6); }
+  c.fillStyle=hlOn?'#ffffe0':'#ffffcc'; c.shadowBlur=hlOn?22:10; c.shadowColor=hlOn?'#ffffa0':'#fff';
+  c.fillRect(x+1,y+h-5,10,4); c.fillRect(x+w-11,y+h-5,10,4); c.shadowBlur=0;
+  c.fillStyle='#ff3131'; c.shadowBlur=8; c.shadowColor='#ff3131';
+  c.fillRect(x+1,y+7,w-2,3); c.shadowBlur=0;
+  c.fillStyle='#181818'; c.fillRect(x-4,y+20,5,18); c.fillRect(x+w-1,y+20,5,18); c.fillRect(x-4,y+48,5,18); c.fillRect(x+w-1,y+48,5,18);
+  c.fillStyle='#444'; c.fillRect(x-3,y+22,3,14); c.fillRect(x+w,y+22,3,14); c.fillRect(x-3,y+50,3,14); c.fillRect(x+w,y+50,3,14);
+  c.fillStyle='#39ff14'; c.shadowBlur=7; c.shadowColor='#39ff14';
+  c.font='bold 9px Orbitron,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(lbl,x+w/2,y+28); c.shadowBlur=0;
+}
+
+function drawTraffic(x,y,col){
+  const w=28,h=58,night=biome.night;
+  ctx.fillStyle='rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(x+w/2,y+h+4,w/2,4,0,0,Math.PI*2); ctx.fill();
+  const g=ctx.createLinearGradient(x,y,x,y+h); g.addColorStop(0,col); g.addColorStop(.45,'rgba(255,255,255,.18)'); g.addColorStop(1,col);
+  ctx.fillStyle=g; ctx.beginPath(); ctx.roundRect(x+2,y,w,h,6); ctx.fill();
+  if(night){ ctx.fillStyle=`rgba(0,0,10,${biome.id==='storm'?.55:biome.id==='neon'?.5:.38})`; ctx.beginPath(); ctx.roundRect(x+2,y,w,h,6); ctx.fill(); }
+  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fillRect(x+5,y+10,18,14);
+  ctx.fillStyle='rgba(160,220,255,.3)'; ctx.beginPath(); ctx.roundRect(x+6,y+11,16,12,2); ctx.fill();
+  ctx.fillStyle='#ffffcc'; ctx.shadowBlur=night?10:5; ctx.shadowColor=night?'#ffffa0':'#fff';
+  ctx.fillRect(x+3,y+2,4,2); ctx.fillRect(x+21,y+2,4,2); ctx.shadowBlur=0;
+  ctx.fillStyle='#ff3131'; ctx.fillRect(x+3,y+h-4,6,3); ctx.fillRect(x+19,y+h-4,6,3);
+  ctx.fillStyle='#111'; ctx.fillRect(x-1,y+14,4,14); ctx.fillRect(x+w+1,y+14,4,14); ctx.fillRect(x-1,y+36,4,14); ctx.fillRect(x+w+1,y+36,4,14);
+}
+
+// ── RANKS ─────────────────────────────────────────────────────────────────────
+function updateRank(){
+  let r='ROOKIE';
+  if(level>=12) r='FLEET LEGEND';
+  else if(level>=9) r='HEAD DISPATCHER';
+  else if(level>=6) r='PRO CABBIE';
+  else if(level>=3) r='CITY DRIVER';
+  rankEl.innerText=r; return r;
+}
+
+// ── RECORDS ───────────────────────────────────────────────────────────────────
+function saveRec(){ if(score>parseInt(localStorage.getItem('joesBest')||0)) localStorage.setItem('joesBest',score); if(totalMiles>parseInt(localStorage.getItem('joesMiles')||0)) localStorage.setItem('joesMiles',Math.floor(totalMiles)); refreshRec(); }
+function refreshRec(){ const s=localStorage.getItem('joesBest')||0,m=localStorage.getItem('joesMiles')||0; mainBestEl.innerText=s; mainBestMiEl.innerText=m; bestScoreEl.innerText=s; }
+refreshRec();
+
+// ── NITRO ─────────────────────────────────────────────────────────────────────
+function triggerNitro(){
+  const vd=VEH[selVeh];
+  if(nitros>0&&!isNitroActive&&!inPitStop&&gameActive&&!isInvincible){
+    nitros--; nitroCountEl.innerText=nitros; isNitroActive=true;
+    nitroSFX(); nflash.classList.add('on'); setTimeout(()=>nflash.classList.remove('on'),300);
+    origSpd=spd; spd=origSpd*vd.nitroMult;
+    setTimeout(()=>{ if(!isInvincible) spd=origSpd; isNitroActive=false; },vd.nitroDur);
+  }
+}
+
+function spawnHearts(){ if(heartsSpawned) return; hearts=[]; for(let i=0;i<14;i++) hearts.push({x:98+(Math.floor(Math.random()*4)*80),y:-100-(i*420),collected:false}); heartsSpawned=true; }
+
+function showLvlAnn(){
+  lvlAnn.textContent=`LEVEL ${level}\n${biome.icon} ${biome.name}`;
+  lvlAnn.style.color=biome.night?'#aaddff':'#ffdd44';
+  lvlAnn.style.textShadow=`0 0 20px ${biome.night?'#88bbff':'#ffaa00'}`;
+  lvlAnn.classList.add('show');
+  setTimeout(()=>lvlAnn.classList.remove('show'),2000);
+}
+
+// ── UPDATE ────────────────────────────────────────────────────────────────────
+function update(dt){
+  if(inPitStop||!gameActive) return;
+  const norm=dt/16.67,vd=VEH[selVeh];
+  let steer=0;
+  if(keys['ArrowLeft']||keys['KeyA']) steer=-1;
+  if(keys['ArrowRight']||keys['KeyD']) steer=1;
+  if(touchSteer!==0) steer=touchSteer;
+  let sm=vd.steer;
+  if(biome.snow) sm*=.72; if(biome.sand) sm*=.82;
+  player.x=Math.max(82,Math.min(358-player.w,player.x+steer*sm*norm));
+
+  if(player.x<82||(player.x+player.w)>358){
+    if(!onSide){ score=Math.max(0,score-4); penGain.gain.setTargetAtTime(.04,audioCtx.currentTime,.05); onSide=true; breakCombo(); spawnFloat(player.x+player.w/2,player.y,'-4','#ff3131'); }
+    sideTimer+=dt; if(sideTimer>=1000){ score=Math.max(0,score-3); sideTimer=0; }
+  } else { onSide=false; sideTimer=0; penGain.gain.setTargetAtTime(0,audioCtx.currentTime,.15); }
+
+  if(!isNitroActive&&!isInvincible) spd=Math.min(maxSpd,spd+.0002*norm);
+  if(biome.snow) spd=Math.min(spd,maxSpd*.78);
+  engUpd();
+
+  totalMiles+=(spd*norm/180);
+  const curM=Math.floor(totalMiles),milesIn=totalMiles-milesAtStart,milesLeft=milesPerLvl-milesIn;
+  pb.style.width=(Math.min(1,milesIn/milesPerLvl)*100)+'%';
+
+  if(milesLeft<=1&&milesLeft>0){ isInvincible=true; obstacles=[]; spawnHearts(); spd=Math.max(.05,spd*Math.pow(.998,norm)); } else if(!isNitroActive){ isInvincible=false; }
+  if(curM>lastMileCheck){ score+=10; lastMileCheck=curM; }
+  milesEl.innerText=curM; speedEl.innerText=Math.floor(spd*35); scoreEl.innerText=score;
+  lineOff=(lineOff+spd*4*norm)%40;
+
+  updEnv(dt,norm);
+
+  parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=.12; p.life-=.034; });
+  parts=parts.filter(p=>p.life>0);
+  floats.forEach(t=>{ t.y+=t.vy; t.life-=.022; });
+  floats=floats.filter(t=>t.life>0);
+
+  if(milesLeft<=.05&&finishY<-1000) finishY=-200;
+  if(finishY>-1000){
+    finishY+=spd*2*norm;
+    if(finishY>620&&!inPitStop){
+      inPitStop=true; spd=0; fanfare(); saveRec();
+      pitUI.style.display='flex';
+      $('pit-ttl-txt').textContent=biome.icon+' FARE DELIVERED!';
+      $('pit-dest').innerText=AIRPORTS[(level-1)%AIRPORTS.length].toUpperCase();
+      $('pit-miles').innerText=curM; $('pit-pass').innerText=passCollected;
+      $('pit-total').innerText=score; $('pit-rank').innerText=updateRank();
+      $('pit-combo').innerText='x'+bestCombo;
+      let tl=15;
+      const tmr=setInterval(()=>{
+        tl--; $('pit-tmr').innerText=tl;
+        if(tl<=0){
+          clearInterval(tmr); inPitStop=false; pitUI.style.display='none';
+          level++; levelEl.innerText=level; updateRank();
+          milesPerLvl=milesForLvl(level);
+          maxSpd=1.0+(level*(0.15+vd.speedBonus));
+          spd=maxSpd*.7; milesAtStart=totalMiles; finishY=-2000;
+          destEl.innerText=AIRPORTS[level%AIRPORTS.length];
+          isInvincible=false; heartsSpawned=false; hearts=[]; pb.style.width='0%';
+          bestCombo=0; combo=0;
+          initBiome(); showLvlAnn(); lvlUpSnd(); startMusic();
         }
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+      },1000);
     }
+  }
 
-    function startMusic() {
-        let step = 0;
-        const bass = [55, 55, 65, 55, 82, 55, 73, 55];
-        const lead = [220, 0, 220, 247, 261, 0, 261, 293];
-        if(musicTimer) clearInterval(musicTimer);
-        musicTimer = setInterval(() => {
-            if(!gameActive || inPitStop) return;
-            playTone(bass[step % bass.length], 0.1, 'square', 0.05);
-            if(step % 2 === 0 && lead[step % lead.length] > 0) {
-                playTone(lead[step % lead.length], 0.1, 'sawtooth', 0.03);
-            }
-            step++;
-        }, 150);
+  // Obstacles – more spawn as level increases
+  if(finishY<-500&&!isInvincible){
+    lastSpawnY+=spd*2*norm;
+    const gap=Math.max(140,290-level*12);
+    if(lastSpawnY>gap){ obstacles.push({x:90+(Math.floor(Math.random()*3)*88),y:-120,col:TFC_COLORS[Math.floor(Math.random()*TFC_COLORS.length)],sm:1.0+Math.random()*.9+(level*.06)}); lastSpawnY=0; }
+  }
+  obstacles.forEach((o,i)=>{
+    o.y+=spd*o.sm*norm;
+    if(o.y>820) obstacles.splice(i,1);
+    if(!isInvincible&&player.x<o.x+26&&player.x+player.w>o.x+2&&player.y<o.y+56&&player.y+player.h>o.y+2){
+      crash(); spawnPart(player.x+player.w/2,player.y+32,'#ff3131',14);
+      gameActive=false; saveRec(); overlay.style.display='flex';
+      $('msg').innerText='WRECKED!'; $('msg').style.color='#ff3131';
     }
+  });
 
-    function playTone(freq, dur, type, vol) {
-        const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
-        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        g.gain.setValueAtTime(vol, audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-        osc.connect(g); g.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + dur);
-    }
+  hearts.forEach(h=>{ h.y+=spd*2.2*norm; if(!h.collected&&player.x<h.x+20&&player.x+player.w>h.x-20&&player.y<h.y+20&&player.y+player.h>h.y-20){ h.collected=true; score+=2; pickup(false); addCombo(); spawnPart(h.x,h.y,'#ff69b4',8); spawnFloat(h.x,h.y,'+2','#ff69b4'); } });
 
-    function playWinFanfare() {
-        const now = audioCtx.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        notes.forEach((freq, i) => {
-            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            osc.type = 'square'; osc.frequency.setValueAtTime(freq, now + (i * 0.15));
-            g.gain.setValueAtTime(0.1, now + (i * 0.15)); g.gain.exponentialRampToValueAtTime(0.0001, now + (i * 0.15) + 0.6);
-            osc.connect(g); g.connect(audioCtx.destination); osc.start(now + (i * 0.15)); osc.stop(now + (i * 0.15) + 0.6);
-        });
-    }
+  passengers.forEach((p,i)=>{ p.y+=spd*2.2*norm; if(player.x<p.x+15&&player.x+player.w>p.x-15&&player.y<p.y+15&&player.y+player.h>p.y-15){ passCollected++; passCountEl.innerText=passCollected; score+=5; addCombo(); pickup(true); spawnPart(p.x,p.y,'#00f3ff',6); spawnFloat(p.x,p.y,'+5','#00f3ff'); passengers.splice(i,1); if(passCollected%5===0) pickups.push({x:90+(Math.floor(Math.random()*3)*88),y:-100}); } });
 
-    function playHorn() {
-        if(!audioCtx || audioCtx.currentTime - lastHornTime < 0.5) return;
-        lastHornTime = audioCtx.currentTime;
-        [400, 480].forEach(f => {
-            let o = audioCtx.createOscillator(); let g = audioCtx.createGain();
-            o.type = 'sawtooth'; o.connect(g); g.connect(audioCtx.destination);
-            o.frequency.setValueAtTime(f, audioCtx.currentTime); g.gain.setValueAtTime(0.12, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4); o.start(); o.stop(audioCtx.currentTime + 0.4);
-        });
-    }
+  pickups.forEach((pk,i)=>{ pk.y+=spd*2.2*norm; if(player.x<pk.x+16&&player.x+player.w>pk.x-16&&player.y<pk.y+16&&player.y+player.h>pk.y-16){ nitros++; nitroCountEl.innerText=nitros; pickups.splice(i,1); pickup(false); spawnFloat(pk.x,pk.y,'N2O+','#ef4444'); } });
 
-    function playNitroSFX() {
-        const now = audioCtx.currentTime;
-        const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
-        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
-        osc.frequency.exponentialRampToValueAtTime(800, now + 0.5);
-        g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-        osc.connect(g); g.connect(audioCtx.destination); osc.start(); osc.stop(now + 0.5);
-    }
+  const spawnChance=.007+level*.0006;
+  if(Math.random()<spawnChance&&!isInvincible) passengers.push({x:90+(Math.floor(Math.random()*3)*88),y:-100});
+}
 
-    function playDing() {
-        let osc = audioCtx.createOscillator(); let g = audioCtx.createGain();
-        osc.connect(g); g.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime); g.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2); osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-    }
+// ── DRAW ──────────────────────────────────────────────────────────────────────
+function draw(){
+  drawEnv();
 
-    function triggerNitro() {
-        if (nitros > 0 && !isNitroActive && !inPitStop && gameActive && !isInvincible) {
-            nitros--; nitroCountEl.innerText = nitros; isNitroActive = true;
-            playNitroSFX();
-            originalSpeed = speed; speed = originalSpeed * 2.5;
-            setTimeout(() => { if(!isInvincible) speed = originalSpeed; isNitroActive = false; }, 3000);
-        }
-    }
+  // Finish line
+  if(finishY>-200){ const fw=276,fx=82,sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
 
-    canvas.addEventListener('touchstart', (e) => {
-        if(!gameActive) return; e.preventDefault();
-        const touchX = e.touches[0].clientX;
-        if(touchX < window.innerWidth / 2) touchSteer = -1;
-        else touchSteer = 1;
-    }, {passive: false});
-    canvas.addEventListener('touchend', (e) => { e.preventDefault(); touchSteer = 0; }, {passive: false});
+  obstacles.forEach(o=>drawTraffic(o.x,o.y,o.col));
 
-    function drawCar(x, y, color, isPlayer) {
-        if (isPlayer) {
-            ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fillRect(x+4, y+4, 32, 64);
-            ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(x, y, 32, 64, 6); ctx.fill();
-            if(isInvincible) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); ctx.globalAlpha = 0.8; }
-            ctx.fillStyle = "#1a1a1a"; ctx.fillRect(x+8, y+2, 16, 4);
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 10; ctx.shadowColor = "#fff";
-            ctx.fillRect(x+2, y+5, 6, 2); ctx.fillRect(x+24, y+5, 6, 2);
-            ctx.shadowBlur = 0; ctx.fillStyle = "#111"; ctx.fillRect(x+3, y+20, 2, 30); ctx.fillRect(x+27, y+20, 2, 30);
-            ctx.fillStyle = "#ff3131"; ctx.shadowBlur = 12; ctx.shadowColor = "#ff3131";
-            ctx.fillRect(x+2, y+60, 28, 2); ctx.shadowBlur = 0;
-            ctx.fillStyle = '#39ff14'; ctx.font = 'bold 11px Orbitron, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-            ctx.fillText("B", x+16, y+20); ctx.fillText("E", x+16, y+32); ctx.fillText("N", x+16, y+44); ctx.globalAlpha = 1.0;
-        } else {
-            ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(x+4, y+4, 28, 60);
-            let bodyGrad = ctx.createLinearGradient(x+2, y, x+2, y+60);
-            bodyGrad.addColorStop(0, color); bodyGrad.addColorStop(0.5, "#fff3"); bodyGrad.addColorStop(1, color); 
-            ctx.fillStyle = bodyGrad; ctx.beginPath(); ctx.roundRect(x+2, y, 28, 60, 5); ctx.fill();
-            ctx.fillStyle = "#1a1a1a"; ctx.fillRect(x+6, y+10, 20, 10);
-            ctx.fillStyle = "#fff"; ctx.shadowBlur = 8; ctx.shadowColor = "#fff";
-            ctx.fillRect(x+4, y+2, 4, 3); ctx.fillRect(x+22, y+2, 4, 3);
-            ctx.shadowBlur = 0; ctx.fillStyle = "#ff3131"; ctx.fillRect(x+4, y+55, 6, 3); ctx.fillRect(x+20, y+55, 6, 3);
-        }
-    }
+  drawHeadlights();
 
-    function spawnVictoryHearts() {
-        if(heartsSpawned) return; hearts = [];
-        for(let i=0; i<12; i++) { hearts.push({ x: 98 + (Math.floor(Math.random() * 4) * 72), y: -100 - (i * 450), collected: false }); }
-        heartsSpawned = true;
-    }
+  const hlOn=biome.night;
+  selVeh==='joe'?drawSUV(ctx,player.x,player.y,playerColor,'JOE',isInvincible,isNitroActive,hlOn):drawMinivan(ctx,player.x,player.y,playerColor,'WILL',isInvincible,isNitroActive,hlOn);
 
-    function update(dt) {
-        if(inPitStop || !gameActive) return;
-        const norm = dt / 16.67; // Normalize to 60fps base
-        let steer = 0;
-        if (keys['ArrowLeft'] || keys['KeyA']) steer = -1;
-        if (keys['ArrowRight'] || keys['KeyD']) steer = 1;
-        if (touchSteer !== 0) steer = touchSteer;
-        player.x = Math.max(20, Math.min(400, player.x + steer * 6.5 * norm));
-        const roadStart = 80, roadEnd = 370;
-        if (player.x < roadStart || (player.x + player.w) > roadEnd) {
-            if (!onSidewalk) { score = Math.max(0, score - 4); penaltyGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.05); onSidewalk = true; }
-            sidewalkTimer += dt; if (sidewalkTimer >= 1000) { score = Math.max(0, score - 3); sidewalkTimer = 0; }
-        } else { onSidewalk = false; sidewalkTimer = 0; penaltyGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); }
-        totalMiles += (speed * norm / 180); let curM = Math.floor(totalMiles);
-        let milesInLevel = totalMiles - milesAtStartOfLevel;
-        let milesLeft = milesPerLevel - milesInLevel;
-        if (milesLeft <= 1 && milesLeft > 0) { isInvincible = true; obstacles = []; spawnVictoryHearts(); speed = Math.max(0.05, speed * Math.pow(0.998, norm)); } else { isInvincible = false; }
-        if (curM > lastMileChecked) { score += 10; lastMileChecked = curM; }
-        milesEl.innerText = curM; speedEl.innerText = Math.floor(speed * 35); scoreEl.innerText = score;
-        lineOffset = (lineOffset + speed * 4 * norm) % 40;
-        if (milesLeft <= 0.05 && finishLineY < -1000) finishLineY = -150;
-        if (finishLineY > -1000) {
-            finishLineY += speed * 2 * norm;
-            if (finishLineY > 550 && !inPitStop) {
-                inPitStop = true; speed = 0; playWinFanfare(); saveRecords();
-                pitUI.style.display = 'flex';
-                pitDestEl.innerText = airports[(level - 1) % airports.length].toUpperCase();
-                pitMiles.innerText = curM; pitPass.innerText = passengersCollected; pitTotal.innerText = score; pitRank.innerText = updateRank();
-                let tl = 15;
-                let timer = setInterval(() => {
-                    tl--; pitTimerEl.innerText = tl;
-                    if(tl <= 0) {
-                        clearInterval(timer); inPitStop = false; pitUI.style.display = 'none';
-                        level++; levelEl.innerText = level; updateRank();
-                        currentLevelMaxSpeed = 1.0 + (level * 0.15); speed = currentLevelMaxSpeed; 
-                        milesAtStartOfLevel = totalMiles; finishLineY = -2000;
-                        destEl.innerText = airports[level % airports.length];
-                        isInvincible = false; heartsSpawned = false; hearts = [];
-                    }
-                }, 1000);
-            }
-        }
-        if (finishLineY < -500 && !isInvincible) {
-            lastSpawnY += speed * 2 * norm;
-            if(lastSpawnY > 300) { obstacles.push({x: 98 + (Math.floor(Math.random() * 4) * 72), y: -100, color: trafficColors[Math.floor(Math.random()*trafficColors.length)], speedMult: 1.1 + (Math.random() * 0.6)}); lastSpawnY = 0; }
-        }
-        obstacles.forEach((o, i) => { 
-            o.y += speed * o.speedMult * norm; 
-            if(o.y > 750) obstacles.splice(i, 1); 
-            if(!isInvincible && player.x < o.x+28 && player.x+player.w > o.x+2 && player.y < o.y+55 && player.y+player.h > o.y+5) { 
-                gameActive = false; saveRecords(); overlay.style.display = 'flex'; document.getElementById('msg').innerText = "WRECKED!"; 
-            } 
-        });
-        hearts.forEach((h) => { h.y += speed * 2.2 * norm; if(!h.collected && player.x < h.x+20 && player.x+player.w > h.x-20 && player.y < h.y+20 && player.y+player.h > h.y-20) { h.collected = true; score += 2; playDing(); } });
-        passengers.forEach((p, i) => { p.y += speed * 2.2 * norm; if(player.x < p.x+15 && player.x+player.w > p.x-15 && player.y < p.y+15 && player.y+player.h > p.y-15) { passengersCollected++; passCountEl.innerText = passengersCollected; score += 5; playDing(); passengers.splice(i, 1); if(passengersCollected % 5 === 0) pickups.push({x: 115 + (Math.floor(Math.random() * 4) * 72), y: -100}); } });
-        pickups.forEach((pk, i) => { pk.y += speed * 2.2 * norm; if(player.x < pk.x+16 && player.x+player.w > pk.x-16 && player.y < pk.y+16 && player.y+player.h > pk.y-16) { nitros++; nitroCountEl.innerText = nitros; pickups.splice(i, 1); } });
-        if(Math.random() < 0.008 && !isInvincible) passengers.push({x: 115 + (Math.floor(Math.random() * 4) * 72), y: -100});
-    }
+  // Nitro flame
+  if(isNitroActive){ const fx=player.x+player.w/2,fy=player.y+player.h,fH=22+Math.random()*26,fg=ctx.createRadialGradient(fx,fy,0,fx,fy+fH,fH); fg.addColorStop(0,'rgba(255,200,0,.9)'); fg.addColorStop(.4,'rgba(255,80,0,.6)'); fg.addColorStop(1,'rgba(255,0,0,0)'); ctx.fillStyle=fg; ctx.beginPath(); ctx.ellipse(fx,fy+fH/2,11,fH/2,0,0,Math.PI*2); ctx.fill(); }
 
-    function draw() {
-        ctx.fillStyle = '#1a4a1a'; ctx.fillRect(0,0,baseWidth,baseHeight);
-        ctx.fillStyle = '#999'; ctx.fillRect(50, 0, 30, baseHeight); ctx.fillRect(370, 0, 30, baseHeight);
-        ctx.fillStyle = '#222'; ctx.fillRect(80, 0, 290, baseHeight);
-        ctx.strokeStyle = '#fff5'; ctx.lineWidth = 2; ctx.setLineDash([20,20]); ctx.lineDashOffset = -lineOffset;
-        ctx.beginPath(); for(let i=1; i<4; i++) { ctx.moveTo(80+i*72, 0); ctx.lineTo(80+i*72, baseHeight); } ctx.stroke(); ctx.setLineDash([]);
-        obstacles.forEach(o => drawCar(o.x, o.y, o.color, false));
-        drawCar(player.x, player.y, playerColor, true); 
-        hearts.forEach(h => {
-            if(h.collected) return;
-            ctx.fillStyle = '#ff69b4'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff69b4'; ctx.beginPath();
-            ctx.moveTo(h.x, h.y + 10); ctx.bezierCurveTo(h.x, h.y, h.x - 15, h.y, h.x - 15, h.y + 10);
-            ctx.bezierCurveTo(h.x - 15, h.y + 25, h.x, h.y + 30, h.x, h.y + 40); ctx.bezierCurveTo(h.x, h.y + 30, h.x + 15, h.y + 25, h.x + 15, h.y + 10);
-            ctx.bezierCurveTo(h.x + 15, h.y, h.x, h.y, h.x, h.y + 10); ctx.fill(); ctx.shadowBlur = 0;
-        });
-        passengers.forEach(p => { 
-            ctx.fillStyle = '#00f3ff'; ctx.shadowBlur = 10; ctx.shadowColor = '#00f3ff'; ctx.beginPath(); ctx.arc(p.x, p.y-22, 5, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#00f3ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y-17); ctx.lineTo(p.x, p.y-5);
-            ctx.moveTo(p.x-6, p.y-13); ctx.lineTo(p.x+6, p.y-13); ctx.moveTo(p.x, p.y-5); ctx.lineTo(p.x-5, p.y+5); ctx.moveTo(p.x, p.y-5); ctx.lineTo(p.x+5, p.y+5); ctx.stroke(); ctx.shadowBlur = 0;
-        });
-        pickups.forEach(pk => { 
-            ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(pk.x, pk.y, 14, 0, Math.PI*2); ctx.fill(); 
-            ctx.fillStyle="#fff"; ctx.font="bold 8px Orbitron, sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("N2O", pk.x, pk.y);
-        });
-    }
+  hearts.forEach(h=>{ if(h.collected) return; ctx.save(); ctx.fillStyle='#ff69b4'; ctx.shadowBlur=18; ctx.shadowColor='#ff69b4'; ctx.beginPath(); ctx.moveTo(h.x,h.y+10); ctx.bezierCurveTo(h.x,h.y,h.x-14,h.y,h.x-14,h.y+10); ctx.bezierCurveTo(h.x-14,h.y+24,h.x,h.y+30,h.x,h.y+38); ctx.bezierCurveTo(h.x,h.y+30,h.x+14,h.y+24,h.x+14,h.y+10); ctx.bezierCurveTo(h.x+14,h.y,h.x,h.y,h.x,h.y+10); ctx.fill(); ctx.restore(); });
 
-    function gameLoop(timestamp) {
-        if(gameActive) { let dt = timestamp - lastTime; if(dt > 100) dt = 16.67; lastTime = timestamp; update(dt); draw(); requestAnimationFrame(gameLoop); }
-    }
+  passengers.forEach(p=>{ ctx.save(); ctx.strokeStyle='#00f3ff'; ctx.fillStyle='#00f3ff'; ctx.shadowBlur=12; ctx.shadowColor='#00f3ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y-24,5,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.moveTo(p.x,p.y-19); ctx.lineTo(p.x,p.y-6); ctx.moveTo(p.x-7,p.y-14); ctx.lineTo(p.x+7,p.y-14); ctx.moveTo(p.x,p.y-6); ctx.lineTo(p.x-5,p.y+4); ctx.moveTo(p.x,p.y-6); ctx.lineTo(p.x+5,p.y+4); ctx.stroke(); ctx.restore(); });
 
-    let lastTime = 0;
-    startBtn.onclick = () => { initAudio(); gameActive = true; overlay.style.display = 'none'; score = 0; totalMiles = 0; level = 1; currentLevelMaxSpeed = 1.0; speed = 1.0; nitros = 1; passengersCollected = 0; obstacles = []; passengers = []; pickups = []; hearts = []; heartsSpawned = false; levelEl.innerText = level; destEl.innerText = airports[0]; updateRank(); milesAtStartOfLevel = 0; isInvincible = false; lastTime = performance.now(); requestAnimationFrame(gameLoop); refreshRecordUI(); };
-    window.addEventListener('keydown', e => { keys[e.code] = true; if(e.code === 'Space') triggerNitro(); if(e.code === 'ArrowUp') playHorn(); });
-    window.addEventListener('keyup', e => keys[e.code] = false);
-    nitroBtn.onclick = (e) => { e.preventDefault(); triggerNitro(); };
-    hornBtn.onclick = (e) => { e.preventDefault(); playHorn(); };
-    document.querySelectorAll('.swatch').forEach(s => { s.onclick = () => { document.querySelector('.swatch.active').classList.remove('active'); s.classList.add('active'); playerColor = s.dataset.color; } });
+  pickups.forEach(pk=>{ ctx.save(); ctx.shadowBlur=18; ctx.shadowColor='#ef4444'; ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.arc(pk.x,pk.y,14,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.font='bold 7px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('N2O',pk.x,pk.y); ctx.restore(); });
+
+  parts.forEach(p=>{ ctx.globalAlpha=p.life; ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1;
+  floats.forEach(t=>{ ctx.globalAlpha=Math.max(0,t.life); ctx.fillStyle=t.col; ctx.font='bold 13px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(t.txt,t.x,t.y); }); ctx.globalAlpha=1;
+}
+
+// ── GAME LOOP ─────────────────────────────────────────────────────────────────
+let lastTime=0;
+function loop(ts){ if(!gameActive) return; let dt=ts-lastTime; if(dt>100)dt=16.67; lastTime=ts; update(dt); draw(); requestAnimationFrame(loop); }
+
+// ── START ─────────────────────────────────────────────────────────────────────
+startBtn.onclick=()=>{
+  const vd=VEH[selVeh];
+  initAudio(); gameActive=true; overlay.style.display='none';
+  $('msg').style.color='var(--gold)'; $('msg').innerText='JOE\'S TAXI';
+  score=0; totalMiles=0; level=1; milesPerLvl=milesForLvl(1);
+  maxSpd=1.0+vd.speedBonus; spd=1.0; nitros=1; passCollected=0;
+  obstacles=[]; passengers=[]; pickups=[]; hearts=[]; heartsSpawned=false;
+  parts=[]; floats=[]; combo=0; bestCombo=0;
+  player.w=vd.w; player.h=vd.h; player.x=203+(34-vd.w)/2; player.y=550;
+  levelEl.innerText=1; destEl.innerText=AIRPORTS[0]; updateRank();
+  milesAtStart=0; isInvincible=false; finishY=-2000;
+  pb.style.width='0%'; nitroCountEl.innerText=1; passCountEl.innerText=0;
+  lastTime=performance.now();
+  initBiome(); showLvlAnn(); startMusic();
+  requestAnimationFrame(loop);
+  refreshRec();
+};
+
+// ── TOUCH CONTROLS ────────────────────────────────────────────────────────────
+const activeTouches={};
+function recalcSteer(){
+  const vals=Object.values(activeTouches);
+  if(vals.includes('right')&&!vals.includes('left')) touchSteer=1;
+  else if(vals.includes('left')&&!vals.includes('right')) touchSteer=-1;
+  else touchSteer=0;
+}
+
+document.addEventListener('touchstart',e=>{
+  if(!gameActive) return;
+  e.preventDefault();
+  [...e.changedTouches].forEach(t=>{
+    const el=document.elementFromPoint(t.clientX,t.clientY);
+    if(!el) return;
+    const sl=el.closest('#steer-l'),sr=el.closest('#steer-r');
+    if(sl) activeTouches[t.identifier]='left';
+    else if(sr) activeTouches[t.identifier]='right';
+  });
+  recalcSteer();
+},{passive:false});
+
+document.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  [...e.changedTouches].forEach(t=>{
+    const el=document.elementFromPoint(t.clientX,t.clientY);
+    if(!el) return;
+    const sl=el.closest('#steer-l'),sr=el.closest('#steer-r');
+    if(sl) activeTouches[t.identifier]='left';
+    else if(sr) activeTouches[t.identifier]='right';
+    else delete activeTouches[t.identifier];
+  });
+  recalcSteer();
+},{passive:false});
+
+document.addEventListener('touchend',e=>{
+  e.preventDefault();
+  [...e.changedTouches].forEach(t=>delete activeTouches[t.identifier]);
+  recalcSteer();
+},{passive:false});
+
+$('btn-nitro').addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();triggerNitro();},{passive:false});
+$('btn-horn').addEventListener('touchstart',e=>{e.stopPropagation();e.preventDefault();horn();},{passive:false});
+$('btn-nitro').onclick=e=>{e.preventDefault();triggerNitro();};
+$('btn-horn').onclick=e=>{e.preventDefault();horn();};
+
+window.addEventListener('keydown',e=>{ keys[e.code]=true; if(e.code==='Space'){e.preventDefault();triggerNitro();} if(e.code==='KeyH') horn(); });
+window.addEventListener('keyup',e=>keys[e.code]=false);
+
+document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>{ document.querySelector('.sw.active').classList.remove('active'); s.classList.add('active'); playerColor=s.dataset.color; renderPreviews(); }));
+['joe','will'].forEach(v=>{ $('card-'+v).addEventListener('touchstart',e=>{e.stopPropagation();selectVehicle(v);},{passive:false}); });
+
+setTimeout(renderPreviews,400);
 </script>
 </body>
 </html>
