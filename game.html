@@ -141,13 +141,19 @@ canvas{display:block;width:100%;height:100%}
   <div class="pit-ttl" id="pit-ttl-txt">✦ FARE DELIVERED ✦</div>
   <div id="pit-dest"></div>
   <div class="pit-stats">
-    <div class="sr"><span>RANK</span><span id="pit-rank"></span></div>
-    <div class="sr"><span>CAREER MILES</span><span id="pit-miles"></span></div>
-    <div class="sr"><span>PASSENGERS</span><span id="pit-pass"></span></div>
-    <div class="sr"><span>BEST COMBO</span><span id="pit-combo"></span></div>
-    <div class="sr hi"><span>TOTAL SCORE</span><span id="pit-total"></span></div>
+    <div class="sr"><span>⏱ LEVEL TIME</span><span id="pit-time"></span></div>
+    <div class="sr"><span>🛣 LEVEL MILES</span><span id="pit-lvl-miles"></span></div>
+    <div class="sr"><span>💰 LEVEL SCORE</span><span id="pit-lvl-score"></span></div>
+    <div class="sr"><span>👤 PASSENGERS</span><span id="pit-pass"></span></div>
+    <div class="sr"><span>🚀 NITROS USED</span><span id="pit-nitros"></span></div>
+    <div class="sr"><span>💥 CURB HITS</span><span id="pit-hits"></span></div>
+    <div class="sr"><span>🔗 BEST COMBO</span><span id="pit-combo"></span></div>
+    <div class="sr"><span>⚡ TOP SPEED</span><span id="pit-topspd"></span></div>
+    <div class="sr"><span>📯 HORN HONKS</span><span id="pit-horn"></span></div>
+    <div class="sr"><span>⭐ DRIVER RATING</span><span id="pit-rating"></span></div>
+    <div class="sr hi"><span>🏆 TOTAL SCORE</span><span id="pit-total"></span></div>
   </div>
-  <div class="sr" style="font-size:.5rem;color:#333;font-family:'Orbitron';width:88%;justify-content:space-between;margin-bottom:8px">
+  <div class="sr" style="font-size:.62rem;color:#aaccee;font-family:'Orbitron';width:88%;justify-content:space-between;margin-bottom:8px;font-weight:700">
     <span>ALL-TIME BEST</span><span id="best-score">0</span>
   </div>
   <div class="pit-nl">NEXT FARE IN</div>
@@ -300,7 +306,10 @@ let selVeh='joe',playerColor='#f5c518';
 const AIRPORTS=["Islip MacArthur","Republic Airport","LaGuardia","JFK","Farmingdale","Deer Park","Bayshore","Amityville"];
 const TFC_COLORS=['#ef4444','#fbbf24','#7c3aed','#e5e7eb','#f97316','#06b6d4','#84cc16'];
 let gameActive=false,inPitStop=false,score=0,totalMiles=0,spd=1.0,nitros=1,level=1,passCollected=0;
-let isNitroActive=false,obstacles=[],passengers=[],pickups=[],hearts=[],keys={};
+let isNitroActive=false,obstacles=[],passengers=[],pickups=[],hearts=[],keys={},police=[];
+let specialVehicles=[]; // school bus, ambulance, tractor trailer
+let coins=[],boostPads=[],speedTrail=[];
+let closeCallCooldown=0;
 let lineOff=0,finishY=-2000,lastMileCheck=0,milesAtStart=0,lastSpawnY=0;
 let milesPerLvl=10,origSpd=1.0,maxSpd=1.0;
 let onSide=false,sideTimer=0,lastHornT=0,isInvincible=false,heartsSpawned=false;
@@ -310,8 +319,12 @@ let lightAlpha=0,lightTimer=0;
 let biome=BIOMES[0];
 let player={x:203,y:550,w:34,h:64}; // will be recalculated on start
 let audioCtx,penOsc,penGain,engOsc;
+let policeSpawnedThisLevel=0; // track how many police spawned per level
+// ── PER-LEVEL STATS ───────────────────────────────────────────────────────────
+let lvlStats={scoreAtStart:0,passStart:0,nitrosUsed:0,sideHits:0,crashCount:0,nitrosStart:0,startTime:0,topSpd:0,hornHonks:0};
 
 function milesForLvl(l){ return Math.round(10*Math.pow(1.5,l-1)); }
+function resetLvlStats(){ lvlStats={scoreAtStart:score,passStart:passCollected,nitrosUsed:0,sideHits:0,nitrosStart:nitros,startTime:performance.now(),topSpd:0,hornHonks:0}; }
 
 // ── VEHICLE SELECT ────────────────────────────────────────────────────────────
 function selectVehicle(v){
@@ -375,7 +388,7 @@ function fanfare(){
 }
 function horn(){
   if(!audioCtx||audioCtx.currentTime-lastHornT<.6) return;
-  lastHornT=audioCtx.currentTime;
+  lastHornT=audioCtx.currentTime; if(gameActive) lvlStats.hornHonks++;
   [370,440].forEach(f=>{
     const o=audioCtx.createOscillator(),g=audioCtx.createGain(),lp=audioCtx.createBiquadFilter();
     lp.type='lowpass'; lp.frequency.value=900; o.type='sawtooth'; o.frequency.value=f;
@@ -530,6 +543,7 @@ function drawEnv(){
 
   // Darkness overlay for deep-night biomes
   if(biome.night){ const darkness=biome.id==='storm'?.62:biome.id==='neon'?.58:.42; ctx.fillStyle=`rgba(0,0,10,${darkness})`; ctx.fillRect(0,0,W,H); }
+  drawWeatherVignette();
 }
 
 // ── HEADLIGHTS ────────────────────────────────────────────────────────────────
@@ -554,49 +568,69 @@ function drawHeadlights(){
 // ── VEHICLE DRAWING ───────────────────────────────────────────────────────────
 function drawSUV(c,x,y,col,lbl,inv,nitroOn,hlOn){
   const w=34,h=64;
+  // Shadow under car
   c.fillStyle='rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x+w/2,y+h+5,w/2+2,5,0,0,Math.PI*2); c.fill();
+  // Body
   c.fillStyle=col; c.beginPath(); c.roundRect(x,y,w,h,5); c.fill();
   if(inv){ c.strokeStyle=`hsla(${Date.now()/8%360},100%,70%,.9)`; c.lineWidth=3; c.stroke(); }
-  c.fillStyle='rgba(0,0,0,.42)'; c.fillRect(x+3,y+2,w-6,14);
-  c.fillStyle=hlOn?'rgba(200,240,255,.6)':'rgba(160,220,255,.48)'; c.beginPath(); c.roundRect(x+4,y+3,w-8,11,2); c.fill();
-  c.fillStyle='rgba(160,220,255,.28)'; c.fillRect(x+2,y+17,4,14); c.fillRect(x+w-6,y+17,4,14);
-  c.fillStyle='#b0b0b0'; c.fillRect(x+4,y+h-10,w-8,4);
-  c.fillStyle='#777'; for(let i=0;i<4;i++) c.fillRect(x+5+i*6,y+h-10,3,4);
+  // Front windshield (TOP — car moves upward = forward)
+  c.fillStyle='rgba(0,0,0,.42)'; c.fillRect(x+3,y+4,w-6,14);
+  c.fillStyle=hlOn?'rgba(200,240,255,.6)':'rgba(160,220,255,.48)'; c.beginPath(); c.roundRect(x+4,y+5,w-8,11,2); c.fill();
+  // Side windows
+  c.fillStyle='rgba(160,220,255,.28)'; c.fillRect(x+2,y+20,4,14); c.fillRect(x+w-6,y+20,4,14);
+  // Front bumper/grille (TOP)
+  c.fillStyle='#b0b0b0'; c.fillRect(x+4,y+1,w-8,4);
+  c.fillStyle='#777'; for(let i=0;i<4;i++) c.fillRect(x+5+i*6,y+1,3,4);
+  // HEADLIGHTS at top (front)
   c.fillStyle=hlOn?'#ffffe0':'#ffffcc'; c.shadowBlur=hlOn?22:10; c.shadowColor=hlOn?'#ffffa0':'#fff';
-  c.fillRect(x+1,y+h-6,8,4); c.fillRect(x+w-9,y+h-6,8,4); c.shadowBlur=0;
+  c.fillRect(x+1,y+2,8,4); c.fillRect(x+w-9,y+2,8,4); c.shadowBlur=0;
+  // TAILLIGHTS at bottom (rear) — red
   c.fillStyle='#ff3131'; c.shadowBlur=8; c.shadowColor='#ff3131';
-  c.fillRect(x+1,y+2,w-2,3); c.shadowBlur=0;
+  c.fillRect(x+1,y+h-4,w-2,3); c.shadowBlur=0;
+  // Wheels
   c.fillStyle='#181818'; c.fillRect(x-4,y+16,5,16); c.fillRect(x+w-1,y+16,5,16); c.fillRect(x-4,y+40,5,16); c.fillRect(x+w-1,y+40,5,16);
   c.fillStyle='#444'; c.fillRect(x-3,y+18,3,12); c.fillRect(x+w,y+18,3,12); c.fillRect(x-3,y+42,3,12); c.fillRect(x+w,y+42,3,12);
-  c.fillStyle='rgba(0,0,0,.48)'; c.fillRect(x+2,y+30,w-4,6);
-  const sw=(w-4)/6; for(let i=0;i<6;i++) if(i%2===0){ c.fillStyle='rgba(255,215,0,.9)'; c.fillRect(x+2+i*sw,y+30,sw,6); }
+  // Roof stripe / detail
+  c.fillStyle='rgba(0,0,0,.48)'; c.fillRect(x+2,y+34,w-4,6);
+  const sw=(w-4)/6; for(let i=0;i<6;i++) if(i%2===0){ c.fillStyle='rgba(255,215,0,.9)'; c.fillRect(x+2+i*sw,y+34,sw,6); }
+  // Label
   c.fillStyle='#39ff14'; c.shadowBlur=7; c.shadowColor='#39ff14';
   c.font='bold 9px Orbitron,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
-  c.fillText(lbl,x+w/2,y+22); c.shadowBlur=0;
+  c.fillText(lbl,x+w/2,y+25); c.shadowBlur=0;
 }
 
 function drawMinivan(c,x,y,col,lbl,inv,nitroOn,hlOn){
   const w=38,h=72;
+  // Shadow
   c.fillStyle='rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x+w/2,y+h+5,w/2+2,5,0,0,Math.PI*2); c.fill();
+  // Body
   c.fillStyle=col; c.beginPath(); c.roundRect(x,y+6,w,h-6,5); c.fill();
+  // Front hood taper (TOP = front)
   c.fillStyle=col; c.beginPath(); c.moveTo(x+3,y+6); c.lineTo(x+w-3,y+6); c.lineTo(x+w-1,y+16); c.lineTo(x+1,y+16); c.closePath(); c.fill();
   if(inv){ c.strokeStyle=`hsla(${Date.now()/8%360},100%,70%,.9)`; c.lineWidth=3; c.stroke(); }
-  c.fillStyle=hlOn?'rgba(200,240,255,.58)':'rgba(160,220,255,.48)'; c.beginPath(); c.moveTo(x+4,y+7); c.lineTo(x+w-4,y+7); c.lineTo(x+w-2,y+20); c.lineTo(x+2,y+20); c.closePath(); c.fill();
+  // Front windshield (top)
   c.fillStyle='rgba(0,0,0,.32)'; c.fillRect(x+2,y+6,w-4,12);
+  c.fillStyle=hlOn?'rgba(200,240,255,.58)':'rgba(160,220,255,.48)'; c.beginPath(); c.moveTo(x+4,y+7); c.lineTo(x+w-4,y+7); c.lineTo(x+w-2,y+20); c.lineTo(x+2,y+20); c.closePath(); c.fill();
+  // Side windows
   c.strokeStyle='rgba(0,0,0,.38)'; c.lineWidth=1.5; c.beginPath(); c.moveTo(x+w-12,y+26); c.lineTo(x+w-12,y+58); c.stroke();
   c.fillStyle='rgba(160,220,255,.38)'; c.fillRect(x+3,y+22,w-16,14); c.fillRect(x+w-10,y+22,7,14);
   c.fillStyle='rgba(255,255,255,.28)'; c.fillRect(x+w-11,y+38,6,2);
+  // Roof stripe
   c.fillStyle='rgba(0,0,0,.48)'; c.fillRect(x+2,y+36,w-4,6);
   const sw=(w-4)/7; for(let i=0;i<7;i++) if(i%2===0){ c.fillStyle='rgba(255,215,0,.9)'; c.fillRect(x+2+i*sw,y+36,sw,6); }
+  // HEADLIGHTS at top (front)
   c.fillStyle=hlOn?'#ffffe0':'#ffffcc'; c.shadowBlur=hlOn?22:10; c.shadowColor=hlOn?'#ffffa0':'#fff';
-  c.fillRect(x+1,y+h-5,10,4); c.fillRect(x+w-11,y+h-5,10,4); c.shadowBlur=0;
+  c.fillRect(x+1,y+3,10,4); c.fillRect(x+w-11,y+3,10,4); c.shadowBlur=0;
+  // TAILLIGHTS at bottom (rear) — red
   c.fillStyle='#ff3131'; c.shadowBlur=8; c.shadowColor='#ff3131';
-  c.fillRect(x+1,y+7,w-2,3); c.shadowBlur=0;
+  c.fillRect(x+1,y+h-4,w-2,3); c.shadowBlur=0;
+  // Wheels
   c.fillStyle='#181818'; c.fillRect(x-4,y+20,5,18); c.fillRect(x+w-1,y+20,5,18); c.fillRect(x-4,y+48,5,18); c.fillRect(x+w-1,y+48,5,18);
   c.fillStyle='#444'; c.fillRect(x-3,y+22,3,14); c.fillRect(x+w,y+22,3,14); c.fillRect(x-3,y+50,3,14); c.fillRect(x+w,y+50,3,14);
+  // Label
   c.fillStyle='#39ff14'; c.shadowBlur=7; c.shadowColor='#39ff14';
   c.font='bold 9px Orbitron,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
-  c.fillText(lbl,x+w/2,y+28); c.shadowBlur=0;
+  c.fillText(lbl,x+w/2,y+30); c.shadowBlur=0;
 }
 
 function drawTraffic(x,y,col){
@@ -613,7 +647,239 @@ function drawTraffic(x,y,col){
   ctx.fillStyle='#111'; ctx.fillRect(x-1,y+14,4,14); ctx.fillRect(x+w+1,y+14,4,14); ctx.fillRect(x-1,y+36,4,14); ctx.fillRect(x+w+1,y+36,4,14);
 }
 
-// ── RANKS ─────────────────────────────────────────────────────────────────────
+function drawPoliceCar(x,y,flashPhase,parked){
+  const w=28,h=58,night=biome.night;
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x+w/2,y+h+4,w/2,4,0,0,Math.PI*2); ctx.fill();
+  // Body — white/black interceptor
+  const g=ctx.createLinearGradient(x,y,x+w,y+h);
+  g.addColorStop(0,'#e8e8e8'); g.addColorStop(.5,'#ffffff'); g.addColorStop(1,'#cccccc');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.roundRect(x+2,y,w,h,6); ctx.fill();
+  // Black door stripe
+  ctx.fillStyle='#111'; ctx.fillRect(x+2,y+22,w,18);
+  ctx.fillStyle='#222'; ctx.fillRect(x+2,y+22,w,2); ctx.fillRect(x+2,y+38,w,2);
+  // Windshield
+  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fillRect(x+5,y+8,18,14);
+  ctx.fillStyle='rgba(160,220,255,.35)'; ctx.beginPath(); ctx.roundRect(x+6,y+9,16,12,2); ctx.fill();
+  // Rear window
+  ctx.fillStyle='rgba(160,220,255,.25)'; ctx.fillRect(x+6,y+42,16,8);
+  // Lightbar on roof
+  ctx.fillStyle='#111'; ctx.beginPath(); ctx.roundRect(x+5,y-5,18,6,2); ctx.fill();
+  // Flashing lights — alternate red/blue rapidly
+  const t=Date.now();
+  const showRed=(Math.floor(t/150)+flashPhase)%2===0;
+  const showBlue=!showRed;
+  // Red light
+  ctx.shadowBlur=showRed?18:4; ctx.shadowColor=showRed?'#ff2020':'#440000';
+  ctx.fillStyle=showRed?'#ff2020':'#661111';
+  ctx.beginPath(); ctx.roundRect(x+5,y-5,8,5,2); ctx.fill();
+  // Blue light
+  ctx.shadowBlur=showBlue?18:4; ctx.shadowColor=showBlue?'#2266ff':'#000044';
+  ctx.fillStyle=showBlue?'#4488ff':'#112266';
+  ctx.beginPath(); ctx.roundRect(x+15,y-5,8,5,2); ctx.fill();
+  ctx.shadowBlur=0;
+  // Ambient glow on road under flashing light
+  if(!parked){
+    const gc2=ctx.createRadialGradient(x+w/2,y-2,0,x+w/2,y-2,30);
+    const glowCol=showRed?'rgba(255,30,30,.12)':'rgba(50,100,255,.12)';
+    gc2.addColorStop(0,glowCol); gc2.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=gc2; ctx.fillRect(x-10,y-30,w+20,35);
+  }
+  // Headlights
+  ctx.fillStyle='#ffffcc'; ctx.shadowBlur=night?10:5; ctx.shadowColor='#ffffa0';
+  ctx.fillRect(x+3,y+2,4,2); ctx.fillRect(x+21,y+2,4,2); ctx.shadowBlur=0;
+  // Taillights
+  ctx.fillStyle='#ff3131'; ctx.fillRect(x+3,y+h-4,6,3); ctx.fillRect(x+19,y+h-4,6,3);
+  // Wheels
+  ctx.fillStyle='#111'; ctx.fillRect(x-1,y+14,4,14); ctx.fillRect(x+w+1,y+14,4,14); ctx.fillRect(x-1,y+36,4,14); ctx.fillRect(x+w+1,y+36,4,14);
+  // POLICE text
+  ctx.fillStyle='#003399'; ctx.font='bold 5px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('POLICE',x+w/2+1,y+31);
+  // Parked: add speed trap cone
+  if(parked){
+    ctx.fillStyle='#ff6600'; ctx.shadowBlur=0;
+    ctx.beginPath(); ctx.moveTo(x+w/2,y+h+2); ctx.lineTo(x+w/2-5,y+h+14); ctx.lineTo(x+w/2+5,y+h+14); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.fillRect(x+w/2-5,y+h+6,10,2); ctx.fillRect(x+w/2-5,y+h+10,10,2);
+  }
+}
+
+// ── SCHOOL BUS ────────────────────────────────────────────────────────────────
+function drawSchoolBus(x,y){
+  const w=36,h=90,night=biome.night;
+  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x+w/2,y+h+4,w/2+2,5,0,0,Math.PI*2); ctx.fill();
+  // Body
+  ctx.fillStyle='#f5c518'; ctx.beginPath(); ctx.roundRect(x,y+8,w,h-8,4); ctx.fill();
+  // Hood (front)
+  ctx.fillStyle='#e8b800'; ctx.beginPath(); ctx.roundRect(x+2,y,w-4,12,3); ctx.fill();
+  // Black bumper
+  ctx.fillStyle='#111'; ctx.fillRect(x,y+h-6,w,6); ctx.fillRect(x,y,w,4);
+  // Windows - row of them
+  for(let i=0;i<4;i++){
+    ctx.fillStyle='rgba(0,0,0,.3)'; ctx.fillRect(x+4,y+16+i*16,w-8,10);
+    ctx.fillStyle='rgba(160,220,255,.3)'; ctx.fillRect(x+5,y+17+i*16,w-10,8);
+  }
+  // SCHOOL BUS text
+  ctx.fillStyle='#111'; ctx.font='bold 5px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('SCHOOL BUS',x+w/2,y+h-16);
+  // Headlights
+  ctx.fillStyle=night?'#ffffaa':'#ffffcc'; ctx.shadowBlur=night?12:5; ctx.shadowColor='#ffffa0';
+  ctx.fillRect(x+2,y+2,6,3); ctx.fillRect(x+w-8,y+2,6,3); ctx.shadowBlur=0;
+  // Taillights
+  ctx.fillStyle='#ff3131'; ctx.fillRect(x+2,y+h-4,7,3); ctx.fillRect(x+w-9,y+h-4,7,3);
+  // Wheels (double axle)
+  ctx.fillStyle='#111'; ctx.fillRect(x-3,y+14,5,18); ctx.fillRect(x+w-2,y+14,5,18);
+  ctx.fillRect(x-3,y+56,5,18); ctx.fillRect(x+w-2,y+56,5,18);
+  ctx.fillStyle='#444'; ctx.fillRect(x-2,y+16,3,14); ctx.fillRect(x+w,y+16,3,14);
+  ctx.fillRect(x-2,y+58,3,14); ctx.fillRect(x+w,y+58,3,14);
+  // Stop sign arm (occasional flash)
+  if(Math.floor(Date.now()/800)%2===0){
+    ctx.fillStyle='#ff0000'; ctx.beginPath(); ctx.arc(x-8,y+40,7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 4px sans-serif'; ctx.fillText('STOP',x-8,y+40);
+  }
+}
+
+// ── AMBULANCE ─────────────────────────────────────────────────────────────────
+function drawAmbulance(x,y){
+  const w=32,h=72,night=biome.night,t=Date.now();
+  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(x+w/2,y+h+4,w/2+1,5,0,0,Math.PI*2); ctx.fill();
+  // Body white
+  ctx.fillStyle='#f0f0f0'; ctx.beginPath(); ctx.roundRect(x,y+6,w,h-6,5); ctx.fill();
+  // Hood
+  ctx.fillStyle='#e0e0e0'; ctx.beginPath(); ctx.roundRect(x+2,y,w-4,10,3); ctx.fill();
+  // Red stripe
+  ctx.fillStyle='#cc0000'; ctx.fillRect(x,y+28,w,8);
+  // AMBULANCE mirrored text on side
+  ctx.save(); ctx.scale(-1,1); ctx.fillStyle='#cc0000'; ctx.font='bold 5px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('AMBULANCE',-(x+w/2),y+32); ctx.restore();
+  // Cross symbol
+  ctx.fillStyle='#cc0000'; ctx.fillRect(x+w/2-2,y+14,4,10); ctx.fillRect(x+w/2-5,y+17,10,4);
+  // Windshield
+  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(x+4,y+6,w-8,12);
+  ctx.fillStyle='rgba(160,220,255,.4)'; ctx.beginPath(); ctx.roundRect(x+5,y+7,w-10,10,2); ctx.fill();
+  // Flashing red/white lightbar
+  const showAmbRed=Math.floor(t/200)%2===0;
+  ctx.fillStyle='#222'; ctx.beginPath(); ctx.roundRect(x+4,y-4,w-8,5,2); ctx.fill();
+  ctx.shadowBlur=showAmbRed?16:3; ctx.shadowColor=showAmbRed?'#ff2020':'#ffffff';
+  ctx.fillStyle=showAmbRed?'#ff4444':'#ffffff';
+  ctx.beginPath(); ctx.roundRect(x+4,y-4,w/2-6,4,2); ctx.fill();
+  ctx.fillStyle=showAmbRed?'#ffffff':'#ff4444'; ctx.shadowColor=showAmbRed?'#ffffff':'#ff2020';
+  ctx.beginPath(); ctx.roundRect(x+w/2+2,y-4,w/2-6,4,2); ctx.fill();
+  ctx.shadowBlur=0;
+  // Headlights
+  ctx.fillStyle=night?'#ffffaa':'#ffffcc'; ctx.shadowBlur=night?10:4; ctx.shadowColor='#ffffa0';
+  ctx.fillRect(x+2,y+2,5,2); ctx.fillRect(x+w-7,y+2,5,2); ctx.shadowBlur=0;
+  // Taillights
+  ctx.fillStyle='#ff3131'; ctx.fillRect(x+2,y+h-3,6,3); ctx.fillRect(x+w-8,y+h-3,6,3);
+  // Wheels
+  ctx.fillStyle='#111'; ctx.fillRect(x-2,y+16,4,14); ctx.fillRect(x+w-2,y+16,4,14);
+  ctx.fillRect(x-2,y+42,4,14); ctx.fillRect(x+w-2,y+42,4,14);
+}
+
+// ── DOUBLE TRACTOR TRAILER ────────────────────────────────────────────────────
+function drawTractor(x,y){
+  const night=biome.night;
+  const tw=38,th=52; // cab
+  const t1w=36,t1h=80; // trailer 1
+  const t2w=36,t2h=80; // trailer 2
+  const total=th+t1h+t2h+8;
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x+tw/2,y+total+4,tw/2+4,6,0,0,Math.PI*2); ctx.fill();
+
+  // Trailer 2 (back)
+  const t2y=y+th+t1h+6;
+  const tc2=Math.floor(Date.now()/5000)%3; const tCols=['#cc3300','#1a4a8a','#228B22'];
+  ctx.fillStyle=tCols[tc2]; ctx.beginPath(); ctx.roundRect(x+1,t2y,t2w,t2h,3); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.06)'; ctx.fillRect(x+3,t2y+4,t2w-6,t2h-8);
+  ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1;
+  for(let i=1;i<5;i++){ ctx.beginPath(); ctx.moveTo(x+1,t2y+i*16); ctx.lineTo(x+t2w+1,t2y+i*16); ctx.stroke(); }
+  ctx.fillStyle='#ff3131'; ctx.fillRect(x+2,t2y+t2h-3,8,3); ctx.fillRect(x+t2w-8,t2y+t2h-3,8,3);
+  // Trailer 2 wheels
+  ctx.fillStyle='#111';
+  ctx.fillRect(x-3,t2y+20,5,20); ctx.fillRect(x+t2w,t2y+20,5,20);
+  ctx.fillRect(x-3,t2y+54,5,20); ctx.fillRect(x+t2w,t2y+54,5,20);
+
+  // Hitch between trailers
+  ctx.fillStyle='#555'; ctx.fillRect(x+tw/2-3,y+th+t1h+2,6,6);
+
+  // Trailer 1
+  const t1y=y+th+4;
+  ctx.fillStyle=tCols[tc2]; ctx.beginPath(); ctx.roundRect(x+1,t1y,t1w,t1h,3); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.06)'; ctx.fillRect(x+3,t1y+4,t1w-6,t1h-8);
+  for(let i=1;i<5;i++){ ctx.beginPath(); ctx.moveTo(x+1,t1y+i*16); ctx.lineTo(x+t1w+1,t1y+i*16); ctx.stroke(); }
+  // Trailer 1 wheels
+  ctx.fillStyle='#111';
+  ctx.fillRect(x-3,t1y+20,5,20); ctx.fillRect(x+t1w,t1y+20,5,20);
+  ctx.fillRect(x-3,t1y+54,5,20); ctx.fillRect(x+t1w,t1y+54,5,20);
+
+  // Cab hitch
+  ctx.fillStyle='#555'; ctx.fillRect(x+tw/2-3,y+th,6,6);
+
+  // Cab
+  const cg=ctx.createLinearGradient(x,y,x+tw,y+th);
+  cg.addColorStop(0,'#666'); cg.addColorStop(.5,'#888'); cg.addColorStop(1,'#555');
+  ctx.fillStyle=cg; ctx.beginPath(); ctx.roundRect(x,y,tw,th,5); ctx.fill();
+  // Cab windshield
+  ctx.fillStyle='rgba(0,0,0,.3)'; ctx.fillRect(x+4,y+6,tw-8,16);
+  ctx.fillStyle='rgba(160,220,255,.38)'; ctx.beginPath(); ctx.roundRect(x+5,y+7,tw-10,14,2); ctx.fill();
+  // Cab exhaust stacks
+  ctx.fillStyle='#333'; ctx.fillRect(x-4,y+4,4,28); ctx.fillRect(x+tw,y+4,4,28);
+  // Smoke puffs
+  if(Math.random()<0.3){
+    ctx.fillStyle='rgba(80,80,80,.25)'; ctx.beginPath(); ctx.arc(x-2,y+2,4+Math.random()*4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+tw+2,y+2,4+Math.random()*4,0,Math.PI*2); ctx.fill();
+  }
+  // Cab headlights
+  ctx.fillStyle=night?'#ffffaa':'#ffffcc'; ctx.shadowBlur=night?14:6; ctx.shadowColor='#ffffa0';
+  ctx.fillRect(x+2,y+2,7,3); ctx.fillRect(x+tw-9,y+2,7,3); ctx.shadowBlur=0;
+  // Cab wheels
+  ctx.fillStyle='#111'; ctx.fillRect(x-3,y+30,5,18); ctx.fillRect(x+tw-2,y+30,5,18);
+  ctx.fillStyle='#444'; ctx.fillRect(x-2,y+32,3,14); ctx.fillRect(x+tw,y+32,3,14);
+  // Grille
+  ctx.fillStyle='#333'; ctx.fillRect(x+4,y+th-10,tw-8,8);
+  for(let g=0;g<5;g++){ ctx.fillStyle='#555'; ctx.fillRect(x+5+g*6,y+th-9,4,6); }
+}
+// ── COIN PICKUP ───────────────────────────────────────────────────────────────
+function drawCoin(x,y){
+  const t=Date.now()/400,spin=Math.abs(Math.sin(t));
+  ctx.save(); ctx.shadowBlur=12; ctx.shadowColor='#ffd700'; ctx.fillStyle='#ffd700';
+  ctx.beginPath(); ctx.ellipse(x,y,12*spin+2,12,0,0,Math.PI*2); ctx.fill();
+  if(spin>0.3){ ctx.fillStyle='#b8860b'; ctx.font='bold 9px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('$',x,y); }
+  ctx.restore();
+}
+// ── BOOST PAD ─────────────────────────────────────────────────────────────────
+function drawBoostPad(x,y){
+  const t=Date.now()/300,pulse=0.7+0.3*Math.sin(t);
+  ctx.save(); ctx.globalAlpha=pulse;
+  ctx.fillStyle='rgba(0,255,150,.18)'; ctx.fillRect(x-18,y-4,36,28);
+  ctx.strokeStyle='#00ff96'; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+  ctx.strokeRect(x-18,y-4,36,28); ctx.setLineDash([]);
+  ctx.fillStyle='#00ff96'; ctx.shadowBlur=10; ctx.shadowColor='#00ff96';
+  for(let a=0;a<2;a++){ const ay=y+4+a*10; ctx.beginPath(); ctx.moveTo(x-10,ay+6); ctx.lineTo(x,ay); ctx.lineTo(x+10,ay+6); ctx.stroke(); }
+  ctx.restore();
+}
+// ── SPEED TRAIL ───────────────────────────────────────────────────────────────
+function updateSpeedTrail(){
+  if(spd>maxSpd*0.82){
+    const cx=player.x+player.w/2;
+    speedTrail.push({x:cx+(Math.random()-0.5)*player.w*0.6,y:player.y+player.h,life:1,col:isNitroActive?'#ff6600':'rgba(0,212,255,.7)'});
+  }
+  speedTrail.forEach(t=>{ t.y+=spd*1.2; t.life-=0.08; });
+  speedTrail=speedTrail.filter(t=>t.life>0);
+}
+function drawSpeedTrail(){
+  speedTrail.forEach(t=>{ ctx.globalAlpha=t.life*0.4; ctx.fillStyle=t.col; ctx.beginPath(); ctx.ellipse(t.x,t.y,3,6,0,0,Math.PI*2); ctx.fill(); });
+  ctx.globalAlpha=1;
+}
+// ── WEATHER VIGNETTE ──────────────────────────────────────────────────────────
+function drawWeatherVignette(){
+  if(!biome.snow&&!biome.storm&&biome.id!=='fog') return;
+  const intensity=biome.storm?0.55:biome.snow?0.35:0.28;
+  const vg=ctx.createRadialGradient(W/2,H/2,H*0.25,W/2,H/2,H*0.85);
+  vg.addColorStop(0,'rgba(0,0,0,0)');
+  vg.addColorStop(1,biome.storm?`rgba(0,0,30,${intensity})`:`rgba(200,220,240,${intensity})`);
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+}
 function updateRank(){
   let r='ROOKIE';
   if(level>=12) r='FLEET LEGEND';
@@ -629,13 +895,29 @@ function refreshRec(){ const s=localStorage.getItem('joesBest')||0,m=localStorag
 refreshRec();
 
 // ── NITRO ─────────────────────────────────────────────────────────────────────
+function nitroBoostSpd(){
+  // Nitro always pushes to maxSpd × a strong multiplier, scaling with level
+  // This guarantees the boost is always felt relative to current top speed
+  const vd=VEH[selVeh];
+  const baseMultiplier=vd.nitroMult; // 3.0 Joe, 2.2 Will
+  // Scale: each level adds 12% ON TOP of maxSpd, not of current speed
+  // So nitro target = maxSpd * (baseMultiplier + level*0.12)
+  return maxSpd * (baseMultiplier + (level-1)*0.12);
+}
+function nitroDur(){
+  const vd=VEH[selVeh];
+  // Duration grows: +200ms per level, capped at 2.5x base
+  return Math.min(vd.nitroDur*2.5, vd.nitroDur + (level-1)*200);
+}
 function triggerNitro(){
   const vd=VEH[selVeh];
   if(nitros>0&&!isNitroActive&&!inPitStop&&gameActive&&!isInvincible){
-    nitros--; nitroCountEl.innerText=nitros; isNitroActive=true;
+    nitros--; nitroCountEl.innerText=nitros; isNitroActive=true; lvlStats.nitrosUsed++;
     nitroSFX(); nflash.classList.add('on'); setTimeout(()=>nflash.classList.remove('on'),300);
-    origSpd=spd; spd=origSpd*vd.nitroMult;
-    setTimeout(()=>{ if(!isInvincible) spd=origSpd; isNitroActive=false; },vd.nitroDur);
+    origSpd=spd;
+    spd=nitroBoostSpd(); // always punches well above maxSpd
+    const dur=nitroDur();
+    setTimeout(()=>{ if(!isInvincible) spd=origSpd; isNitroActive=false; },dur);
   }
 }
 
@@ -662,9 +944,10 @@ function update(dt){
   player.x=Math.max(RX(),Math.min(RR()-player.w,player.x+steer*sm*norm));
 
   if(player.x<RX()||(player.x+player.w)>RR()){
-    if(!onSide){ score=Math.max(0,score-4); penGain.gain.setTargetAtTime(.04,audioCtx.currentTime,.05); onSide=true; breakCombo(); spawnFloat(player.x+player.w/2,player.y,'-4','#ff3131'); }
+    if(!onSide){ score=Math.max(0,score-4); penGain.gain.setTargetAtTime(.04,audioCtx.currentTime,.05); onSide=true; breakCombo(); spawnFloat(player.x+player.w/2,player.y,'-4','#ff3131'); lvlStats.sideHits++; }
     sideTimer+=dt; if(sideTimer>=1000){ score=Math.max(0,score-3); sideTimer=0; }
   } else { onSide=false; sideTimer=0; penGain.gain.setTargetAtTime(0,audioCtx.currentTime,.15); }
+  const curSpdMph=Math.floor(spd*35); if(curSpdMph>lvlStats.topSpd) lvlStats.topSpd=curSpdMph;
 
   if(!isNitroActive&&!isInvincible) spd=Math.min(maxSpd,spd+.0002*norm);
   if(biome.snow) spd=Math.min(spd,maxSpd*.78);
@@ -691,12 +974,29 @@ function update(dt){
     finishY+=spd*2*norm;
     if(finishY>620&&!inPitStop){
       inPitStop=true; spd=0; fanfare(); saveRec();
+      const elapsed=((performance.now()-lvlStats.startTime)/1000).toFixed(1);
+      const lvlMiles=(totalMiles-milesAtStart).toFixed(1);
+      const lvlScore=score-lvlStats.scoreAtStart;
+      const lvlPass=passCollected-lvlStats.passStart;
+      // Driver rating: 5 stars based on passengers, curb hits, combos
+      const rawRating=Math.max(1,Math.min(5,Math.round(
+        5 - lvlStats.sideHits*0.4 + lvlPass*0.3 + (bestCombo>=5?1:0) - (lvlStats.nitrosUsed===0&&level>2?0.5:0)
+      )));
+      const stars='★'.repeat(rawRating)+'☆'.repeat(5-rawRating);
       pitUI.style.display='flex';
       $('pit-ttl-txt').textContent=biome.icon+' FARE DELIVERED!';
       $('pit-dest').innerText=AIRPORTS[(level-1)%AIRPORTS.length].toUpperCase();
-      $('pit-miles').innerText=curM; $('pit-pass').innerText=passCollected;
-      $('pit-total').innerText=score; $('pit-rank').innerText=updateRank();
-      $('pit-combo').innerText='x'+bestCombo;
+      $('pit-time').innerText=elapsed+'s';
+      $('pit-lvl-miles').innerText=lvlMiles+' mi';
+      $('pit-lvl-score').innerText='+'+lvlScore+' pts';
+      $('pit-pass').innerText=lvlPass+' this run';
+      $('pit-nitros').innerText=lvlStats.nitrosUsed+(lvlStats.nitrosUsed===0?' (clean run!)':'x');
+      $('pit-hits').innerText=lvlStats.sideHits===0?'ZERO — PERFECT!':lvlStats.sideHits+'x';
+      $('pit-combo').innerText='x'+bestCombo+(bestCombo>=10?' 🔥':'');
+      $('pit-topspd').innerText=lvlStats.topSpd+' MPH';
+      $('pit-horn').innerText=lvlStats.hornHonks+(lvlStats.hornHonks>=5?' (honk addict!)':'');
+      $('pit-rating').innerText=stars;
+      $('pit-total').innerText=score;
       let tl=15;
       const tmr=setInterval(()=>{
         tl--; $('pit-tmr').innerText=tl;
@@ -708,8 +1008,9 @@ function update(dt){
           spd=maxSpd*.7; milesAtStart=totalMiles; finishY=-2000;
           destEl.innerText=AIRPORTS[(level-1)%AIRPORTS.length];
           isInvincible=false; heartsSpawned=false; hearts=[]; pb.style.width='0%';
-          bestCombo=0; combo=0;
-          initBiome(); showLvlAnn(); lvlUpSnd(); startMusic();
+          bestCombo=0; combo=0; police=[]; policeSpawnedThisLevel=0;
+          specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[];
+          initBiome(); showLvlAnn(); lvlUpSnd(); startMusic(); resetLvlStats();
         }
       },1000);
     }
@@ -732,6 +1033,40 @@ function update(dt){
     }
   });
 
+  // ── POLICE SPAWN ──────────────────────────────────────────────────────────────
+  const maxPolice=3+Math.floor(level/2); // 3-5 per level depending on level
+  if(policeSpawnedThisLevel<maxPolice&&finishY<-600&&!isInvincible){
+    // Space them out across the level using mile progress
+    const milesIn=totalMiles-milesAtStart;
+    const spacing=milesPerLvl/(maxPolice+1);
+    const expectedSpawned=Math.floor(milesIn/spacing);
+    if(expectedSpawned>policeSpawnedThisLevel&&Math.random()<0.8){
+      const parked=Math.random()<0.45; // 45% chance of speed trap
+      if(parked){
+        // Parked on shoulder — left or right side
+        const side=Math.random()<0.5;
+        const px=side?(RX()-32):(RR()+4);
+        police.push({x:px,y:-120,parked:true,side,vy:spd*1.2,flashPhase:Math.round(Math.random())});
+      } else {
+        // Driving in a lane alongside player
+        const laneX=RX()+Math.round(RW()/6)+Math.floor(Math.random()*3)*Math.round(RW()/3);
+        const drivingSpd=0.6+Math.random()*0.5; // slower than player so you pass them
+        police.push({x:laneX,y:-150,parked:false,vy:spd*drivingSpd,flashPhase:Math.round(Math.random())});
+      }
+      policeSpawnedThisLevel++;
+    }
+  }
+  police.forEach((p,i)=>{
+    if(p.parked){
+      p.y+=spd*norm; // parked cars scroll with road
+    } else {
+      // Driving: move slower than player so player overtakes
+      p.vy=Math.max(0.4,spd*0.65);
+      p.y+=p.vy*norm;
+    }
+    if(p.y>H+80) police.splice(i,1);
+  });
+
   hearts.forEach(h=>{ h.y+=spd*2.2*norm; if(!h.collected&&player.x<h.x+20&&player.x+player.w>h.x-20&&player.y<h.y+20&&player.y+player.h>h.y-20){ h.collected=true; score+=2; pickup(false); addCombo(); spawnPart(h.x,h.y,'#ff69b4',8); spawnFloat(h.x,h.y,'+2','#ff69b4'); } });
 
   const laneXSpawn=()=>RX()+Math.round(RW()/6)+Math.floor(Math.random()*3)*Math.round(RW()/3);
@@ -741,6 +1076,59 @@ function update(dt){
 
   const spawnChance=.007+level*.0006;
   if(Math.random()<spawnChance&&!isInvincible) passengers.push({x:laneXSpawn(),y:-100});
+
+  // ── SPECIAL VEHICLES SPAWN ────────────────────────────────────────────────────
+  const svTypes=['bus','ambulance','truck'];
+  if(finishY<-800&&!isInvincible&&Math.random()<0.0012){
+    const type=svTypes[Math.floor(Math.random()*svTypes.length)];
+    const lane=RX()+Math.round(RW()/6)+Math.floor(Math.random()*3)*Math.round(RW()/3);
+    const svH={bus:90,ambulance:72,truck:212};
+    specialVehicles.push({type,x:lane-18,y:-svH[type]-20,vy:0.55+Math.random()*0.3,h:svH[type]});
+  }
+  specialVehicles.forEach((sv,i)=>{
+    sv.y+=spd*sv.vy*norm;
+    if(sv.y>H+250) specialVehicles.splice(i,1);
+    // Collision — truck is very wide, bus and ambulance standard
+    const sw=sv.type==='truck'?38:sv.type==='bus'?36:32;
+    if(!isInvincible&&player.x<sv.x+sw&&player.x+player.w>sv.x&&player.y<sv.y+sv.h&&player.y+player.h>sv.y){
+      crash(); spawnPart(player.x+player.w/2,player.y+32,'#ff3131',18);
+      gameActive=false; saveRec(); overlay.style.display='flex';
+      $('msg').innerText='WRECKED!'; $('msg').style.color='#ff3131';
+    }
+    // Close-call bonus — just missed a special vehicle
+    if(closeCallCooldown<=0){
+      const nearX=player.x<sv.x+sw+9&&player.x+player.w>sv.x-9;
+      const nearY=player.y<sv.y+sv.h+9&&player.y+player.h>sv.y-9;
+      const hitX=player.x<sv.x+sw&&player.x+player.w>sv.x;
+      const hitY=player.y<sv.y+sv.h&&player.y+player.h>sv.y;
+      if(nearX&&nearY&&!(hitX&&hitY)){ score+=8; spawnFloat(player.x+player.w/2,player.y-10,'CLOSE CALL! +8','#ff9900'); closeCallCooldown=120; addCombo(); }
+    }
+  });
+  if(closeCallCooldown>0) closeCallCooldown-=1;
+
+  // Close call on regular obstacles too
+  if(closeCallCooldown<=0){
+    obstacles.forEach(o=>{
+      const nearX=player.x<o.x+32&&player.x+player.w>o.x-6;
+      const nearY=player.y<o.y+62&&player.y+player.h>o.y-8;
+      const hitX=player.x<o.x+26&&player.x+player.w>o.x+2;
+      const hitY=player.y<o.y+56&&player.y+player.h>o.y+2;
+      if(nearX&&nearY&&!(hitX&&hitY)&&!isInvincible){ score+=5; spawnFloat(player.x+player.w/2,player.y-10,'CLOSE CALL! +5','#ff9900'); closeCallCooldown=90; addCombo(); }
+    });
+  }
+
+  // ── COINS SPAWN & COLLECT ──────────────────────────────────────────────────
+  if(Math.random()<0.004&&!isInvincible) coins.push({x:laneXSpawn()+(Math.random()*30-15),y:-30,collected:false});
+  coins.forEach((c,i)=>{ c.y+=spd*2*norm; if(!c.collected&&Math.abs(player.x+player.w/2-c.x)<18&&Math.abs(player.y+player.h/2-c.y)<18){ c.collected=true; const bonus=5+level*2; score+=bonus; addCombo(); pickup(false); spawnFloat(c.x,c.y,'+$'+bonus,'#ffd700'); } });
+  coins=coins.filter(c=>!c.collected&&c.y<H+30);
+
+  // ── BOOST PADS SPAWN & TRIGGER ─────────────────────────────────────────────
+  if(Math.random()<0.0015&&boostPads.length<2&&!isInvincible) boostPads.push({x:laneXSpawn(),y:-60});
+  boostPads.forEach((bp,i)=>{ bp.y+=spd*norm; if(player.x+player.w/2>bp.x-18&&player.x+player.w/2<bp.x+18&&player.y+player.h>bp.y&&player.y<bp.y+28){ spd=Math.min(maxSpd*1.4,spd*1.35); spawnFloat(bp.x,bp.y,'BOOST!','#00ff96'); boostPads.splice(i,1); } });
+  boostPads=boostPads.filter(bp=>bp.y<H+30);
+
+  // ── SPEED TRAIL ────────────────────────────────────────────────────────────
+  updateSpeedTrail();
 }
 
 // ── DRAW ──────────────────────────────────────────────────────────────────────
@@ -751,6 +1139,15 @@ function draw(){
   if(finishY>-200){ const fw=RW(),fx=RX(),sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
 
   obstacles.forEach(o=>drawTraffic(o.x,o.y,o.col));
+  police.forEach(p=>drawPoliceCar(p.x,p.y,p.flashPhase,p.parked));
+  specialVehicles.forEach(sv=>{
+    if(sv.type==='bus') drawSchoolBus(sv.x,sv.y);
+    else if(sv.type==='ambulance') drawAmbulance(sv.x,sv.y);
+    else drawTractor(sv.x,sv.y);
+  });
+  boostPads.forEach(bp=>drawBoostPad(bp.x,bp.y));
+  coins.forEach(c=>drawCoin(c.x,c.y));
+  drawSpeedTrail();
 
   drawHeadlights();
 
@@ -781,14 +1178,15 @@ startBtn.onclick=()=>{
   $('msg').style.color='var(--gold)'; $('msg').innerText='TAXI DRIVING SIMULATOR';
   score=0; totalMiles=0; level=1; milesPerLvl=milesForLvl(1);
   maxSpd=1.0+vd.speedBonus; spd=1.0; nitros=1; passCollected=0;
-  obstacles=[]; passengers=[]; pickups=[]; hearts=[]; heartsSpawned=false;
+  obstacles=[]; passengers=[]; pickups=[]; hearts=[]; heartsSpawned=false; police=[]; policeSpawnedThisLevel=0;
+  specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[]; closeCallCooldown=0;
   parts=[]; floats=[]; combo=0; bestCombo=0;
   player.w=vd.w; player.h=vd.h; player.x=Math.round(W/2-vd.w/2); player.y=Math.round(H*0.71);
   levelEl.innerText=1; destEl.innerText=AIRPORTS[0]; updateRank();
   milesAtStart=0; isInvincible=false; finishY=-2000;
   pb.style.width='0%'; nitroCountEl.innerText=1; passCountEl.innerText=0;
   lastTime=performance.now();
-  initBiome(); showLvlAnn(); startMusic();
+  initBiome(); showLvlAnn(); startMusic(); resetLvlStats();
   requestAnimationFrame(loop);
   refreshRec();
 };
