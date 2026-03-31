@@ -206,9 +206,25 @@ canvas{display:block;width:100%;height:100%}
 <script>
 // ── CANVAS SETUP ──────────────────────────────────────────────────────────────
 const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d');
-const W=440,H=780,dpr=Math.min(window.devicePixelRatio||1,2);
-canvas.width=W*dpr; canvas.height=H*dpr; ctx.scale(dpr,dpr);
+const dpr=Math.min(window.devicePixelRatio||1,2);
+const gc=document.getElementById('gc');
+let W=440,H=780;
+function resizeCanvas(){
+  const rect=gc.getBoundingClientRect();
+  W=rect.width||440; H=rect.height||780;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+}
+resizeCanvas();
 ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H);
+window.addEventListener('resize',()=>{ resizeCanvas(); });
+window.addEventListener('orientationchange',()=>{ setTimeout(resizeCanvas,200); });
+
+// Road boundaries derived from W (road is center 62.7% of width, shoulders at ~18.6% each side)
+function RX(){ return Math.round(W*0.1864); }   // left road edge (~82/440)
+function RW(){ return Math.round(W*0.6273); }   // road width (~276/440)
+function RR(){ return RX()+RW(); }              // right road edge (~358)
 
 const $=id=>document.getElementById(id);
 const scoreEl=$('score'),milesEl=$('miles'),speedEl=$('speedDisplay'),nitroCountEl=$('nitroCount');
@@ -292,7 +308,7 @@ let touchSteer=0,parts=[],floats=[],snowflakes=[],sandDrifts=[],rainDrops=[],sta
 let combo=0,comboTimer=0,bestCombo=0;
 let lightAlpha=0,lightTimer=0;
 let biome=BIOMES[0];
-let player={x:203,y:550,w:34,h:64};
+let player={x:203,y:550,w:34,h:64}; // will be recalculated on start
 let audioCtx,penOsc,penGain,engOsc;
 
 function milesForLvl(l){ return Math.round(10*Math.pow(1.5,l-1)); }
@@ -478,26 +494,27 @@ function drawEnv(){
   });
 
   // Sidewalks
-  ctx.fillStyle=biome.side; ctx.fillRect(0,H*.35,82,H*.65); ctx.fillRect(358,H*.35,82,H*.65);
+  const rx=RX(),rw=RW(),rr=RR();
+  ctx.fillStyle=biome.side; ctx.fillRect(0,H*.35,rx,H*.65); ctx.fillRect(rr,H*.35,rx,H*.65);
   // Full sidewalk bg
-  ctx.fillStyle=biome.side; ctx.fillRect(0,0,82,H); ctx.fillRect(358,0,82,H);
-  ctx.fillStyle='rgba(255,255,255,.055)'; ctx.fillRect(78,0,4,H); ctx.fillRect(358,0,4,H);
+  ctx.fillStyle=biome.side; ctx.fillRect(0,0,rx,H); ctx.fillRect(rr,0,rx,H);
+  ctx.fillStyle='rgba(255,255,255,.055)'; ctx.fillRect(rx-4,0,4,H); ctx.fillRect(rr,0,4,H);
 
   // Road
-  ctx.fillStyle=biome.road; ctx.fillRect(82,0,276,H);
+  ctx.fillStyle=biome.road; ctx.fillRect(rx,0,rw,H);
 
   // Snow / sand tint on road
-  if(biome.snow){ ctx.fillStyle='rgba(210,228,245,.07)'; ctx.fillRect(82,0,276,H); ctx.fillStyle='rgba(70,85,100,.38)'; ctx.fillRect(125,0,22,H); ctx.fillRect(200,0,22,H); ctx.fillRect(275,0,22,H); }
-  if(biome.sand){ ctx.fillStyle='rgba(200,170,90,.11)'; ctx.fillRect(82,0,276,H); }
+  if(biome.snow){ ctx.fillStyle='rgba(210,228,245,.07)'; ctx.fillRect(rx,0,rw,H); const laneW=rw/3; ctx.fillStyle='rgba(70,85,100,.38)'; ctx.fillRect(rx+laneW*.5-11,0,22,H); ctx.fillRect(rx+laneW*1.5-11,0,22,H); ctx.fillRect(rx+laneW*2.5-11,0,22,H); }
+  if(biome.sand){ ctx.fillStyle='rgba(200,170,90,.11)'; ctx.fillRect(rx,0,rw,H); }
 
   // Lane lines
   ctx.strokeStyle=biome.line; ctx.lineWidth=2; ctx.setLineDash([22,18]); ctx.lineDashOffset=-lineOff;
-  ctx.beginPath(); for(let i=1;i<3;i++){ ctx.moveTo(82+i*92,0); ctx.lineTo(82+i*92,H); } ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); for(let i=1;i<3;i++){ ctx.moveTo(rx+i*(rw/3),0); ctx.lineTo(rx+i*(rw/3),H); } ctx.stroke(); ctx.setLineDash([]);
 
   // Shoulders
   ctx.strokeStyle=biome.shoulder; ctx.lineWidth=2; ctx.setLineDash([30,10]); ctx.lineDashOffset=-lineOff;
-  ctx.beginPath(); ctx.moveTo(83,0); ctx.lineTo(83,H); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(357,0); ctx.lineTo(357,H); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(rx+1,0); ctx.lineTo(rx+1,H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rr-1,0); ctx.lineTo(rr-1,H); ctx.stroke(); ctx.setLineDash([]);
 
   // Snowflakes
   if(biome.snow){ snowflakes.forEach(s=>{ ctx.globalAlpha=s.a; ctx.fillStyle='#eef4ff'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1; }
@@ -642,9 +659,9 @@ function update(dt){
   if(touchSteer!==0) steer=touchSteer;
   let sm=vd.steer;
   if(biome.snow) sm*=.72; if(biome.sand) sm*=.82;
-  player.x=Math.max(82,Math.min(358-player.w,player.x+steer*sm*norm));
+  player.x=Math.max(RX(),Math.min(RR()-player.w,player.x+steer*sm*norm));
 
-  if(player.x<82||(player.x+player.w)>358){
+  if(player.x<RX()||(player.x+player.w)>RR()){
     if(!onSide){ score=Math.max(0,score-4); penGain.gain.setTargetAtTime(.04,audioCtx.currentTime,.05); onSide=true; breakCombo(); spawnFloat(player.x+player.w/2,player.y,'-4','#ff3131'); }
     sideTimer+=dt; if(sideTimer>=1000){ score=Math.max(0,score-3); sideTimer=0; }
   } else { onSide=false; sideTimer=0; penGain.gain.setTargetAtTime(0,audioCtx.currentTime,.15); }
@@ -702,11 +719,12 @@ function update(dt){
   if(finishY<-500&&!isInvincible){
     lastSpawnY+=spd*2*norm;
     const gap=Math.max(140,290-level*12);
-    if(lastSpawnY>gap){ obstacles.push({x:90+(Math.floor(Math.random()*3)*88),y:-120,col:TFC_COLORS[Math.floor(Math.random()*TFC_COLORS.length)],sm:1.0+Math.random()*.9+(level*.06)}); lastSpawnY=0; }
+    const laneX=()=>RX()+Math.round(RW()/6)+Math.floor(Math.random()*3)*Math.round(RW()/3);
+    if(lastSpawnY>gap){ obstacles.push({x:laneX(),y:-120,col:TFC_COLORS[Math.floor(Math.random()*TFC_COLORS.length)],sm:1.0+Math.random()*.9+(level*.06)}); lastSpawnY=0; }
   }
   obstacles.forEach((o,i)=>{
     o.y+=spd*o.sm*norm;
-    if(o.y>820) obstacles.splice(i,1);
+    if(o.y>H+50) obstacles.splice(i,1);
     if(!isInvincible&&player.x<o.x+26&&player.x+player.w>o.x+2&&player.y<o.y+56&&player.y+player.h>o.y+2){
       crash(); spawnPart(player.x+player.w/2,player.y+32,'#ff3131',14);
       gameActive=false; saveRec(); overlay.style.display='flex';
@@ -716,12 +734,13 @@ function update(dt){
 
   hearts.forEach(h=>{ h.y+=spd*2.2*norm; if(!h.collected&&player.x<h.x+20&&player.x+player.w>h.x-20&&player.y<h.y+20&&player.y+player.h>h.y-20){ h.collected=true; score+=2; pickup(false); addCombo(); spawnPart(h.x,h.y,'#ff69b4',8); spawnFloat(h.x,h.y,'+2','#ff69b4'); } });
 
-  passengers.forEach((p,i)=>{ p.y+=spd*2.2*norm; if(player.x<p.x+15&&player.x+player.w>p.x-15&&player.y<p.y+15&&player.y+player.h>p.y-15){ passCollected++; passCountEl.innerText=passCollected; score+=5; addCombo(); pickup(true); spawnPart(p.x,p.y,'#00f3ff',6); spawnFloat(p.x,p.y,'+5','#00f3ff'); passengers.splice(i,1); if(passCollected%5===0) pickups.push({x:90+(Math.floor(Math.random()*3)*88),y:-100}); } });
+  const laneXSpawn=()=>RX()+Math.round(RW()/6)+Math.floor(Math.random()*3)*Math.round(RW()/3);
+  passengers.forEach((p,i)=>{ p.y+=spd*2.2*norm; if(player.x<p.x+15&&player.x+player.w>p.x-15&&player.y<p.y+15&&player.y+player.h>p.y-15){ passCollected++; passCountEl.innerText=passCollected; score+=5; addCombo(); pickup(true); spawnPart(p.x,p.y,'#00f3ff',6); spawnFloat(p.x,p.y,'+5','#00f3ff'); passengers.splice(i,1); if(passCollected%5===0) pickups.push({x:laneXSpawn(),y:-100}); } });
 
   pickups.forEach((pk,i)=>{ pk.y+=spd*2.2*norm; if(player.x<pk.x+16&&player.x+player.w>pk.x-16&&player.y<pk.y+16&&player.y+player.h>pk.y-16){ nitros++; nitroCountEl.innerText=nitros; pickups.splice(i,1); pickup(false); spawnFloat(pk.x,pk.y,'N2O+','#ef4444'); } });
 
   const spawnChance=.007+level*.0006;
-  if(Math.random()<spawnChance&&!isInvincible) passengers.push({x:90+(Math.floor(Math.random()*3)*88),y:-100});
+  if(Math.random()<spawnChance&&!isInvincible) passengers.push({x:laneXSpawn(),y:-100});
 }
 
 // ── DRAW ──────────────────────────────────────────────────────────────────────
@@ -729,7 +748,7 @@ function draw(){
   drawEnv();
 
   // Finish line
-  if(finishY>-200){ const fw=276,fx=82,sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
+  if(finishY>-200){ const fw=RW(),fx=RX(),sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
 
   obstacles.forEach(o=>drawTraffic(o.x,o.y,o.col));
 
@@ -764,7 +783,7 @@ startBtn.onclick=()=>{
   maxSpd=1.0+vd.speedBonus; spd=1.0; nitros=1; passCollected=0;
   obstacles=[]; passengers=[]; pickups=[]; hearts=[]; heartsSpawned=false;
   parts=[]; floats=[]; combo=0; bestCombo=0;
-  player.w=vd.w; player.h=vd.h; player.x=203+(34-vd.w)/2; player.y=550;
+  player.w=vd.w; player.h=vd.h; player.x=Math.round(W/2-vd.w/2); player.y=Math.round(H*0.71);
   levelEl.innerText=1; destEl.innerText=AIRPORTS[0]; updateRank();
   milesAtStart=0; isInvincible=false; finishY=-2000;
   pb.style.width='0%'; nitroCountEl.innerText=1; passCountEl.innerText=0;
