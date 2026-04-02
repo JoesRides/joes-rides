@@ -1,141 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-PHES5VVG0M"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-PHES5VVG0M');
-</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PHES5VVG0M"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-PHES5VVG0M');
+    </script>
+         
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Our Story | Joe's Rides</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Orbitron:wght@800&display=swap" rel="stylesheet">
     <style>
-    :root {
-        --neon-blue: #00d4ff;
-        --neon-purple: #9d50bb;
-        --dark-bg: #0f172a;
-        --glass: rgba(15, 23, 42, 0.85); 
-        --gradient: linear-gradient(45deg, #2563eb, #7c3aed);
-    }
-
-    body {
-        font-family: 'Inter', sans-serif;
-        background-color: var(--dark-bg);
-        /* Optimized Background */
-        background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('joesrideswithseltos.jpg');
-        background-size: cover;
-        background-position: center center;
-        background-attachment: fixed;
-        color: white;
-        line-height: 1.8;
-        margin: 0;
-        padding: 0;
-    }
-
-    /* Mobile Background Fix */
-    @media (max-width: 768px) {
-        body {
-            background-attachment: scroll; /* Prevents jumping/glitching on mobile */
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-purple: #9d50bb;
+            --dark-bg: #0f172a;
+            --glass: rgba(15, 23, 42, 0.85);
+            --gradient: linear-gradient(45deg, #2563eb, #7c3aed);
         }
-    }
 
-    .container {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 40px 20px; /* Added side padding for mobile */
-    }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('joesrideswithseltos.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            line-height: 1.8;
+        }
 
-    .story-card {
-        background: var(--glass);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 20px;
-        padding: 40px;
-        margin-bottom: 30px;
-    }
+        @media (max-width: 768px) {
+            body { background-attachment: scroll; }
+        }
 
-    /* Responsive Grid Fix */
-    .experience-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Automatically stacks on mobile */
-        gap: 20px;
-        margin-top: 30px;
-    }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
 
-    .exp-card {
-        background: rgba(255,255,255,0.05);
-        padding: 25px;
-        border-radius: 15px;
-        border-left: 4px solid var(--neon-blue);
-        transition: transform 0.3s ease;
-    }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 180px;
+            height: 50px;
+            background: var(--gradient);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            margin-bottom: 40px;
+            transition: 0.3s;
+        }
 
-    /* Image Scaling for inner images if added later */
-    img {
-        max-width: 100%;
-        height: auto;
-    }
-</style>
+        .back-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2rem, 6vw, 3.5rem);
+            background: linear-gradient(to bottom, #ffffff, var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            color: var(--neon-blue);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 300;
+        }
+
+        .story-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 600px) {
+            .photo-grid { grid-template-columns: 1fr; }
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 16px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .photo-caption {
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 10px;
+            color: var(--neon-blue);
+            font-weight: 600;
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: white;
+            border-bottom: 2px solid var(--neon-blue);
+            display: inline-block;
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+        }
+
+        .experience-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .exp-card {
+            background: rgba(255,255,255,0.05);
+            padding: 25px;
+            border-radius: 16px;
+            border-left: 4px solid var(--neon-blue);
+            transition: 0.3s;
+        }
+
+        .exp-card:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .exp-card h3 {
+            margin-top: 0;
+            color: var(--neon-blue);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+        }
+
+        .footer-cta {
+            text-align: center;
+            margin-top: 60px;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
-    <a href="index.html" class="back-btn">← Back to Home</a>
-    
-    <header class="story-header">
+    <a href="index.html" class="back-btn">← Home</a>
+
+    <header>
         <h1>The Drive Behind the Ride</h1>
         <p class="tagline">Riding the waves of the future...</p>
     </header>
 
-    <section class="photo-showcase">
+    <div class="photo-grid">
         <div class="photo-card">
-            <img src="family_photo.jpg" alt="The Joe's Rides Family">
-            <div class="photo-caption">Erica, Madison, and Joe: The Heart of the Operation</div>
+            <img src="fleet_team.jpg" alt="Joe and Will">
+            <div class="photo-caption">Joe (Owner) & Will (Operations Manager)</div>
         </div>
-
         <div class="photo-card">
-            <img src="selt_montauk.jpg" alt="Black Kia Seltos at Montauk Lighthouse">
-            <div class="photo-caption">Our Fleet: Reliable Travel to the End of the Island</div>
+            <img src="selt_montauk.jpg" alt="Black Kia Seltos at Montauk">
+            <div class="photo-caption">Our Fleet: Serving JFK, LGA, EWR, & HPN</div>
         </div>
-    </section>
+    </div>
 
-    <div class="story-content">
-        <div class="family-highlight">
-            <h2>Built on Family</h2>
-            <p style="color: white; font-size: 1.2rem;">Joe's Rides is built on the inspiration and hard work of <strong>Erica</strong> and <strong>Madison</strong>. Together as a family, along with our dedicated team of drivers, we've grown from a few local trips to serving over 250 loyal clients.</p>
-        </div>
-
-        <div class="story-text">
-            <p>Today, we specialize in seamless curbside pickups at JFK International and LaGuardia Airports.</p>
-            
-            <p>The road to Joe's Rides started long before 2020—it was built on 30 years of experience behind the wheel.</p>
-        </div>
+    <div class="story-card">
+        <h2>A Partnership Built on the Field and the Road</h2>
+        <p>Joe's Rides is led by longtime friends and softball teammates, **Joe** and **Will**. As the Owner and Operations Manager, we are the engine that keeps this business afloat, personally ensuring that every client receives a premium experience. With over 250 loyal clients, our success is built on the trust we've developed through years of teamwork, both on the field and behind the wheel.</p>
+        
+        <p>We specialize in precision transportation for the most demanding terminals in the world. Whether it’s a curbside pickup at **JFK International**, navigating **LaGuardia**, or serving **Newark** and **Westchester**, we bring a level of local expertise that only comes from decades of professional driving.</p>
     </div>
 
     <div class="experience-grid">
         <div class="exp-card">
-            <h3>Teamster Credibility</h3>
-            <p>Years spent as a Teamster (Local 802 Union) pulling heavy loads for McDonald's.</p>
+            <h3>Elite Hub Mastery</h3>
+            <p>Unmatched expertise in high-traffic Tri-State terminals including JFK, LGA, EWR, and Westchester (HPN).</p>
         </div>
 
         <div class="exp-card">
-            <h3>Airport Expertise</h3>
-            <p>Specialized training navigating high-pressure airports like Tampa International and Tri-State terminals.</p>
+            <h3>Teamster Standards</h3>
+            <p>Years of Local 802 Union experience hauling heavy loads ensures our commitment to safety and logistics is ironclad.</p>
         </div>
 
         <div class="exp-card">
             <h3>8,000+ Trip Veteran</h3>
-            <p>After thousands of trips for other services, we built a personal service that prioritizes quality.</p>
+            <p>Our background includes extensive airport logistics, from Tampa shuttle operations to thousands of private Tri-State bookings.</p>
         </div>
     </div>
 
-    <div class="cta-section">
-        <a href="index.html" class="btn-home">Return to Main Site</a>
+    <div class="footer-cta">
+        <a href="index.html" class="back-btn">Return Home</a>
     </div>
 </div>
 
