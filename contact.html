@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact | Joe's Rides</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@800&display=swap" rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00d4ff;
             --dark-bg: #0f172a;
-            --glass: rgba(15, 23, 42, 0.85);
-            --gradient: linear-gradient(45deg, #2563eb, #7c3aed);
+            --glass: rgba(15, 23, 42, 0.9);
         }
 
         body {
@@ -23,164 +22,141 @@
             background-position: center;
             background-attachment: fixed;
             color: white;
-            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
-        @media (max-width: 768px) {
-            body {
-                background-attachment: scroll;
-            }
-        }
-
-        .container {
-            max-width: 560px;
-            margin: 40px auto;
-            padding: 20px;
-        }
-
-        .glass-panel {
+        .contact-panel {
             background: var(--glass);
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             padding: 40px;
             border-radius: 24px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 90%;
+            max-width: 500px;
             box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
         }
 
-        h1 {
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: -1px;
-            margin-bottom: 10px;
-            font-size: 1.75rem;
-        }
-
-        .tagline {
+        h2 {
+            font-family: 'Orbitron', sans-serif;
             text-align: center;
             color: var(--neon-blue);
             text-transform: uppercase;
-            font-weight: 300;
-            letter-spacing: 2px;
-            margin-bottom: 28px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
             font-size: 0.9rem;
-        }
-
-        .contact-block {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-
-        .contact-block p {
-            color: #cbd5e1;
-            margin: 0 0 16px;
-            font-size: 0.95rem;
-        }
-
-        .phone-hero {
-            display: inline-block;
-            background: var(--gradient);
-            color: white;
-            text-decoration: none;
-            font-weight: 800;
-            font-size: 1.25rem;
-            padding: 16px 28px;
-            border-radius: 12px;
-            transition: 0.3s;
-        }
-
-        .phone-hero:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
-        }
-
-        .sub-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        .btn-secondary {
-            display: inline-block;
-            padding: 12px 22px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: var(--neon-blue);
-            text-decoration: none;
             font-weight: 600;
-            font-size: 0.85rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        .btn-text {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(45deg, #2563eb, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
             text-transform: uppercase;
+            cursor: pointer;
+            margin-top: 10px;
             transition: 0.3s;
         }
 
-        .btn-secondary:hover {
-            border-color: var(--neon-blue);
-            background: rgba(0, 212, 255, 0.08);
-        }
-
-        .info-list {
-            list-style: none;
-            padding: 0;
-            margin: 24px 0 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding-top: 24px;
-        }
-
-        .info-list li {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            padding-left: 1.2em;
-            position: relative;
-        }
-
-        .info-list li::before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: var(--neon-blue);
-            font-weight: bold;
+        .btn-text:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
         }
 
         .back-link {
             display: block;
             text-align: center;
-            margin-top: 28px;
+            margin-top: 20px;
             color: var(--neon-blue);
             text-decoration: none;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            font-weight: 600;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="glass-panel">
-        <h1>Contact Us</h1>
-        <p class="tagline">We’re here when you land</p>
+    <div class="contact-panel">
+        <h2>Book Your Ride</h2>
+        
+        <div class="form-group">
+            <label>Pickup Location</label>
+            <input type="text" id="pickup" placeholder="e.g. 123 Main St, Oceanside">
+        </div>
 
-        <div class="contact-block">
-            <p>For bookings, flight changes, or questions—call or text anytime.</p>
-            <a href="tel:5162091518" class="phone-hero">516.209.1518</a>
-            <div class="sub-actions">
-                <a href="sms:+15162091518" class="btn-secondary">Text us</a>
-                <a href="book.html" class="btn-secondary">Book a ride</a>
+        <div class="form-group">
+            <label>Dropoff Location</label>
+            <input type="text" id="dropoff" placeholder="e.g. JFK Terminal 4">
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 1;">
+                <label>Date</label>
+                <input type="date" id="date">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Time</label>
+                <input type="time" id="time">
             </div>
         </div>
 
-        <ul class="info-list">
-            <li>JFK &amp; LaGuardia airport pickups (curbside &amp; inside)</li>
-            <li>Long Island &amp; tri-state coverage</li>
-            <li>Flight monitoring so your driver is ready when you are</li>
-        </ul>
+        <div class="form-group">
+            <label>Flight # (Optional)</label>
+            <input type="text" id="flight" placeholder="e.g. DL123">
+        </div>
 
+        <button class="btn-text" onclick="sendSMS()">Text Joe's Rides</button>
+        
         <a href="index.html" class="back-link">← Back to Home</a>
     </div>
-</div>
+
+    <script>
+        function sendSMS() {
+            const pickup = document.getElementById('pickup').value;
+            const dropoff = document.getElementById('dropoff').value;
+            const date = document.getElementById('date').value;
+            const time = document.getElementById('time').value;
+            const flight = document.getElementById('flight').value;
+
+            // Creating the pre-filled message
+            let message = `Hi Joe's Rides! I'd like to book a trip.%0A%0A`;
+            message += `📍 Pickup: ${pickup}%0A`;
+            message += `🏁 Dropoff: ${dropoff}%0A`;
+            message += `📅 Date: ${date}%0A`;
+            message += `⏰ Time: ${time}`;
+            
+            if(flight) {
+                message += `%0A✈️ Flight: ${flight}`;
+            }
+
+            // Launches the text message app to your number
+            window.location.href = `sms:+15162091518?body=${message}`;
+        }
+    </script>
 
 </body>
 </html>
