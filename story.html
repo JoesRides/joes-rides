@@ -112,7 +112,8 @@
         .photo-card img {
             width: 100%;
             height: 300px;
-            object-fit: cover;
+            object-fit: contain; /* Changed to contain for the logo */
+            background: rgba(0,0,0,0.2);
             border-radius: 16px;
             border: 2px solid rgba(255,255,255,0.1);
         }
@@ -132,6 +133,11 @@
             display: inline-block;
             padding-bottom: 5px;
             margin-bottom: 20px;
+        }
+
+        .highlight-name {
+            color: var(--neon-blue);
+            font-weight: 800;
         }
 
         .experience-grid {
@@ -177,8 +183,8 @@
 
     <div class="photo-grid">
         <div class="photo-card">
-            <img src="fleet_team.jpg" alt="Joe and Will">
-            <div class="photo-caption">Joe (Owner) & Will (Operations Manager)</div>
+            <img src="joes_rides_oceanside_logo.jpg" alt="Joe's Rides Oceanside Logo">
+            <div class="photo-caption">Established 2020 | Premium Transportation</div>
         </div>
         <div class="photo-card">
             <img src="selt_montauk.jpg" alt="Black Kia Seltos at Montauk">
@@ -188,7 +194,7 @@
 
     <div class="story-card">
         <h2>A Partnership Built on the Field and the Road</h2>
-        <p>Joe's Rides is led by longtime friends and softball teammates, **Joe** and **Will**. As the Owner and Operations Manager, we are the engine that keeps this business afloat, personally ensuring that every client receives a premium experience. With over 250 loyal clients, our success is built on the trust we've developed through years of teamwork, both on the field and behind the wheel.</p>
+        <p>Joe's Rides is led by longtime friends and softball teammates, <span class="highlight-name">Joe</span> and <span class="highlight-name">Will</span>. As the Owner and Operations Manager, we are the engine that keeps this business afloat, personally ensuring that every client receives a premium experience. With over 250 loyal clients, our success is built on the trust we've developed through years of teamwork, both on the field and behind the wheel.</p>
         
         <p>We specialize in precision transportation for the most demanding terminals in the world. Whether it’s a curbside pickup at **JFK International**, navigating **LaGuardia**, or serving **Newark** and **Westchester**, we bring a level of local expertise that only comes from decades of professional driving.</p>
     </div>
