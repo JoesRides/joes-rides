@@ -10,6 +10,7 @@
             --neon-blue: #00d4ff;
             --dark-bg: #0f172a;
             --glass: rgba(15, 23, 42, 0.9);
+            --success-green: #22c55e;
         }
 
         body {
@@ -37,39 +38,39 @@
             width: 90%;
             max-width: 500px;
             box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
+            text-align: center;
         }
 
         h2 {
             font-family: 'Orbitron', sans-serif;
-            text-align: center;
             color: var(--neon-blue);
             text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .recommendation {
+            font-size: 0.95rem;
+            color: #cbd5e1;
             margin-bottom: 25px;
+            line-height: 1.4;
         }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        input {
+        textarea {
             width: 100%;
-            padding: 12px;
-            border-radius: 8px;
+            height: 150px;
+            padding: 15px;
+            border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             background: rgba(0, 0, 0, 0.3);
             color: white;
             box-sizing: border-box;
             font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            resize: none;
+            margin-bottom: 20px;
         }
 
-        .btn-text {
+        .btn-send {
             width: 100%;
             padding: 16px;
             background: linear-gradient(45deg, #2563eb, #7c3aed);
@@ -79,19 +80,29 @@
             font-weight: 700;
             text-transform: uppercase;
             cursor: pointer;
-            margin-top: 10px;
             transition: 0.3s;
         }
 
-        .btn-text:hover {
+        .btn-send:hover {
             transform: translateY(-2px);
             box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
         }
 
+        /* Success Message Styling */
+        #confirmation {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid var(--success-green);
+            border-radius: 12px;
+            color: var(--success-green);
+            font-weight: 600;
+        }
+
         .back-link {
             display: block;
-            text-align: center;
-            margin-top: 20px;
+            margin-top: 25px;
             color: var(--neon-blue);
             text-decoration: none;
             font-size: 0.9rem;
@@ -100,61 +111,45 @@
 </head>
 <body>
 
-    <div class="contact-panel">
-        <h2>Book Your Ride</h2>
+    <div class="contact-panel" id="form-container">
+        <h2>Talk to Us</h2>
+        <p class="recommendation">
+            Use this space for anything! Send us suggestions to improve your ride, leave a review for a driver, or ask us a general question. We're listening.
+        </p>
         
-        <div class="form-group">
-            <label>Pickup Location</label>
-            <input type="text" id="pickup" placeholder="e.g. 123 Main St, Oceanside">
-        </div>
+        <textarea id="userMessage" placeholder="Type your message here..."></textarea>
 
-        <div class="form-group">
-            <label>Dropoff Location</label>
-            <input type="text" id="dropoff" placeholder="e.g. JFK Terminal 4">
-        </div>
-
-        <div style="display: flex; gap: 10px;">
-            <div class="form-group" style="flex: 1;">
-                <label>Date</label>
-                <input type="date" id="date">
-            </div>
-            <div class="form-group" style="flex: 1;">
-                <label>Time</label>
-                <input type="time" id="time">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Flight # (Optional)</label>
-            <input type="text" id="flight" placeholder="e.g. DL123">
-        </div>
-
-        <button class="btn-text" onclick="sendSMS()">Text Joe's Rides</button>
+        <button class="btn-send" onclick="handleSubmission()">Send via Text</button>
         
+        <div id="confirmation">
+            ✅ Message Sent! We have received your contact attempt and will get back to you shortly.
+        </div>
+
         <a href="index.html" class="back-link">← Back to Home</a>
     </div>
 
     <script>
-        function sendSMS() {
-            const pickup = document.getElementById('pickup').value;
-            const dropoff = document.getElementById('dropoff').value;
-            const date = document.getElementById('date').value;
-            const time = document.getElementById('time').value;
-            const flight = document.getElementById('flight').value;
-
-            // Creating the pre-filled message
-            let message = `Hi Joe's Rides! I'd like to book a trip.%0A%0A`;
-            message += `📍 Pickup: ${pickup}%0A`;
-            message += `🏁 Dropoff: ${dropoff}%0A`;
-            message += `📅 Date: ${date}%0A`;
-            message += `⏰ Time: ${time}`;
+        function handleSubmission() {
+            const userMsg = document.getElementById('userMessage').value;
             
-            if(flight) {
-                message += `%0A✈️ Flight: ${flight}`;
+            if (!userMsg.trim()) {
+                alert("Please enter a message before sending.");
+                return;
             }
 
-            // Launches the text message app to your number
-            window.location.href = `sms:+15162091518?body=${message}`;
+            // Encode the message for the URL
+            const encodedMsg = encodeURIComponent("Joe's Rides Feedback/Review: " + userMsg);
+
+            // 1. Show the success message on screen
+            document.getElementById('confirmation').style.display = 'block';
+            
+            // 2. Clear the textarea
+            document.getElementById('userMessage').value = "";
+
+            // 3. Open the SMS app after a tiny delay
+            setTimeout(() => {
+                window.location.href = `sms:+15162091518?body=${encodedMsg}`;
+            }, 1000);
         }
     </script>
 
