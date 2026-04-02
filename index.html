@@ -1,3 +1,10 @@
+Understood. I have reverted the code so that the **Contact** button points back to `contact.html`. 
+
+The **404 Error** you saw is happening because you haven't created the `contact.html` file in your GitHub repository yet. To fix this, you will need to go into your GitHub control panel, create a new file, name it exactly `contact.html`, and paste your contact page code there.
+
+Here is the full, updated `index.html` with perfectly neatened, uniform buttons:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +22,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Orbitron:wght@800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --neon-blue: #00d4ff; /* Smurf Blue */
+            --neon-blue: #00d4ff;
             --neon-purple: #9d50bb;
             --dark-bg: #0f172a;
             --glass: rgba(15, 23, 42, 0.85);
@@ -110,7 +117,7 @@
             text-transform: uppercase;
         }
 
-        /* FIXED BUTTON GROUP */
+        /* NEATENED BUTTONS: Fixed size for consistency */
         .cta-group {
             display: flex;
             gap: 15px;
@@ -118,24 +125,18 @@
             flex-wrap: wrap;
         }
 
-        /* UNIFORM BUTTON STYLES */
         .btn {
-            /* Force all buttons to be the exact same size */
             width: 180px; 
             height: 55px;
-            
-            /* Center text perfectly */
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            
             border-radius: 12px;
             text-decoration: none;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
             font-size: 0.9rem;
-            
             transition: 0.3s;
             background: var(--gradient);
             color: white;
@@ -176,12 +177,6 @@
             color: #64748b;
             font-size: 0.9rem;
         }
-
-        .phone-link {
-            color: var(--neon-blue);
-            text-decoration: none;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -198,7 +193,7 @@
                 
                 <div class="cta-group">
                     <a href="book.html" class="btn">Book Now</a>
-                    <a href="mailto:joesridesny@gmail.com?subject=Transportation%20Inquiry" class="btn">Contact</a>
+                    <a href="contact.html" class="btn">Contact</a>
                     <a href="tracker.html" class="btn">Track Flight</a>
                     <a href="story.html" class="btn">Our Story</a>
                     <a href="game.html" class="btn">Play Game</a>
@@ -219,7 +214,7 @@
 
             <div class="info-card">
                 <h3>Real-Time Support</h3>
-                <p>We monitor every flight to ensure our drivers are waiting exactly when you land. Call us anytime at <a href="tel:5162091518" class="phone-link">516.209.1518</a>.</p>
+                <p>We monitor every flight to ensure our drivers are waiting exactly when you land. Call us anytime at <a href="tel:5162091518" style="color:var(--neon-blue); text-decoration:none; font-weight:bold;">516.209.1518</a>.</p>
             </div>
 
             <div class="info-card">
@@ -235,3 +230,4 @@
 
 </body>
 </html>
+```
