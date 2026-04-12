@@ -86,7 +86,25 @@ canvas{display:block;width:100%;height:100%}
 .pit-nl{font-size:.65rem;color:#aaccee;letter-spacing:3px;margin-top:8px;font-weight:700}
 #pit-tmr{font-size:2.4rem;font-weight:900;color:var(--cyan);margin:0;line-height:1.1}
 
-/* TOUCH STEER ZONES — invisible, no visual arrows */
+/* TRIVIA PANEL */
+#trivia{position:absolute;inset:0;background:rgba(0,0,5,.97);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:95;font-family:'Orbitron',sans-serif;padding:20px;text-align:center;backdrop-filter:blur(8px)}
+#trivia-header{font-size:.65rem;letter-spacing:4px;color:#aaccee;font-weight:700;margin-bottom:8px}
+#trivia-lvl{font-size:.9rem;font-weight:900;color:var(--cyan);margin-bottom:14px}
+#trivia-q{font-size:.82rem;font-weight:700;color:#fff;line-height:1.55;margin-bottom:18px;max-width:340px}
+#trivia-opts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px}
+.t-opt{background:rgba(255,255,255,.06);border:1.5px solid rgba(0,212,255,.3);border-radius:10px;padding:12px 16px;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;color:#ddeeff;text-align:left;transition:.18s;touch-action:manipulation;display:flex;align-items:center;gap:10px}
+.t-opt:active{transform:scale(.98)}
+.t-opt:hover{border-color:var(--cyan);background:rgba(0,212,255,.1)}
+.t-opt.correct{border-color:var(--green);background:rgba(57,255,20,.15);color:var(--green)}
+.t-opt.wrong{border-color:var(--red);background:rgba(255,49,49,.15);color:var(--red)}
+.t-opt.disabled{pointer-events:none;opacity:.55}
+.t-lbl{font-size:.8rem;font-weight:900;color:var(--gold);min-width:16px}
+#trivia-result{font-size:1.1rem;font-weight:900;margin-top:14px;opacity:0;transition:opacity .3s}
+#trivia-result.show{opacity:1}
+#trivia-sub{font-size:.62rem;color:#aaccee;letter-spacing:2px;margin-top:6px;font-weight:600;opacity:0;transition:opacity .3s}
+#trivia-sub.show{opacity:1}
+
+/* TOUCH STEER ZONES */
 #steer-l,#steer-r{position:absolute;bottom:58px;top:58px;width:36%;z-index:30;touch-action:none;pointer-events:all}
 #steer-l{left:0}
 #steer-r{right:0}
@@ -155,8 +173,18 @@ canvas{display:block;width:100%;height:100%}
   <div class="sr" style="font-size:.62rem;color:#aaccee;font-family:'Orbitron';width:88%;justify-content:space-between;margin-bottom:8px;font-weight:700">
     <span>ALL-TIME BEST</span><span id="best-score">0</span>
   </div>
-  <div class="pit-nl">NEXT FARE IN</div>
-  <div id="pit-tmr">15</div>
+  <div class="pit-nl">TRIVIA CHALLENGE IN</div>
+  <div id="pit-tmr">5</div>
+</div>
+
+<!-- TRIVIA PANEL -->
+<div id="trivia">
+  <div id="trivia-header">🧠 TRIVIA CHALLENGE</div>
+  <div id="trivia-lvl">ANSWER TO ADVANCE TO LEVEL <span id="trivia-next-lvl">2</span></div>
+  <div id="trivia-q"></div>
+  <div id="trivia-opts"></div>
+  <div id="trivia-result"></div>
+  <div id="trivia-sub"></div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -209,6 +237,69 @@ canvas{display:block;width:100%;height:100%}
 </div>
 
 <script>
+// ── TRIVIA BANK ───────────────────────────────────────────────────────────────
+const TRIVIA_BANK = [
+  {q:"What is the capital of France?", opts:["London","Paris","Rome","Madrid"], ans:1},
+  {q:"How many legs does a spider have?", opts:["6","8","10","4"], ans:1},
+  {q:"What planet is known as the Red Planet?", opts:["Venus","Jupiter","Mars","Saturn"], ans:2},
+  {q:"How many continents are there on Earth?", opts:["5","6","7","8"], ans:2},
+  {q:"What is 12 × 12?", opts:["124","144","132","148"], ans:1},
+  {q:"Which ocean is the largest in the world?", opts:["Atlantic","Indian","Arctic","Pacific"], ans:3},
+  {q:"What gas do plants breathe in to make food?", opts:["Oxygen","Nitrogen","Carbon Dioxide","Hydrogen"], ans:2},
+  {q:"How many sides does a hexagon have?", opts:["5","7","6","8"], ans:2},
+  {q:"What is the fastest land animal?", opts:["Lion","Cheetah","Horse","Leopard"], ans:1},
+  {q:"Which planet has rings around it?", opts:["Mars","Neptune","Saturn","Uranus"], ans:2},
+  {q:"What is the hardest natural substance on Earth?", opts:["Gold","Iron","Ruby","Diamond"], ans:3},
+  {q:"How many days are in a leap year?", opts:["365","366","364","367"], ans:1},
+  {q:"What color is the sky on a clear day?", opts:["Green","Blue","Gray","White"], ans:1},
+  {q:"Which animal is known as the King of the Jungle?", opts:["Tiger","Elephant","Lion","Gorilla"], ans:2},
+  {q:"How many bones are in the adult human body?", opts:["186","206","216","196"], ans:1},
+  {q:"What is the largest planet in our solar system?", opts:["Saturn","Neptune","Jupiter","Uranus"], ans:2},
+  {q:"In which country was the Eiffel Tower built?", opts:["Italy","Germany","Spain","France"], ans:3},
+  {q:"What is the chemical symbol for water?", opts:["WO","HO2","H2O","W2O"], ans:2},
+  {q:"What do you call a baby dog?", opts:["Kitten","Cub","Foal","Puppy"], ans:3},
+  {q:"What is the smallest planet in our solar system?", opts:["Mars","Mercury","Pluto","Venus"], ans:1},
+  {q:"How many minutes are in one hour?", opts:["100","50","60","70"], ans:2},
+  {q:"What type of animal is a shark?", opts:["Mammal","Reptile","Fish","Amphibian"], ans:2},
+  {q:"Which country has the most people in the world?", opts:["USA","India","Russia","China"], ans:3},
+  {q:"What is 25% of 200?", opts:["25","50","75","100"], ans:1},
+  {q:"What is the tallest mountain in the world?", opts:["K2","Kilimanjaro","Everest","Denali"], ans:2},
+  {q:"How many teeth does an adult human have?", opts:["28","30","32","34"], ans:2},
+  {q:"What is the nearest star to Earth?", opts:["Sirius","The Sun","Proxima Centauri","Betelgeuse"], ans:1},
+  {q:"Which direction does the sun rise from?", opts:["West","North","South","East"], ans:3},
+  {q:"What is the main ingredient in chocolate?", opts:["Sugar","Milk","Vanilla","Cacao"], ans:3},
+  {q:"How many colors are in a rainbow?", opts:["5","6","7","8"], ans:2},
+  {q:"What is the capital of the United States?", opts:["New York","Los Angeles","Washington D.C.","Chicago"], ans:2},
+  {q:"What do caterpillars turn into?", opts:["Moths or Butterflies","Bees","Dragonflies","Beetles"], ans:0},
+  {q:"How many players are on a basketball team on the court?", opts:["6","4","5","7"], ans:2},
+  {q:"What is the longest river in the world?", opts:["Amazon","Mississippi","Yangtze","Nile"], ans:3},
+  {q:"What is 7 × 8?", opts:["54","56","58","52"], ans:1},
+  {q:"Which animal can live on both land and water?", opts:["Dolphin","Frog","Eagle","Whale"], ans:1},
+  {q:"How many strings does a standard guitar have?", opts:["4","5","7","6"], ans:3},
+  {q:"What is the opposite of 'cold'?", opts:["Warm","Wet","Hot","Dry"], ans:2},
+  {q:"In what country is the Great Wall located?", opts:["Japan","India","Korea","China"], ans:3},
+  {q:"What are the three primary colors?", opts:["Red, Blue, Yellow","Red, Green, Blue","Pink, Purple, Orange","Black, White, Gray"], ans:0},
+  {q:"How many wheels does a tricycle have?", opts:["2","4","3","5"], ans:2},
+  {q:"What is the currency used in Japan?", opts:["Won","Yuan","Yen","Ringgit"], ans:2},
+  {q:"What do bees make?", opts:["Milk","Silk","Honey","Wax only"], ans:2},
+  {q:"How many seconds are in one minute?", opts:["100","60","50","30"], ans:1},
+  {q:"What is the square root of 64?", opts:["6","7","9","8"], ans:3},
+  {q:"Which season comes after summer?", opts:["Spring","Winter","Fall / Autumn","Another Summer"], ans:2},
+  {q:"What is the boiling point of water in Celsius?", opts:["90°","100°","110°","80°"], ans:1},
+  {q:"Which instrument has black and white keys?", opts:["Guitar","Violin","Drums","Piano"], ans:3},
+  {q:"How many planets are in our solar system?", opts:["7","9","8","10"], ans:2},
+  {q:"What language is spoken in Brazil?", opts:["Spanish","Portuguese","French","English"], ans:1},
+];
+
+let usedTriviaIndices = [];
+function getTrivia(){
+  if(usedTriviaIndices.length >= TRIVIA_BANK.length) usedTriviaIndices = [];
+  let idx;
+  do { idx = Math.floor(Math.random() * TRIVIA_BANK.length); } while(usedTriviaIndices.includes(idx));
+  usedTriviaIndices.push(idx);
+  return TRIVIA_BANK[idx];
+}
+
 // ── CANVAS SETUP ──────────────────────────────────────────────────────────────
 const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d');
 const dpr=Math.min(window.devicePixelRatio||1,2);
@@ -236,58 +327,39 @@ const passCountEl=$('passCount'),levelEl=$('levelNum'),destEl=$('destName'),rank
 const overlay=$('overlay'),startBtn=$('startBtn'),pitUI=$('pit');
 const biomeLbl=$('biomeLbl'),biomeBanner=$('biome-banner'),lvlAnn=$('lvl-ann'),comboDisp=$('combo-disp');
 const pb=$('pb'),nflash=$('nflash'),splash=$('splash');
+const triviaUI=$('trivia');
 const mainBestEl=$('main-best-score'),mainBestMiEl=$('main-best-miles'),bestScoreEl=$('best-score');
 
 setTimeout(()=>{splash.style.opacity='0';setTimeout(()=>splash.style.display='none',900);},2200);
 
 // ── 8-BIT MUSIC TUNES ─────────────────────────────────────────────────────────
-// Each tune: array of {f: freq, d: duration_ms} — inspired by 8-Bit Universe chiptune style
-// 0=rest, positive=note freq in Hz
-// 8 distinct tunes, one per biome level cycling
-
 const TUNES = [
-  // Tune 0 — "City Rush" (upbeat NES-style, inspired by classic city racing games)
   {name:'City Rush', bpm:160, waveM:'square', waveB:'triangle',
    mel:[523,659,784,659,523,392,440,523, 659,784,880,784,659,523,587,659, 523,659,784,880,784,659,523,440, 392,523,659,784,659,523,440,392],
    bass:[131,131,165,131, 196,131,175,131, 131,131,165,131, 196,175,165,131]},
-
-  // Tune 1 — "Neon Night" (minor key, moody night-drive feel)
   {name:'Neon Night', bpm:130, waveM:'square', waveB:'sawtooth',
    mel:[440,392,330,294, 330,370,440,494, 440,392,330,294, 370,330,294,247, 440,494,523,494, 440,392,370,330, 294,330,370,440, 494,523,587,523],
    bass:[110,110,138,110, 110,110,138,110, 110,110,138,110, 110,138,123,110]},
-
-  // Tune 2 — "Blizzard Drive" (crisp, high-energy, fast arpeggios)
   {name:'Blizzard Drive', bpm:175, waveM:'square', waveB:'square',
    mel:[784,659,523,659, 784,880,1047,880, 784,659,523,440, 523,587,659,784, 880,784,659,523, 659,784,880,1047, 880,784,659,784, 880,1047,1175,1047],
    bass:[196,196,247,196, 196,196,247,196, 196,196,247,196, 196,247,220,196]},
-
-  // Tune 3 — "Desert Cruise" (western/adventurous, syncopated)
   {name:'Desert Cruise', bpm:140, waveM:'sawtooth', waveB:'triangle',
    mel:[392,330,294,330, 392,440,523,440, 392,330,294,247, 294,330,392,440, 523,494,440,392, 330,294,330,392, 440,523,587,523, 440,392,330,294],
    bass:[98,98,123,98, 110,110,131,110, 98,98,123,98, 110,123,110,98]},
-
-  // Tune 4 — "Storm Chaser" (intense, dark, driving rhythm)
   {name:'Storm Chaser', bpm:150, waveM:'sawtooth', waveB:'sawtooth',
    mel:[220,247,261,294, 330,294,261,247, 220,247,261,294, 330,370,440,392, 330,294,261,247, 220,247,294,330, 370,440,494,440, 370,330,294,220],
    bass:[55,55,69,55, 55,55,69,55, 55,55,69,55, 55,69,62,55]},
-
-  // Tune 5 — "Golden Dawn" (heroic, triumphant, rising melody)
   {name:'Golden Dawn', bpm:145, waveM:'triangle', waveB:'triangle',
    mel:[523,659,784,880, 1047,880,784,659, 523,587,659,698, 784,698,659,587, 523,659,784,1047, 1047,880,784,659, 784,880,1047,1175, 1047,880,784,523],
    bass:[131,131,165,131, 196,175,165,131, 131,131,165,131, 196,165,175,131]},
-
-  // Tune 6 — "Neon Strip" (synthwave/chiptune fusion, pulsing)
   {name:'Neon Strip', bpm:155, waveM:'square', waveB:'sawtooth',
    mel:[659,698,784,698, 659,587,523,587, 659,698,784,880, 784,698,659,698, 784,880,988,880, 784,698,659,587, 523,587,659,698, 784,880,988,784],
    bass:[165,165,196,165, 165,165,196,165, 165,165,196,165, 165,196,175,165]},
-
-  // Tune 7 — "Fog Coast" (mysterious, slightly eerie, floating)
   {name:'Fog Coast', bpm:120, waveM:'triangle', waveB:'sine',
    mel:[440,494,523,494, 440,415,392,415, 440,494,523,587, 523,494,440,415, 392,440,494,523, 494,440,392,349, 392,415,440,494, 523,587,523,440],
    bass:[110,110,131,110, 110,110,131,110, 110,110,131,110, 110,131,123,110]},
 ];
 
-// ── BIOMES ────────────────────────────────────────────────────────────────────
 const BIOMES=[
   {id:'day',    name:'CITY DAY',       icon:'🌆', night:false,
    sky0:'#2a5f9a',sky1:'#5a8fc0', road:'#22222e', side:'#8a7a6a',
@@ -332,14 +404,12 @@ const BIOMES=[
 ];
 function getBiome(lvl){ return BIOMES[(lvl-1)%BIOMES.length]; }
 
-// ── VEHICLES ──────────────────────────────────────────────────────────────────
 const VEH={
   joe:{w:34,h:64,speedBonus:.18,steer:5.8,nitroMult:3.0,nitroDur:3000},
   will:{w:38,h:72,speedBonus:0,steer:8.2,nitroMult:2.2,nitroDur:2200}
 };
 let selVeh='joe',playerColor='#f5c518';
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
 const AIRPORTS=["Islip MacArthur","Republic Airport","LaGuardia","JFK","Farmingdale","Deer Park","Bayshore","Amityville"];
 const TFC_COLORS=['#ef4444','#fbbf24','#7c3aed','#e5e7eb','#f97316','#06b6d4','#84cc16'];
 let gameActive=false,inPitStop=false,score=0,totalMiles=0,spd=1.0,nitros=1,level=1,passCollected=0;
@@ -362,7 +432,6 @@ let lvlStats={scoreAtStart:0,passStart:0,nitrosUsed:0,sideHits:0,crashCount:0,ni
 function milesForLvl(l){ return Math.round(10*Math.pow(1.5,l-1)); }
 function resetLvlStats(){ lvlStats={scoreAtStart:score,passStart:passCollected,nitrosUsed:0,sideHits:0,nitrosStart:nitros,startTime:performance.now(),topSpd:0,hornHonks:0}; }
 
-// ── VEHICLE SELECT ────────────────────────────────────────────────────────────
 function selectVehicle(v){
   selVeh=v;
   $('card-joe').classList.toggle('sel',v==='joe');
@@ -378,7 +447,6 @@ function renderPreviews(){
   });
 }
 
-// ── AUDIO ─────────────────────────────────────────────────────────────────────
 function initAudio(){
   if(!audioCtx){
     audioCtx=new(window.AudioContext||window.webkitAudioContext)();
@@ -402,33 +470,23 @@ function tone(freq,dur,type,vol){
   o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+dur);
 }
 
-// ── 8-BIT MUSIC ENGINE ────────────────────────────────────────────────────────
 let musicStep=0,musicTimer=null,musicTune=null;
-
 function startMusic(){
   if(musicTimer) clearInterval(musicTimer);
   musicStep=0;
   const tune=TUNES[biome.tuneIdx];
   musicTune=tune;
-  const stepMs=Math.round(60000/(tune.bpm*2)); // 8th notes
+  const stepMs=Math.round(60000/(tune.bpm*2));
   const melLen=tune.mel.length;
   const bassLen=tune.bass.length;
-
   musicTimer=setInterval(()=>{
     if(!gameActive||inPitStop) return;
     const idx=musicStep%melLen;
     const bidx=Math.floor(musicStep/2)%bassLen;
     const mf=tune.mel[idx];
     if(mf>0) tone(mf, stepMs/1000*0.82, tune.waveM, 0.028);
-    // Bass on every 4th step (quarter notes)
-    if(musicStep%4===0){
-      const bf=tune.bass[bidx];
-      if(bf>0) tone(bf, stepMs/1000*1.6, tune.waveB, 0.032);
-    }
-    // Sub-bass kick on beat 1 and 3 of each bar (every 8 steps)
-    if(musicStep%8===0||musicStep%8===4){
-      tone(65, 0.08, 'sine', 0.04);
-    }
+    if(musicStep%4===0){ const bf=tune.bass[bidx]; if(bf>0) tone(bf, stepMs/1000*1.6, tune.waveB, 0.032); }
+    if(musicStep%8===0||musicStep%8===4) tone(65, 0.08, 'sine', 0.04);
     musicStep++;
   }, stepMs);
 }
@@ -465,19 +523,34 @@ function pickup(big){ const fs=big?[880,1108,1318]:[660,880],now=audioCtx.curren
 function crash(){ const now=audioCtx.currentTime,buf=audioCtx.createBuffer(1,audioCtx.sampleRate*.4,audioCtx.sampleRate),d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(audioCtx.sampleRate*.08)); const src=audioCtx.createBufferSource(),g=audioCtx.createGain(); g.gain.setValueAtTime(.3,now); g.gain.exponentialRampToValueAtTime(.001,now+.4); src.buffer=buf; src.connect(g); g.connect(audioCtx.destination); src.start(now); }
 function comboSnd(n){ const fs=[880,1046,1319,1568,2093]; tone(fs[Math.min(n-1,4)],.15,'sine',.06); }
 function lvlUpSnd(){ const now=audioCtx.currentTime; [784,988,1175,1568].forEach((f,i)=>{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(.07,now+i*.1); g.gain.exponentialRampToValueAtTime(.0001,now+i*.1+.4); o.connect(g); g.connect(audioCtx.destination); o.start(now+i*.1); o.stop(now+i*.1+.5); }); }
+function triviaSnd(correct){
+  const now=audioCtx.currentTime;
+  if(correct){
+    [660,880,1108].forEach((f,i)=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(.08,now+i*.1); g.gain.exponentialRampToValueAtTime(.001,now+i*.1+.4);
+      o.connect(g); g.connect(audioCtx.destination); o.start(now+i*.1); o.stop(now+i*.1+.5);
+    });
+  } else {
+    [330,220,165].forEach((f,i)=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type='sawtooth'; o.frequency.value=f;
+      g.gain.setValueAtTime(.09,now+i*.12); g.gain.exponentialRampToValueAtTime(.001,now+i*.12+.4);
+      o.connect(g); g.connect(audioCtx.destination); o.start(now+i*.12); o.stop(now+i*.12+.5);
+    });
+  }
+}
 
-// ── PARTICLES ─────────────────────────────────────────────────────────────────
 function spawnPart(x,y,col,n=6){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=1+Math.random()*3.5; parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,col,r:2+Math.random()*2}); } }
 function spawnFloat(x,y,txt,col){ floats.push({x,y,txt,col,life:1,vy:-1.5}); }
 
-// ── COMBO ─────────────────────────────────────────────────────────────────────
 function addCombo(){
   combo++; comboTimer=180; if(combo>bestCombo) bestCombo=combo;
   if(combo>1){ comboSnd(combo); comboDisp.textContent=`x${combo} COMBO!`; comboDisp.classList.add('show'); const b=combo*2; score+=b; spawnFloat(player.x+player.w/2,player.y-10,`COMBO +${b}`,`hsl(${combo*30},100%,65%)`); }
 }
 function breakCombo(){ combo=0; comboDisp.classList.remove('show'); }
 
-// ── BIOME INIT ────────────────────────────────────────────────────────────────
 function initBiome(){
   biome=getBiome(level);
   biomeLbl.textContent=biome.icon+' '+biome.name;
@@ -488,10 +561,8 @@ function initBiome(){
   biomeBanner.style.border=`1px solid ${biome.night?'rgba(100,150,255,.3)':'rgba(255,180,0,.3)'}`;
   biomeBanner.classList.add('show');
   setTimeout(()=>biomeBanner.classList.remove('show'),2300);
-
   buildings=[]; stars=[]; snowflakes=[]; sandDrifts=[]; rainDrops=[];
   lightAlpha=0; lightTimer=0;
-
   if(biome.buildings){
     for(let i=0;i<14;i++){
       const left=i<7,x=left?2+Math.random()*68:362+Math.random()*68;
@@ -509,7 +580,6 @@ function initBiome(){
   if(biome.storm) for(let i=0;i<90;i++) rainDrops.push({x:Math.random()*W,y:Math.random()*H,vy:8+Math.random()*7,len:7+Math.random()*14});
 }
 
-// ── ENV UPDATE ────────────────────────────────────────────────────────────────
 function updEnv(dt,norm){
   buildings.forEach(b=>{ b.y+=spd*1.1*norm; if(b.y>H+b.h) b.y=-b.h-Math.random()*300; });
   if(biome.snow) snowflakes.forEach(s=>{ s.x+=s.vx+spd*.25; s.y+=s.vy*norm; if(s.y>H){s.y=-5;s.x=Math.random()*W;} });
@@ -519,32 +589,26 @@ function updEnv(dt,norm){
   if(comboTimer>0){ comboTimer-=dt; if(comboTimer<=0) breakCombo(); }
 }
 
-// ── ENV DRAW ──────────────────────────────────────────────────────────────────
 function drawEnv(){
   const sg=ctx.createLinearGradient(0,0,0,H*.38);
   sg.addColorStop(0,biome.sky0); sg.addColorStop(1,biome.sky1);
   ctx.fillStyle=sg; ctx.fillRect(0,0,W,H*.38);
-
   if(biome.sunGlow){
     const sg2=ctx.createRadialGradient(W*.7,H*.1,10,W*.7,H*.1,160);
     const sunCol=biome.dawn?'rgba(255,140,30,.35)':'rgba(255,200,50,.25)';
     sg2.addColorStop(0,sunCol); sg2.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=sg2; ctx.fillRect(0,0,W,H*.4);
   }
-
   if(biome.stars){
     stars.forEach(s=>{ const tw=.55+.45*Math.sin(s.t); ctx.globalAlpha=tw*.9; ctx.fillStyle=biome.neon?`hsl(${280+s.t*30},100%,80%)`:'#fff'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); });
     ctx.globalAlpha=1;
   }
-
   if(lightAlpha>0){ ctx.fillStyle=`rgba(200,210,255,${lightAlpha})`; ctx.fillRect(0,0,W,H); }
-
   if(biome.neon){
     const ng=ctx.createLinearGradient(0,0,W,0);
     ng.addColorStop(0,'rgba(255,0,200,.06)'); ng.addColorStop(.5,'rgba(100,0,255,.08)'); ng.addColorStop(1,'rgba(0,200,255,.06)');
     ctx.fillStyle=ng; ctx.fillRect(0,0,W,H*.4);
   }
-
   buildings.forEach(b=>{
     ctx.fillStyle=b.col; ctx.fillRect(b.x,b.y,b.w,b.h);
     b.wins.forEach(w=>{
@@ -555,24 +619,18 @@ function drawEnv(){
       ctx.fillRect(b.x+w.dx,b.y+w.dy,4,4);
     });
   });
-
   const rx=RX(),rw=RW(),rr=RR();
   ctx.fillStyle=biome.side; ctx.fillRect(0,H*.35,rx,H*.65); ctx.fillRect(rr,H*.35,rx,H*.65);
   ctx.fillStyle=biome.side; ctx.fillRect(0,0,rx,H); ctx.fillRect(rr,0,rx,H);
   ctx.fillStyle='rgba(255,255,255,.055)'; ctx.fillRect(rx-4,0,4,H); ctx.fillRect(rr,0,4,H);
-
   ctx.fillStyle=biome.road; ctx.fillRect(rx,0,rw,H);
-
   if(biome.snow){ ctx.fillStyle='rgba(210,228,245,.07)'; ctx.fillRect(rx,0,rw,H); const laneW=rw/3; ctx.fillStyle='rgba(70,85,100,.38)'; ctx.fillRect(rx+laneW*.5-11,0,22,H); ctx.fillRect(rx+laneW*1.5-11,0,22,H); ctx.fillRect(rx+laneW*2.5-11,0,22,H); }
   if(biome.sand){ ctx.fillStyle='rgba(200,170,90,.11)'; ctx.fillRect(rx,0,rw,H); }
-
   ctx.strokeStyle=biome.line; ctx.lineWidth=2; ctx.setLineDash([22,18]); ctx.lineDashOffset=-lineOff;
   ctx.beginPath(); for(let i=1;i<3;i++){ ctx.moveTo(rx+i*(rw/3),0); ctx.lineTo(rx+i*(rw/3),H); } ctx.stroke(); ctx.setLineDash([]);
-
   ctx.strokeStyle=biome.shoulder; ctx.lineWidth=2; ctx.setLineDash([30,10]); ctx.lineDashOffset=-lineOff;
   ctx.beginPath(); ctx.moveTo(rx+1,0); ctx.lineTo(rx+1,H); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(rr-1,0); ctx.lineTo(rr-1,H); ctx.stroke(); ctx.setLineDash([]);
-
   if(biome.snow){ snowflakes.forEach(s=>{ ctx.globalAlpha=s.a; ctx.fillStyle='#eef4ff'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1; }
   if(biome.sand){ sandDrifts.forEach(s=>{ ctx.globalAlpha=s.a; ctx.fillStyle='#c8a030'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1; }
   if(biome.storm){ ctx.strokeStyle='rgba(120,140,200,.32)'; ctx.lineWidth=1; rainDrops.forEach(r=>{ ctx.beginPath(); ctx.moveTo(r.x,r.y); ctx.lineTo(r.x-2,r.y+r.len); ctx.stroke(); }); }
@@ -598,7 +656,6 @@ function drawHeadlights(){
   }
 }
 
-// ── VEHICLE DRAWING ───────────────────────────────────────────────────────────
 function drawSUV(c,x,y,col,lbl,inv,nitroOn,hlOn){
   const w=34,h=64;
   c.fillStyle='rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x+w/2,y+h+5,w/2+2,5,0,0,Math.PI*2); c.fill();
@@ -639,7 +696,7 @@ function drawMinivan(c,x,y,col,lbl,inv,nitroOn,hlOn){
   c.fillRect(x+1,y+3,10,4); c.fillRect(x+w-11,y+3,10,4); c.shadowBlur=0;
   c.fillStyle='#ff3131'; c.shadowBlur=8; c.shadowColor='#ff3131';
   c.fillRect(x+1,y+h-4,w-2,3); c.shadowBlur=0;
-  c.fillStyle='#181818'; c.fillRect(x-4,y+20,5,18); c.fillRect(x+w-1,y+20,5,18); c.fillRect(x-4,y+48,5,18); c.fillRect(x+w-1,y+48,5,18);
+  c.fillStyle='#111'; c.fillRect(x-4,y+20,5,18); c.fillRect(x+w-1,y+20,5,18); c.fillRect(x-4,y+48,5,18); c.fillRect(x+w-1,y+48,5,18);
   c.fillStyle='#444'; c.fillRect(x-3,y+22,3,14); c.fillRect(x+w,y+22,3,14); c.fillRect(x-3,y+50,3,14); c.fillRect(x+w,y+50,3,14);
   c.fillStyle='#39ff14'; c.shadowBlur=7; c.shadowColor='#39ff14';
   c.font='bold 9px Orbitron,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
@@ -784,10 +841,6 @@ function drawTractor(x,y){
   ctx.fillStyle='rgba(0,0,0,.3)'; ctx.fillRect(x+4,y+6,tw-8,16);
   ctx.fillStyle='rgba(160,220,255,.38)'; ctx.beginPath(); ctx.roundRect(x+5,y+7,tw-10,14,2); ctx.fill();
   ctx.fillStyle='#333'; ctx.fillRect(x-4,y+4,4,28); ctx.fillRect(x+tw,y+4,4,28);
-  if(Math.random()<0.3){
-    ctx.fillStyle='rgba(80,80,80,.25)'; ctx.beginPath(); ctx.arc(x-2,y+2,4+Math.random()*4,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+tw+2,y+2,4+Math.random()*4,0,Math.PI*2); ctx.fill();
-  }
   ctx.fillStyle=night?'#ffffaa':'#ffffcc'; ctx.shadowBlur=night?14:6; ctx.shadowColor='#ffffa0';
   ctx.fillRect(x+2,y+2,7,3); ctx.fillRect(x+tw-9,y+2,7,3); ctx.shadowBlur=0;
   ctx.fillStyle='#111'; ctx.fillRect(x-3,y+30,5,18); ctx.fillRect(x+tw-2,y+30,5,18);
@@ -881,6 +934,65 @@ function showLvlAnn(){
   setTimeout(()=>lvlAnn.classList.remove('show'),2000);
 }
 
+// ── TRIVIA ────────────────────────────────────────────────────────────────────
+function showTrivia(nextLevel, onPass, onFail){
+  const q = getTrivia();
+  const labels = ['A','B','C','D'];
+
+  $('trivia-next-lvl').textContent = nextLevel;
+  $('trivia-q').textContent = q.q;
+  $('trivia-result').classList.remove('show');
+  $('trivia-sub').classList.remove('show');
+
+  const optsEl = $('trivia-opts');
+  optsEl.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('div');
+    btn.className = 't-opt';
+    btn.innerHTML = `<span class="t-lbl">${labels[i]}</span>${opt}`;
+    btn.addEventListener('click', () => handleTriviaAnswer(i, q.ans, btn, optsEl, onPass, onFail));
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); handleTriviaAnswer(i, q.ans, btn, optsEl, onPass, onFail); }, {passive:false});
+    optsEl.appendChild(btn);
+  });
+
+  triviaUI.style.display = 'flex';
+}
+
+function handleTriviaAnswer(chosen, correct, btn, optsEl, onPass, onFail){
+  // Disable all buttons
+  [...optsEl.querySelectorAll('.t-opt')].forEach(b => b.classList.add('disabled'));
+
+  const isCorrect = chosen === correct;
+  triviaSnd(isCorrect);
+
+  // Highlight correct and wrong
+  const allBtns = [...optsEl.querySelectorAll('.t-opt')];
+  allBtns[correct].classList.add('correct');
+  if(!isCorrect) btn.classList.add('wrong');
+
+  const resultEl = $('trivia-result');
+  const subEl = $('trivia-sub');
+
+  if(isCorrect){
+    resultEl.textContent = '✅ CORRECT! NEXT LEVEL UNLOCKED!';
+    resultEl.style.color = '#39ff14';
+    subEl.textContent = 'GET READY TO ROLL...';
+  } else {
+    resultEl.textContent = '❌ WRONG ANSWER! GAME OVER!';
+    resultEl.style.color = '#ff3131';
+    subEl.textContent = `The correct answer was: ${allBtns[correct].textContent.replace(/^[A-D]/,'').trim()}`;
+  }
+
+  resultEl.classList.add('show');
+  subEl.classList.add('show');
+
+  setTimeout(() => {
+    triviaUI.style.display = 'none';
+    if(isCorrect) onPass();
+    else onFail();
+  }, 2200);
+}
+
 // ── UPDATE ────────────────────────────────────────────────────────────────────
 function update(dt){
   if(inPitStop||!gameActive) return;
@@ -947,20 +1059,45 @@ function update(dt){
       $('pit-horn').innerText=lvlStats.hornHonks+(lvlStats.hornHonks>=5?' (honk addict!)':'');
       $('pit-rating').innerText=stars;
       $('pit-total').innerText=score;
-      let tl=15;
+
+      // ── 5-second countdown then trivia ───────────────────────────────────
+      let tl=5;
+      $('pit-tmr').innerText=tl;
       const tmr=setInterval(()=>{
         tl--; $('pit-tmr').innerText=tl;
         if(tl<=0){
-          clearInterval(tmr); inPitStop=false; pitUI.style.display='none';
-          level++; levelEl.innerText=level; updateRank();
-          milesPerLvl=milesForLvl(level);
-          maxSpd=1.0+(level*(0.15+vd.speedBonus));
-          spd=maxSpd*.7; milesAtStart=totalMiles; finishY=-2000;
-          destEl.innerText=AIRPORTS[(level-1)%AIRPORTS.length];
-          isInvincible=false; heartsSpawned=false; hearts=[]; pb.style.width='0%';
-          bestCombo=0; combo=0; police=[]; policeSpawnedThisLevel=0;
-          specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[];
-          initBiome(); showLvlAnn(); lvlUpSnd(); startMusic(); resetLvlStats();
+          clearInterval(tmr);
+          pitUI.style.display='none';
+
+          const nextLvl = level + 1;
+
+          showTrivia(
+            nextLvl,
+            // onPass — correct answer: advance
+            () => {
+              inPitStop=false;
+              const vd2=VEH[selVeh];
+              level++; levelEl.innerText=level; updateRank();
+              milesPerLvl=milesForLvl(level);
+              maxSpd=1.0+(level*(0.15+vd2.speedBonus));
+              spd=maxSpd*.7; milesAtStart=totalMiles; finishY=-2000;
+              destEl.innerText=AIRPORTS[(level-1)%AIRPORTS.length];
+              isInvincible=false; heartsSpawned=false; hearts=[]; pb.style.width='0%';
+              bestCombo=0; combo=0; police=[]; policeSpawnedThisLevel=0;
+              specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[];
+              initBiome(); showLvlAnn(); lvlUpSnd(); startMusic(); resetLvlStats();
+            },
+            // onFail — wrong answer: game over
+            () => {
+              inPitStop=false;
+              gameActive=false;
+              saveRec();
+              overlay.style.display='flex';
+              $('msg').innerText='TRIVIA FAIL!';
+              $('msg').style.color='#ff3131';
+              $('msg').style.textShadow='0 0 20px #ff3131';
+            }
+          );
         }
       },1000);
     }
@@ -1067,9 +1204,7 @@ function update(dt){
 // ── DRAW ──────────────────────────────────────────────────────────────────────
 function draw(){
   drawEnv();
-
   if(finishY>-200){ const fw=RW(),fx=RX(),sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
-
   obstacles.forEach(o=>drawTraffic(o.x,o.y,o.col));
   police.forEach(p=>drawPoliceCar(p.x,p.y,p.flashPhase,p.parked));
   specialVehicles.forEach(sv=>{
@@ -1080,20 +1215,13 @@ function draw(){
   boostPads.forEach(bp=>drawBoostPad(bp.x,bp.y));
   coins.forEach(c=>drawCoin(c.x,c.y));
   drawSpeedTrail();
-
   drawHeadlights();
-
   const hlOn=biome.night;
   selVeh==='joe'?drawSUV(ctx,player.x,player.y,playerColor,'JOE',isInvincible,isNitroActive,hlOn):drawMinivan(ctx,player.x,player.y,playerColor,'WILL',isInvincible,isNitroActive,hlOn);
-
   if(isNitroActive){ const fx=player.x+player.w/2,fy=player.y+player.h,fH=22+Math.random()*26,fg=ctx.createRadialGradient(fx,fy,0,fx,fy+fH,fH); fg.addColorStop(0,'rgba(255,200,0,.9)'); fg.addColorStop(.4,'rgba(255,80,0,.6)'); fg.addColorStop(1,'rgba(255,0,0,0)'); ctx.fillStyle=fg; ctx.beginPath(); ctx.ellipse(fx,fy+fH/2,11,fH/2,0,0,Math.PI*2); ctx.fill(); }
-
   hearts.forEach(h=>{ if(h.collected) return; ctx.save(); ctx.fillStyle='#ff69b4'; ctx.shadowBlur=18; ctx.shadowColor='#ff69b4'; ctx.beginPath(); ctx.moveTo(h.x,h.y+10); ctx.bezierCurveTo(h.x,h.y,h.x-14,h.y,h.x-14,h.y+10); ctx.bezierCurveTo(h.x-14,h.y+24,h.x,h.y+30,h.x,h.y+38); ctx.bezierCurveTo(h.x,h.y+30,h.x+14,h.y+24,h.x+14,h.y+10); ctx.bezierCurveTo(h.x+14,h.y,h.x,h.y,h.x,h.y+10); ctx.fill(); ctx.restore(); });
-
   passengers.forEach(p=>{ ctx.save(); ctx.strokeStyle='#00f3ff'; ctx.fillStyle='#00f3ff'; ctx.shadowBlur=12; ctx.shadowColor='#00f3ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y-24,5,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.moveTo(p.x,p.y-19); ctx.lineTo(p.x,p.y-6); ctx.moveTo(p.x-7,p.y-14); ctx.lineTo(p.x+7,p.y-14); ctx.moveTo(p.x,p.y-6); ctx.lineTo(p.x-5,p.y+4); ctx.moveTo(p.x,p.y-6); ctx.lineTo(p.x+5,p.y+4); ctx.stroke(); ctx.restore(); });
-
   pickups.forEach(pk=>{ ctx.save(); ctx.shadowBlur=18; ctx.shadowColor='#ef4444'; ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.arc(pk.x,pk.y,14,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.font='bold 7px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('N2O',pk.x,pk.y); ctx.restore(); });
-
   parts.forEach(p=>{ ctx.globalAlpha=p.life; ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1;
   floats.forEach(t=>{ ctx.globalAlpha=Math.max(0,t.life); ctx.fillStyle=t.col; ctx.font='bold 13px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(t.txt,t.x,t.y); }); ctx.globalAlpha=1;
 }
@@ -1161,7 +1289,7 @@ document.addEventListener('touchstart',e=>{
   if(!gameActive) return;
   const t0=e.changedTouches[0];
   const el=document.elementFromPoint(t0.clientX,t0.clientY);
-  if(el&&(el.closest('#overlay')||el.closest('#pit'))) return;
+  if(el&&(el.closest('#overlay')||el.closest('#pit')||el.closest('#trivia'))) return;
   e.preventDefault();
   [...e.changedTouches].forEach(t=>{
     const el2=document.elementFromPoint(t.clientX,t.clientY);
