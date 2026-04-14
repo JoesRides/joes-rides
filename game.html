@@ -68,6 +68,11 @@ canvas{display:block;width:100%;height:100%}
 
 
 #splash{position:absolute;inset:0;background:#000;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s}
+/* GAS STATION INTERLUDE */
+#gas-station{position:absolute;inset:0;background:#1a1a2a;z-index:140;display:none;flex-direction:column;align-items:center;justify-content:center;font-family:monospace}
+#gas-canvas{display:block;margin:0 auto}
+#gas-title{font-family:'Orbitron',sans-serif;color:#ffd700;font-size:.75rem;font-weight:900;letter-spacing:3px;margin-top:8px;text-align:center}
+#gas-sub{color:#88aacc;font-size:.65rem;letter-spacing:2px;margin-top:4px;text-align:center;font-family:'Rajdhani',sans-serif}
 /* PRINCESS ENDING */
 #ending{position:absolute;inset:0;background:linear-gradient(180deg,#0a001a 0%,#1a0a3a 40%,#2d1a5a 100%);z-index:150;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;text-align:center;overflow:hidden}
 #ending canvas{display:block;margin:0 auto}
@@ -198,18 +203,18 @@ canvas{display:block;width:100%;height:100%}
 <div id="pit">
   <div class="pit-ttl" id="pit-ttl-txt">✦ FARE DELIVERED ✦</div>
   <div id="pit-dest"></div>
+  <div id="pit-flawless" style="display:none;background:linear-gradient(135deg,#ffd700,#ffaa00);color:#000;padding:8px 16px;border-radius:8px;font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:900;letter-spacing:2px;text-align:center;margin-bottom:8px">
+    ⭐ FLAWLESS VICTORY! +1500 PTS +1 NITRO ⭐
+  </div>
   <div class="pit-stats">
-    <div class="sr"><span>⏱ LEVEL TIME</span><span id="pit-time"></span></div>
     <div class="sr"><span>🛣 LEVEL MILES</span><span id="pit-lvl-miles"></span></div>
-    <div class="sr"><span>💰 LEVEL SCORE</span><span id="pit-lvl-score"></span></div>
-    <div class="sr"><span>👤 PASSENGERS</span><span id="pit-pass"></span></div>
-    <div class="sr"><span>🚀 NITROS USED</span><span id="pit-nitros"></span></div>
-    <div class="sr"><span>💥 CURB HITS</span><span id="pit-hits"></span></div>
-    <div class="sr"><span>🔗 BEST COMBO</span><span id="pit-combo"></span></div>
+    <div class="sr"><span>🌍 TOTAL MILES</span><span id="pit-total-miles"></span></div>
+    <div class="sr"><span>👤 LEVEL PASSENGERS</span><span id="pit-pass"></span></div>
+    <div class="sr"><span>👥 TOTAL PASSENGERS</span><span id="pit-total-pass"></span></div>
+    <div class="sr"><span>💥 CARS HIT</span><span id="pit-carhits"></span></div>
     <div class="sr"><span>⚡ TOP SPEED</span><span id="pit-topspd"></span></div>
-    <div class="sr"><span>📯 HORN HONKS</span><span id="pit-horn"></span></div>
     <div class="sr"><span>❤️ HP REMAINING</span><span id="pit-hp"></span></div>
-    <div class="sr"><span>⭐ DRIVER RATING</span><span id="pit-rating"></span></div>
+    <div class="sr"><span>💰 LEVEL SCORE</span><span id="pit-lvl-score"></span></div>
     <div class="sr hi"><span>🏆 TOTAL SCORE</span><span id="pit-total"></span></div>
   </div>
   <div class="sr" style="font-size:.62rem;color:#aaccee;font-family:'Orbitron';width:88%;justify-content:space-between;margin-bottom:8px;font-weight:700">
@@ -227,6 +232,13 @@ canvas{display:block;width:100%;height:100%}
   <div id="trivia-opts"></div>
   <div id="trivia-result"></div>
   <div id="trivia-sub"></div>
+</div>
+
+<!-- GAS STATION -->
+<div id="gas-station">
+  <canvas id="gas-canvas" width="320" height="300"></canvas>
+  <div id="gas-title">⛽ PIT STOP — HALFWAY THERE!</div>
+  <div id="gas-sub">IS THAT... A WANTED POSTER?</div>
 </div>
 
 <!-- PRINCESS ENDING -->
@@ -421,18 +433,18 @@ setTimeout(()=>{splash.style.opacity='0';setTimeout(()=>splash.style.display='no
 
 // ── 8-BIT MUSIC TUNES ─────────────────────────────────────────────────────────
 const TUNES = [
-  {name:'Oh Susanna', bpm:130, waveM:'square', waveB:'triangle',
-   mel:[262,294,330,392, 392,440,392,330, 262,294,330,330, 294,262,294,294, 262,294,330,392, 392,440,392,330, 262,294,330,294, 262,0,262,0],
-   bass:[131,131,165,131, 196,131,175,131, 131,131,165,131, 196,175,165,131]},
-  {name:'Camptown Races', bpm:144, waveM:'square', waveB:'triangle',
-   mel:[392,392,330,392,440,392,330,262, 294,330,349,330,294,262,294,0, 392,392,330,392,440,392,330,262, 294,330,349,330,294,262,262,0, 330,330,330,262,330,392,0,392, 440,440,440,392,440,494,0,494, 523,494,440,392,330,262,294,0, 392,392,330,392,440,330,262,0],
-   bass:[196,196,196,196, 175,196,175,196, 196,196,196,196, 175,196,196,196, 131,131,131,131, 196,196,196,196, 131,131,131,131, 196,196,196,196]},
-  {name:'We Wish You Merry Xmas', bpm:138, waveM:'square', waveB:'triangle',
-   mel:[262,349,349,392,349,330, 294,294,294,392,392,440,392, 349,262,440,440,494,440,392, 349,349,330,330,392,349,262, 262,349,349,392,349,330, 294,294,294,392,392,440,392, 349,262,440,440,494,440,392, 349,349,330,330,349,294,262,0],
-   bass:[131,175,175,196,175,165, 147,147,147,196,196,220,196, 175,131,220,220,247,220,196, 175,175,165,165,196,175,131, 131,175,175,196,175,165, 147,147,147,196,196,220,196, 175,131,220,220,247,220,196, 175,175,165,165,175,147,131,131]},
-  {name:'BINGO', bpm:132, waveM:'square', waveB:'triangle',
-   mel:[392,392,392,330,392,440,392,330, 294,294,294,247,294,330,294,247, 392,392,392,330,392,440,392,330, 294,330,392,294,392,0,392,0, 392,392,330,392,440,392,330,262, 330,330,294,330,392,330,294,247, 392,440,392,330,294,392,330,262, 392,0,392,0,392,0,392,0],
-   bass:[196,196,196,165,196,220,196,165, 147,147,147,123,147,165,147,123, 196,196,196,165,196,220,196,165, 147,165,196,147,196,196,196,196, 196,196,165,196,220,196,165,131, 165,165,147,165,196,165,147,123, 196,220,196,165,147,196,165,131, 196,196,196,196,196,196,196,196]},
+  {name:'Oh Susanna', bpm:120, waveM:'square', waveB:'triangle',
+   mel:[262,262,294,330, 262,330,294,0, 262,262,294,330, 262,0,0,0, 262,262,294,330, 392,330,294,262, 294,294,330,294, 262,0,0,0, 392,392,440,392, 330,392,0,0, 330,330,349,330, 294,0,0,0, 262,262,294,330, 262,330,294,262, 294,294,330,294, 262,0,0,0],
+   bass:[131,131,165,131, 131,165,131,131, 131,131,165,131, 131,131,131,131, 131,131,165,131, 196,165,131,131, 147,147,165,147, 131,131,131,131, 196,196,220,196, 165,196,196,196, 165,165,175,165, 147,147,147,147, 131,131,165,131, 131,165,131,131, 147,147,165,147, 131,131,131,131]},
+  {name:'Camptown Races', bpm:126, waveM:'square', waveB:'triangle',
+   mel:[392,392,392,330, 392,440,440,392, 330,262,294,294, 294,330,294,0, 392,392,392,330, 392,440,440,392, 330,262,294,294, 262,0,0,0, 330,330,330,330, 294,294,294,294, 330,330,330,330, 392,392,392,392, 392,440,440,392, 330,262,294,294, 392,392,330,262, 262,0,0,0],
+   bass:[196,196,196,165, 196,220,220,196, 165,131,147,147, 147,165,147,147, 196,196,196,165, 196,220,220,196, 165,131,147,147, 131,131,131,131, 165,165,165,165, 147,147,147,147, 165,165,165,165, 196,196,196,196, 196,220,220,196, 165,131,147,147, 196,196,165,131, 131,131,131,131]},
+  {name:'We Wish You Merry Xmas', bpm:132, waveM:'square', waveB:'triangle',
+   mel:[262,349,349, 392,349,330, 294,294,294, 392,392,440, 392,349,262, 440,440,440, 494,440,392, 349,0,0, 262,349,349, 392,349,330, 294,294,294, 392,392,440, 392,349,262, 523,494,440, 440,392,0, 0,0,0, 440,440,440, 494,440,392, 349,349,349, 440,392,349, 330,330,330, 440,349,330, 294,0,0, 0,0,0, 262,349,349, 392,349,330, 294,294,294, 392,392,440, 392,349,262, 523,494,440, 440,392,0, 0,0,0],
+   bass:[131,175,175, 196,175,165, 147,147,147, 196,196,220, 196,175,131, 220,220,220, 247,220,196, 175,175,175, 131,175,175, 196,175,165, 147,147,147, 196,196,220, 196,175,131, 262,247,220, 220,196,196, 196,196,196, 220,220,220, 247,220,196, 175,175,175, 220,196,175, 165,165,165, 220,175,165, 147,147,147, 147,147,147, 131,175,175, 196,175,165, 147,147,147, 196,196,220, 196,175,131, 262,247,220, 220,196,196, 196,196,196]},
+  {name:'BINGO', bpm:120, waveM:'square', waveB:'triangle',
+   mel:[392,392,392,330, 392,440,440,392, 330,262,294,294, 392,0,0,0, 392,392,392,330, 392,440,440,392, 330,262,294,294, 262,0,0,0, 392,440,494,392, 440,0,392,440, 494,392,440,0, 0,0,0,0, 392,440,494,392, 440,0,392,440, 494,392,440,0, 392,0,0,0],
+   bass:[196,196,196,165, 196,220,220,196, 165,131,147,147, 196,196,196,196, 196,196,196,165, 196,220,220,196, 165,131,147,147, 131,131,131,131, 196,220,247,196, 220,220,196,220, 247,196,220,220, 220,220,220,220, 196,220,247,196, 220,220,196,220, 247,196,220,220, 196,196,196,196]},
   {name:'Storm Chaser', bpm:150, waveM:'sawtooth', waveB:'sawtooth',
    mel:[220,247,261,294, 330,294,261,247, 220,247,261,294, 330,370,440,392, 330,294,261,247, 220,247,294,330, 370,440,494,440, 370,330,294,220],
    bass:[55,55,69,55, 55,55,69,55, 55,55,69,55, 55,69,62,55]},
@@ -917,7 +929,7 @@ let biome=BIOMES[0];
 let player={x:203,y:550,w:34,h:64};
 let audioCtx,penOsc,penGain,engOsc;
 let policeSpawnedThisLevel=0;
-let lvlStats={scoreAtStart:0,passStart:0,nitrosUsed:0,sideHits:0,crashCount:0,nitrosStart:0,startTime:0,topSpd:0,hornHonks:0};
+let lvlStats={scoreAtStart:0,passStart:0,nitrosUsed:0,sideHits:0,carHits:0,nitrosStart:0,startTime:0,topSpd:0,hornHonks:0};
 
 // ── ROAD FORK SYSTEM ──────────────────────────────────────────────────────────
 // A fork event scrolls warning signs, then a physical split zone where the road divides.
@@ -1768,6 +1780,157 @@ function _drawPrincess(c,x,y,t,stopped){
   c.restore();
 }
 
+// ── GAS STATION SEQUENCE (after level 4) ─────────────────────────────────────
+function showGasStation(onDone){
+  const gs=document.getElementById('gas-station');
+  gs.style.display='flex';
+  const gc2=document.getElementById('gas-canvas');
+  const gx=gc2.getContext('2d');
+  let gt=0;
+  let pumpAnim=0;
+
+  function drawGas(){
+    gt++;pumpAnim=(pumpAnim+1)%60;
+    gx.clearRect(0,0,320,300);
+
+    // Sky gradient — dusk
+    const sky=gx.createLinearGradient(0,0,0,120);
+    sky.addColorStop(0,'#0a0818');sky.addColorStop(1,'#1a1040');
+    gx.fillStyle=sky;gx.fillRect(0,0,320,300);
+
+    // Stars
+    [[20,15],[80,8],[140,20],[200,6],[260,18],[300,12],[50,35],[170,30],[290,40]].forEach(([sx,sy])=>{
+      gx.fillStyle='rgba(255,255,200,0.8)';gx.beginPath();gx.arc(sx,sy,1,0,Math.PI*2);gx.fill();
+    });
+
+    // Ground
+    gx.fillStyle='#222';gx.fillRect(0,180,320,120);
+    // Road/Forecourt
+    gx.fillStyle='#2d2d2d';gx.fillRect(0,220,320,80);
+    // Road markings
+    gx.strokeStyle='rgba(255,200,0,.4)';gx.lineWidth=2;gx.setLineDash([20,14]);
+    gx.beginPath();gx.moveTo(0,270);gx.lineTo(320,270);gx.stroke();gx.setLineDash([]);
+
+    // ── GAS STATION BUILDING ──────────────────────────────────────────────────
+    // Main building
+    gx.fillStyle='#3a3050';gx.fillRect(30,100,160,130);
+    // Roof overhang
+    gx.fillStyle='#2a2040';gx.fillRect(20,95,180,18);
+    // Roof neon strip
+    gx.fillStyle='rgba(255,60,60,0.9)';gx.fillRect(20,94,180,5);
+    // Sign on building
+    gx.fillStyle='#ff4400';gx.fillRect(50,108,120,28);
+    gx.strokeStyle='#ff6600';gx.lineWidth=2;gx.strokeRect(51,109,118,26);
+    gx.fillStyle='#fff';gx.font='bold 9px monospace';gx.textAlign='center';gx.textBaseline='middle';
+    gx.fillText('GAS  STOP',110,122);
+    // Windows
+    [[40,140,30,28],[90,140,30,28],[140,140,30,28]].forEach(([wx,wy,ww,wh])=>{
+      gx.fillStyle='rgba(0,150,255,0.2)';gx.fillRect(wx,wy,ww,wh);
+      gx.strokeStyle='#555';gx.lineWidth=1;gx.strokeRect(wx,wy,ww,wh);
+      // Window cross
+      gx.beginPath();gx.moveTo(wx+ww/2,wy);gx.lineTo(wx+ww/2,wy+wh);gx.stroke();
+      gx.beginPath();gx.moveTo(wx,wy+wh/2);gx.lineTo(wx+ww,wy+wh/2);gx.stroke();
+    });
+    // Door
+    gx.fillStyle='rgba(0,0,0,0.5)';gx.fillRect(158,170,22,60);
+    gx.strokeStyle='#666';gx.lineWidth=1;gx.strokeRect(158,170,22,60);
+    // Door handle
+    gx.fillStyle='#aaa';gx.beginPath();gx.arc(160,200,2,0,Math.PI*2);gx.fill();
+
+    // ── PRINCESS WANTED POSTER ON WINDOW ─────────────────────────────────────
+    // Slightly askew poster on left window — eye-catching
+    gx.save();gx.translate(55,145);gx.rotate(-0.06);
+    // Poster background — torn paper look
+    gx.fillStyle='#f4e4a0';gx.fillRect(-1,-1,28,36);
+    gx.fillStyle='#e8d080';
+    // Torn edge top
+    for(let ti=0;ti<14;ti++) gx.fillRect(ti*2,0,1,1+Math.sin(ti)*1.5);
+    // "WANTED" header
+    gx.fillStyle='#8b0000';gx.font='bold 5px monospace';gx.textAlign='center';gx.fillText('WANTED',14,7);
+    // Princess face (simple pixel art)
+    gx.fillStyle='#ffe0b2'; // skin
+    gx.beginPath();gx.arc(14,18,7,0,Math.PI*2);gx.fill();
+    // Hair
+    gx.fillStyle='#cc9900';gx.beginPath();gx.arc(14,15,8,Math.PI,0);gx.fill();
+    gx.beginPath();gx.ellipse(7,19,3,6,-0.2,0,Math.PI*2);gx.fill();
+    gx.beginPath();gx.ellipse(21,19,3,6,0.2,0,Math.PI*2);gx.fill();
+    // Crown
+    gx.fillStyle='#ffd700';gx.fillRect(8,9,12,3);
+    [8,12,16].forEach(cx=>{gx.beginPath();gx.moveTo(cx,9);gx.lineTo(cx+2,5);gx.lineTo(cx+4,9);gx.fill();});
+    // Eyes
+    gx.fillStyle='#333';gx.beginPath();gx.arc(11,17,1.2,0,Math.PI*2);gx.fill();
+    gx.beginPath();gx.arc(17,17,1.2,0,Math.PI*2);gx.fill();
+    // Smile
+    gx.strokeStyle='#cc3366';gx.lineWidth=1;gx.beginPath();gx.arc(14,20,3,0,Math.PI);gx.stroke();
+    // "PRINCESS" text below
+    gx.fillStyle='#333';gx.font='4px monospace';gx.textAlign='center';gx.fillText('PRINCESS',14,30);
+    gx.fillStyle='#cc0000';gx.font='bold 3.5px monospace';gx.fillText('FIND HER!',14,35);
+    // Pin/tape at top
+    gx.fillStyle='rgba(200,50,50,0.7)';gx.beginPath();gx.arc(14,-2,3,0,Math.PI*2);gx.fill();
+    gx.restore();
+
+    // ── GAS PUMP ──────────────────────────────────────────────────────────────
+    gx.fillStyle='#444';gx.fillRect(210,160,30,70);
+    gx.fillStyle='#cc0000';gx.fillRect(213,163,24,20);
+    gx.fillStyle='#ffffcc';gx.font='bold 5px monospace';gx.textAlign='center';gx.fillText('PUMP',225,174);
+    // Price display
+    gx.fillStyle='#000';gx.fillRect(213,185,24,12);
+    gx.fillStyle='#00ff66';gx.font='5px monospace';gx.textAlign='center';
+    gx.fillText('$4.99',225,192);
+    // Nozzle hose
+    gx.strokeStyle='#333';gx.lineWidth=3;
+    gx.beginPath();gx.moveTo(240,190);gx.quadraticCurveTo(255,185,258,200);gx.stroke();
+    gx.fillStyle='#222';gx.fillRect(256,198,6,8);
+
+    // ── PLAYER'S TAXI parked at pump ─────────────────────────────────────────
+    const carX=255, carY=215;
+    // Draw whichever car the player selected
+    if(selVeh==='will'){
+      // Minivan silhouette
+      gx.fillStyle=playerColor||'#f5c518';gx.beginPath();gx.roundRect(carX-22,carY,46,28,3);gx.fill();
+      gx.fillStyle=playerColor||'#f5c518';gx.beginPath();gx.roundRect(carX-18,carY-8,38,14,6);gx.fill();
+      gx.fillStyle='rgba(140,200,255,.5)';gx.fillRect(carX-16,carY-7,34,10);
+      gx.fillStyle='#111';gx.beginPath();gx.roundRect(carX-24,carY+8,6,12,2);gx.fill();
+      gx.beginPath();gx.roundRect(carX+18,carY+8,6,12,2);gx.fill();
+      gx.beginPath();gx.roundRect(carX-24,carY+18,6,12,2);gx.fill();
+      gx.beginPath();gx.roundRect(carX+18,carY+18,6,12,2);gx.fill();
+      gx.fillStyle='#ffd700';gx.fillRect(carX-8,carY-11,16,4);
+      gx.fillStyle='#000';gx.font='bold 4px Orbitron,monospace';gx.textAlign='center';gx.fillText('TAXI',carX,carY-9);
+    } else {
+      // SUV silhouette
+      gx.fillStyle=playerColor||'#f5c518';gx.beginPath();gx.roundRect(carX-20,carY+8,42,22,3);gx.fill();
+      gx.beginPath();gx.roundRect(carX-16,carY,34,16,8);gx.fill();
+      gx.fillStyle='rgba(140,200,255,.5)';gx.beginPath();gx.moveTo(carX-14,carY+1);gx.lineTo(carX+14,carY+1);gx.lineTo(carX+12,carY+13);gx.lineTo(carX-12,carY+13);gx.closePath();gx.fill();
+      gx.fillStyle='#111';gx.beginPath();gx.roundRect(carX-22,carY+10,5,12,2);gx.fill();
+      gx.beginPath();gx.roundRect(carX+17,carY+10,5,12,2);gx.fill();
+      gx.beginPath();gx.roundRect(carX-22,carY+20,5,12,2);gx.fill();
+      gx.beginPath();gx.roundRect(carX+17,carY+20,5,12,2);gx.fill();
+      gx.fillStyle='#ffd700';gx.fillRect(carX-7,carY-4,14,4);
+      gx.fillStyle='#000';gx.font='bold 4px Orbitron,monospace';gx.textAlign='center';gx.fillText('TAXI',carX,carY-2);
+    }
+
+    // Pulsing "!" thought bubble above car pointing to poster
+    if(Math.floor(gt/20)%2===0){
+      gx.fillStyle='rgba(255,255,255,0.9)';gx.beginPath();gx.arc(carX-30,carY-10,10,0,Math.PI*2);gx.fill();
+      gx.fillStyle='#ff4400';gx.font='bold 12px sans-serif';gx.textAlign='center';gx.textBaseline='middle';gx.fillText('!',carX-30,carY-10);
+    }
+
+    // Overhead canopy
+    gx.fillStyle='#cc2200';gx.fillRect(190,150,130,8);
+    gx.fillStyle='#aa1800';gx.fillRect(190,150,130,3);
+    // Canopy posts
+    gx.fillStyle='#888';gx.fillRect(192,158,6,72);gx.fillRect(310,158,6,72);
+
+    requestAnimationFrame(drawGas);
+  }
+  const gasAnim=requestAnimationFrame(drawGas);
+  setTimeout(()=>{
+    cancelAnimationFrame(gasAnim);
+    gs.style.display='none';
+    onDone();
+  },6000);
+}
+
 function saveRec(){ if(score>parseInt(localStorage.getItem('joesBest')||0)) localStorage.setItem('joesBest',score); if(totalMiles>parseInt(localStorage.getItem('joesMiles')||0)) localStorage.setItem('joesMiles',Math.floor(totalMiles)); refreshRec(); }
 function refreshRec(){ const s=localStorage.getItem('joesBest')||0,m=localStorage.getItem('joesMiles')||0; mainBestEl.innerText=s; mainBestMiEl.innerText=m; bestScoreEl.innerText=s; }
 refreshRec();
@@ -1932,21 +2095,27 @@ function update(dt){
         5 - lvlStats.sideHits*0.4 + lvlPass*0.3 + (bestCombo>=5?1:0) - (lvlStats.nitrosUsed===0&&level>2?0.5:0)
       )));
       const stars='★'.repeat(rawRating)+'☆'.repeat(5-rawRating);
-      pitUI.style.display='flex';
-      $('pit-ttl-txt').textContent=biome.icon+' FARE DELIVERED!';
+      // Flawless Victory check
+      const flawless=lvlStats.carHits===0&&lvlStats.sideHits===0;
+      if(flawless){
+        score+=1500; nitros++; nitroCountEl.innerText=nitros;
+        $('pit-flawless').style.display='block';
+      } else { $('pit-flawless').style.display='none'; }
+      const _showPit=()=>{
+        pitUI.style.display='flex';
+        $('pit-ttl-txt').textContent=biome.icon+' FARE DELIVERED!';
       $('pit-dest').innerText=AIRPORTS[(level-1)%AIRPORTS.length].toUpperCase();
-      $('pit-time').innerText=elapsed+'s';
       $('pit-lvl-miles').innerText=lvlMiles+' mi';
-      $('pit-lvl-score').innerText='+'+lvlScore+' pts';
-      $('pit-pass').innerText=lvlPass+' this run';
-      $('pit-nitros').innerText=lvlStats.nitrosUsed+(lvlStats.nitrosUsed===0?' (clean run!)':'x');
-      $('pit-hits').innerText=lvlStats.sideHits===0?'ZERO — PERFECT!':lvlStats.sideHits+'x';
-      $('pit-combo').innerText='x'+bestCombo+(bestCombo>=10?' 🔥':'');
+      $('pit-total-miles').innerText=Math.floor(totalMiles)+' mi total';
+      $('pit-pass').innerText=lvlPass+' this level';
+      $('pit-total-pass').innerText=passCollected+' total';
+      $('pit-carhits').innerText=lvlStats.carHits===0?'NONE — CLEAN DRIVE! 🌟':lvlStats.carHits+'x';
       $('pit-topspd').innerText=lvlStats.topSpd+' MPH';
-      $('pit-horn').innerText=lvlStats.hornHonks+(lvlStats.hornHonks>=5?' (honk addict!)':'');
-      $('pit-hp').innerText=Math.ceil(playerHP)+'% remaining';
-      $('pit-rating').innerText=stars;
+      $('pit-hp').innerText=Math.ceil(playerHP)+'%';
+      $('pit-lvl-score').innerText='+'+lvlScore+(flawless?' (+1500 FLAWLESS)':'');
       $('pit-total').innerText=score;
+      };// end _showPit
+      if(level===4){showGasStation(_showPit);}else{_showPit();}
 
       // ── 5-second countdown then trivia ───────────────────────────────────
       let tl=5;
@@ -2073,10 +2242,7 @@ function update(dt){
     // ── Player collision ──────────────────────────────────────────────────────
     if(!isInvincible&&player.x<o.x+NPC_W-2&&player.x+player.w>o.x+2&&player.y<o.y+NPC_H&&player.y+player.h>o.y+2){
       const killed=takeDamage(18);
-      if(!killed){
-        // Bounce NPC sideways
-        o.vx+=(o.x>player.x?10:-10);
-      }
+      if(!killed){ o.vx+=(o.x>player.x?10:-10); lvlStats.carHits++; }
     }
   }
 
@@ -2325,21 +2491,16 @@ function drawFork(){
 }
 
 function _drawChoiceLabel(rx,rw,midX,medW){
-  const {leftW,rightW,lLane1,rLane1}=_forkLaneGeom(medW);
-  const lblY=H*0.58;
+  // Dim the UNCHOSEN lane — no text, just a dark overlay on the wrong path
+  const {leftW,rightW}=_forkLaneGeom(medW);
   ctx.save();
+  ctx.fillStyle='rgba(0,0,0,0.38)'; // subtle dark veil
   if(forkChoice==='left'){
-    ctx.fillStyle='rgba(39,174,96,0.5)';
-    ctx.fillRect(rx+2,lblY-13,(midX-medW/2)-rx-3,26);
-    ctx.fillStyle='#fff';ctx.font='bold 8px Orbitron,sans-serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('YOUR WAY',lLane1,lblY);
+    // Dim the RIGHT lane (not chosen)
+    ctx.fillRect(midX+medW/2,0,rightW,H);
   } else {
-    ctx.fillStyle='rgba(41,128,185,0.5)';
-    ctx.fillRect(midX+medW/2+2,lblY-13,RR()-(midX+medW/2)-3,26);
-    ctx.fillStyle='#fff';ctx.font='bold 8px Orbitron,sans-serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('YOUR WAY',rLane1,lblY);
+    // Dim the LEFT lane (not chosen)
+    ctx.fillRect(rx,0,leftW,H);
   }
   ctx.restore();
 }
