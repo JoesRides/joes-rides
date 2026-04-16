@@ -948,9 +948,6 @@ let oilSlicks=[]; // {x,y,r,hit}
 let spinTimer=0; // ms remaining in spin
 let spinAngle=0; // current spin rotation in radians
 let spinVel=0;  // spin velocity
-// 4-lane expansion — integrated into fork transitions
-let fourLaneState='none'; // 'none'|'expand'|'hold'|'contract'
-let fourLaneScroll=0;     // scroll progress within current 4-lane phase
 let lightAlpha=0,lightTimer=0;
 let biome=BIOMES[0];
 let player={x:203,y:550,w:34,h:64};
@@ -958,51 +955,10 @@ let audioCtx,penOsc,penGain,engOsc;
 let policeSpawnedThisLevel=0;
 let lvlStats={scoreAtStart:0,passStart:0,nitrosUsed:0,sideHits:0,carHits:0,nitrosStart:0,startTime:0,topSpd:0,hornHonks:0};
 
-// ── ROAD FORK SYSTEM ──────────────────────────────────────────────────────────
-// A fork event scrolls warning signs, then a physical split zone where the road divides.
-// After the player crosses the split the road reforms.
-let forkState='none'; // 'none' | 'warning' | 'active' | 'transit' | 'reform'
-let forkScrollY=0;    // how far the fork graphics have scrolled
-let forkChoice=null;  // 'left' | 'right' — chosen by player's lateral position
-let forkSignsScroll=0;// sign scroll counter
-// forkMilestones and forkMilestoneIdx are defined in buildForkSchedule()
-let forkInMedian=false;// player is in the median zone — draining HP
-
 function milesForLvl(l){ return Math.round(10*Math.pow(1.5,l-1)); }
-// Pre-scheduled fork milestones for this level (array of offsets within level)
-let forkMilestones=[];
-let forkMilestoneIdx=0;
-
-// Each fork is {mile, dur} where dur controls split_full scroll budget
-// dur small (~H+200) = short split, dur large (~H+800) = ~8 second split at normal speed
-function buildForkSchedule(){
-  forkMilestones=[];
-  forkMilestoneIdx=0;
-  const maxForks=level<=5?(Math.random()<0.5?1:2):(Math.floor(Math.random()*3)+1);
-  const ml=milesPerLvl;
-  // Duration range: H+160 (short ~3s) to H+840 (long ~8s)
-  function randDur(){ return (H+160)+(Math.random()<0.35?(H*2.6):(Math.random()*H*0.8)); }
-  if(maxForks===1){
-    forkMilestones=[{mile:ml*(0.45+Math.random()*0.10),dur:randDur()}];
-  } else if(maxForks===2){
-    forkMilestones=[
-      {mile:ml*(0.30+Math.random()*0.10),dur:randDur()},
-      {mile:ml*(0.60+Math.random()*0.10),dur:randDur()}
-    ];
-  } else {
-    forkMilestones=[
-      {mile:ml*(0.25+Math.random()*0.08),dur:randDur()},
-      {mile:ml*(0.50+Math.random()*0.08),dur:randDur()},
-      {mile:ml*(0.74+Math.random()*0.08),dur:randDur()}
-    ];
-  }
-}
 
 function resetLvlStats(){
   lvlStats={scoreAtStart:score,passStart:passCollected,nitrosUsed:0,sideHits:0,nitrosStart:nitros,startTime:performance.now(),topSpd:0,hornHonks:0};
-  forkState='none'; forkScrollY=0; forkChoice=null; forkSignsScroll=0;
-  buildForkSchedule();
-  fourLaneState='none'; fourLaneScroll=0;
   // Seed oil slicks: 1-3 per level, spread across the level distance
   oilSlicks=[];
   const numSlicks=1+Math.floor(Math.random()*3);
@@ -1229,6 +1185,19 @@ function updEnv(dt,norm){
   });
 }
 
+// Utility: lighten a hex/rgb road colour for horizon haze
+function _blendRoadColor(col,amt){
+  // col is a CSS hex like '#22222e'. Lighten each channel by amt*255
+  try{
+    let h=col.replace('#','');
+    if(h.length===3) h=h.split('').map(c=>c+c).join('');
+    const r=Math.min(255,parseInt(h.slice(0,2),16)+Math.round(amt*255));
+    const g2=Math.min(255,parseInt(h.slice(2,4),16)+Math.round(amt*255));
+    const b=Math.min(255,parseInt(h.slice(4,6),16)+Math.round(amt*255));
+    return `rgb(${r},${g2},${b})`;
+  }catch(e){return col;}
+}
+
 function drawEnv(){
   const sg=ctx.createLinearGradient(0,0,0,H*.38);
   sg.addColorStop(0,biome.sky0); sg.addColorStop(1,biome.sky1);
@@ -1260,19 +1229,121 @@ function drawEnv(){
     });
   });
   const rx=RX(),rw=RW(),rr=RR();
-  ctx.fillStyle=biome.side; ctx.fillRect(0,H*.35,rx,H*.65); ctx.fillRect(rr,H*.35,rx,H*.65);
-  ctx.fillStyle=biome.side; ctx.fillRect(0,0,rx,H); ctx.fillRect(rr,0,rx,H);
-  ctx.fillStyle='rgba(255,255,255,.055)'; ctx.fillRect(rx-4,0,4,H); ctx.fillRect(rr,0,4,H);
-  ctx.fillStyle=biome.road; ctx.fillRect(rx,0,rw,H);
+  const laneW=rw/3;
+
+  // ── SIDEWALKS ────────────────────────────────────────────────────────────────
+  ctx.fillStyle=biome.side;
+  ctx.fillRect(0,0,rx,H);
+  ctx.fillRect(rr,0,W-rr,H);
+
+  // ── SIDEWALK PROPS ───────────────────────────────────────────────────────────
   if(biome.mario) marioProps.forEach(p=>drawMarioProp(p));
   else if(biome.sideTheme) sideProps.forEach(p=>drawSideProp(p));
-  if(biome.snow){ ctx.fillStyle='rgba(210,228,245,.07)'; ctx.fillRect(rx,0,rw,H); const laneW=rw/3; ctx.fillStyle='rgba(70,85,100,.38)'; ctx.fillRect(rx+laneW*.5-11,0,22,H); ctx.fillRect(rx+laneW*1.5-11,0,22,H); ctx.fillRect(rx+laneW*2.5-11,0,22,H); }
-  if(biome.sand){ ctx.fillStyle='rgba(200,170,90,.11)'; ctx.fillRect(rx,0,rw,H); }
-  ctx.strokeStyle=biome.line; ctx.lineWidth=2; ctx.setLineDash([22,18]); ctx.lineDashOffset=-lineOff;
-  ctx.beginPath(); for(let i=1;i<3;i++){ ctx.moveTo(rx+i*(rw/3),0); ctx.lineTo(rx+i*(rw/3),H); } ctx.stroke(); ctx.setLineDash([]);
-  ctx.strokeStyle=biome.shoulder; ctx.lineWidth=2; ctx.setLineDash([30,10]); ctx.lineDashOffset=-lineOff;
-  ctx.beginPath(); ctx.moveTo(rx+1,0); ctx.lineTo(rx+1,H); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(rr-1,0); ctx.lineTo(rr-1,H); ctx.stroke(); ctx.setLineDash([]);
+
+  // ── ROAD BASE ────────────────────────────────────────────────────────────────
+  // Deep blacktop gradient: slightly lighter at top (horizon haze), darker near player
+  const roadGrad=ctx.createLinearGradient(0,0,0,H);
+  const rc=biome.road; // base road colour from biome
+  roadGrad.addColorStop(0,_blendRoadColor(rc,0.18));   // horizon — lighter
+  roadGrad.addColorStop(0.35,_blendRoadColor(rc,0.06));
+  roadGrad.addColorStop(1,rc);                          // player end — full dark
+  ctx.fillStyle=roadGrad;
+  ctx.fillRect(rx,0,rw,H);
+
+  // ── SUBTLE ASPHALT TEXTURE ────────────────────────────────────────────────────
+  // Three overlapping semi-transparent strips simulate aggregate in the mix
+  // These are pre-computed bands that slide with lineOff for a scrolling feel
+  const texOff=(lineOff*1.4)%8;
+  ctx.save();
+  ctx.globalAlpha=0.04;
+  ctx.fillStyle='#fff';
+  for(let ty=-texOff;ty<H+8;ty+=8){
+    // stagger every other row for a random-pebble feel
+    const shift=(Math.floor(ty/8)%2)*12;
+    for(let tx=rx+shift;tx<rr;tx+=24){
+      ctx.fillRect(tx,ty,3,2);
+    }
+  }
+  ctx.restore();
+
+  // ── TYRE WEAR TRACKS in each lane (subtle lighter ruts) ───────────────────────
+  ctx.save();
+  ctx.globalAlpha=0.055;
+  ctx.fillStyle='#b0b8c0';
+  // Left and right tyre lines per lane
+  [0,1,2].forEach(li=>{
+    const lx=rx+li*laneW;
+    const t1=lx+laneW*0.25;
+    const t2=lx+laneW*0.72;
+    ctx.fillRect(t1,0,4,H);
+    ctx.fillRect(t2,0,4,H);
+  });
+  ctx.restore();
+
+  // ── BIOME ROAD SURFACE EFFECTS ────────────────────────────────────────────────
+  if(biome.snow){
+    // Snow pack: blueish-white overlay, heavier in centre of each lane
+    ctx.fillStyle='rgba(210,228,245,.09)'; ctx.fillRect(rx,0,rw,H);
+    ctx.fillStyle='rgba(230,240,255,.12)';
+    [0,1,2].forEach(li=>{ const cx=rx+li*laneW+laneW/2; ctx.fillRect(cx-13,0,26,H); });
+  }
+  if(biome.sand){
+    // Drifting sand reddish-tan glaze
+    ctx.fillStyle='rgba(200,160,70,.09)'; ctx.fillRect(rx,0,rw,H);
+  }
+  if(biome.storm){
+    // Wet reflective sheen — pale blue highlight strip down center
+    const wetG=ctx.createLinearGradient(rx,0,rr,0);
+    wetG.addColorStop(0,'rgba(80,100,140,.0)');
+    wetG.addColorStop(0.5,'rgba(100,130,180,.12)');
+    wetG.addColorStop(1,'rgba(80,100,140,.0)');
+    ctx.fillStyle=wetG; ctx.fillRect(rx,0,rw,H);
+  }
+  if(biome.id==='bowser'){
+    // Scorched asphalt — faint orange lava-heat shimmer
+    const lavaG=ctx.createLinearGradient(0,H,0,H*0.4);
+    lavaG.addColorStop(0,'rgba(180,40,0,.1)');
+    lavaG.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=lavaG; ctx.fillRect(rx,0,rw,H);
+  }
+  if(biome.neon){
+    // Wet neon-lit street: purple/cyan shimmer
+    const neonWet=ctx.createLinearGradient(rx,0,rr,0);
+    neonWet.addColorStop(0,'rgba(120,0,180,.06)');
+    neonWet.addColorStop(0.5,'rgba(0,200,255,.05)');
+    neonWet.addColorStop(1,'rgba(120,0,180,.06)');
+    ctx.fillStyle=neonWet; ctx.fillRect(rx,0,rw,H);
+  }
+
+  // ── KERB / GUTTER STRIP at road edges ─────────────────────────────────────────
+  // A narrow concrete gutter strip between sidewalk and road
+  ctx.fillStyle='rgba(150,145,140,.55)';
+  ctx.fillRect(rx-5,0,5,H);
+  ctx.fillRect(rr,0,5,H);
+  // Kerb highlight (top edge of kerb catches light)
+  ctx.fillStyle='rgba(220,215,210,.28)';
+  ctx.fillRect(rx-5,0,2,H);
+  ctx.fillRect(rr+3,0,2,H);
+
+  // ── SHOULDER / EDGE LINES (solid yellow) ─────────────────────────────────────
+  ctx.strokeStyle=biome.shoulder;
+  ctx.lineWidth=2.5;
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(rx+2,0); ctx.lineTo(rx+2,H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rr-2,0); ctx.lineTo(rr-2,H); ctx.stroke();
+
+  // ── LANE DIVIDERS (dashed white) ──────────────────────────────────────────────
+  ctx.strokeStyle=biome.line;
+  ctx.lineWidth=2;
+  ctx.setLineDash([28,20]);
+  ctx.lineDashOffset=-lineOff;
+  ctx.beginPath();
+  ctx.moveTo(rx+laneW,0); ctx.lineTo(rx+laneW,H);
+  ctx.moveTo(rx+laneW*2,0); ctx.lineTo(rx+laneW*2,H);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ── WEATHER OVERLAYS ─────────────────────────────────────────────────────────
   if(biome.snow){ snowflakes.forEach(s=>{ ctx.globalAlpha=s.a; ctx.fillStyle='#eef4ff'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1; }
   if(biome.sand){ sandDrifts.forEach(s=>{ ctx.globalAlpha=s.a; ctx.fillStyle='#c8a030'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1; }
   if(biome.storm){ ctx.strokeStyle='rgba(120,140,200,.32)'; ctx.lineWidth=1; rainDrops.forEach(r=>{ ctx.beginPath(); ctx.moveTo(r.x,r.y); ctx.lineTo(r.x-2,r.y+r.len); ctx.stroke(); }); }
@@ -2260,17 +2331,6 @@ function update(dt){
   let sm=vd.steer;
   if(biome.snow) sm*=.72; if(biome.sand) sm*=.82;
   player.x=Math.max(RX(),Math.min(RR()-player.w,player.x+steer*sm*norm));
-  // During fork full split: gently push player to chosen side
-  if(forkState==='split_full'){
-    const fMid2=RX()+RW()/2, medW3=22;
-    if(forkChoice==='left'){
-      if(player.x+player.w>fMid2-medW3/2-1) player.x-=1.5*norm;
-    } else {
-      if(player.x<fMid2+medW3/2+1) player.x+=1.5*norm;
-    }
-    player.x=Math.max(RX(),Math.min(RR()-player.w,player.x));
-  }
-
   if(player.x<RX()||(player.x+player.w)>RR()){
     if(!onSide){ score=Math.max(0,score-4); penGain.gain.setTargetAtTime(.04,audioCtx.currentTime,.05); onSide=true; breakCombo(); spawnFloat(player.x+player.w/2,player.y,'-4','#ff3131'); lvlStats.sideHits++; }
     sideTimer+=dt;
@@ -2584,326 +2644,8 @@ function update(dt){
   }
   updateSpeedTrail();
 
-  // ── FORK SYSTEM UPDATE ────────────────────────────────────────────────────
-  const milesInLvl=totalMiles-milesAtStart;
-  // Trigger next fork milestone
-  if(forkState==='none'&&forkMilestoneIdx<forkMilestones.length&&
-     milesInLvl>=forkMilestones[forkMilestoneIdx].mile&&finishY<-600&&!isInvincible){
-    forkState='sign_approach'; forkSignsScroll=0; forkScrollY=0; forkChoice=null; forkInMedian=false;
-  }
-
-  // ── SIGN APPROACH: scrolling roadside signs appear while road looks normal ──
-  if(forkState==='sign_approach'){
-    forkSignsScroll+=spd*2*norm;
-    // Continuously read player side preference
-    const roadCx2=RX()+RW()/2;
-    forkChoice=player.x+player.w/2 < roadCx2 ? 'left' : 'right';
-    if(forkSignsScroll>480){ forkState='split_grow'; forkScrollY=0; }
-  }
-
-  // ── SPLIT GROW: median appears at top and grows DOWN toward player ──────────
-  if(forkState==='split_grow'){
-    forkScrollY+=spd*3.5*norm; // how far down the split has reached
-    const roadCx3=RX()+RW()/2;
-    forkChoice=player.x+player.w/2 < roadCx3 ? 'left' : 'right';
-    // NO damage during grow — median hasn't reached player. Grass is safe.
-    forkInMedian=false;
-    if(forkScrollY>=H+50){ forkState='split_full'; forkScrollY=H+50; }
-  }
-
-  // ── SPLIT FULL: road fully split — damage only if player overlaps median strip
-  if(forkState==='split_full'){
-    forkScrollY+=spd*2*norm;
-    const roadCx4=RX()+RW()/2;
-    const medW2=22;
-    const medLeft4=roadCx4-medW2/2;
-    const medRight4=roadCx4+medW2/2;
-    const playerRight=player.x+player.w, playerLeft=player.x;
-    forkInMedian=(playerRight>medLeft4+2)&&(playerLeft<medRight4-2);
-    // Use per-fork duration (some are ~3s, some are ~8s)
-    const curForkDur=(forkMilestones[forkMilestoneIdx]&&forkMilestones[forkMilestoneIdx].dur)||H+380;
-    if(forkScrollY>curForkDur){ forkState='reform'; forkScrollY=0; forkInMedian=false; }
-  }
-
-  // ── REFORM: road narrows back to 3 lanes from top ───────────────────────────
-  if(forkState==='reform'){
-    forkScrollY+=spd*3*norm;
-    if(forkScrollY>H+80){
-      forkState='none'; forkScrollY=0; forkInMedian=false;
-      forkMilestoneIdx++; // advance to next fork in schedule
-    }
-  }
-
-  // ── 4-LANE EXPANSION: tied to fork transitions ─────────────────────────────
-  // expand: triggered when sign_approach begins → road widens top→down
-  // hold:   stays 4 lanes through the entire fork (split_grow, split_full)
-  // contract: triggered when reform ends → road narrows top→down back to 3
-  if(forkState==='sign_approach' && fourLaneState==='none'){
-    fourLaneState='expand'; fourLaneScroll=0;
-  }
-  if(forkState==='reform' && (fourLaneState==='hold'||fourLaneState==='expand')){
-    fourLaneState='contract'; fourLaneScroll=0;
-  }
-  if(fourLaneState==='expand'){
-    fourLaneScroll+=spd*3*norm;
-    if(fourLaneScroll>H+20){fourLaneState='hold'; fourLaneScroll=0;}
-  }
-  if(fourLaneState==='hold'){
-    fourLaneScroll+=spd*2*norm; // used for banner timing only
-  }
-  if(fourLaneState==='contract'){
-    fourLaneScroll+=spd*3*norm;
-    if(fourLaneScroll>H+20){fourLaneState='none'; fourLaneScroll=0;}
-  }
-
-  // Median damage
-  if(forkInMedian&&!isInvincible){
-    if(typeof forkMedianTimer==='undefined') window.forkMedianTimer=0;
-    forkMedianTimer+=dt;
-    if(forkMedianTimer>350){
-      playerHP=Math.max(0,playerHP-5); updateDmgBar();
-      document.getElementById('dmgflash').classList.add('on');
-      setTimeout(()=>document.getElementById('dmgflash').classList.remove('on'),140);
-      spawnFloat(player.x+player.w/2,player.y-10,'MEDIAN! -5','#ff6600');
-      forkMedianTimer=0;
-      if(playerHP<=0){killPlayer();return;}
-    }
-  } else { window.forkMedianTimer=0; }
 }
 
-// ── FORK DRAWING ─────────────────────────────────────────────────────────────
-// Lane geometry helpers — consistent everywhere
-function _forkLaneGeom(medW){
-  const rx=RX(),rw=RW(),rr=RR(),midX=rx+rw/2;
-  const leftW=midX-medW/2-rx;   // width of left highway
-  const rightW=rr-(midX+medW/2); // width of right highway
-  const lLane1=rx+leftW/2;       // left hwy centre line X
-  const rLane1=midX+medW/2+rightW/2; // right hwy centre line X
-  return {rx,rw,rr,midX,leftW,rightW,lLane1,rLane1};
-}
-
-function _drawSplitRoad(medW, fromY, toY){
-  // Draw the split road section between fromY and toY:
-  //   - green median strip (centred)
-  //   - road fill for left and right halves
-  //   - ONE dashed lane divider per half
-  //   - shoulder lines on outer edges
-  const {rx,rw,rr,midX,leftW,rightW,lLane1,rLane1}=_forkLaneGeom(medW);
-  // Road fill — use biome road colour so it always matches
-  ctx.fillStyle=biome.road;
-  ctx.fillRect(rx,fromY,rw,toY-fromY);
-  // Median kerb + grass
-  ctx.fillStyle='#555';
-  ctx.fillRect(midX-medW/2,fromY,medW,toY-fromY);
-  ctx.fillStyle='#2d7a2d';
-  ctx.fillRect(midX-medW/2+1,fromY,medW-2,toY-fromY);
-  // Left-half centre lane line
-  ctx.save();
-  ctx.strokeStyle=biome.line;ctx.lineWidth=2;ctx.setLineDash([16,14]);ctx.lineDashOffset=-lineOff;
-  ctx.beginPath();ctx.moveTo(lLane1,fromY);ctx.lineTo(lLane1,toY);ctx.stroke();
-  // Right-half centre lane line
-  ctx.beginPath();ctx.moveTo(rLane1,fromY);ctx.lineTo(rLane1,toY);ctx.stroke();
-  ctx.setLineDash([]);
-  // Outer shoulder lines (solid)
-  ctx.strokeStyle=biome.shoulder;ctx.lineWidth=2;ctx.setLineDash([24,10]);ctx.lineDashOffset=-lineOff;
-  ctx.beginPath();ctx.moveTo(rx+2,fromY);ctx.lineTo(rx+2,toY);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(rr-2,fromY);ctx.lineTo(rr-2,toY);ctx.stroke();
-  // Inner kerb lines (edge of median)
-  ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=1.5;ctx.setLineDash([]);
-  ctx.beginPath();ctx.moveTo(midX-medW/2,fromY);ctx.lineTo(midX-medW/2,toY);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(midX+medW/2,fromY);ctx.lineTo(midX+medW/2,toY);ctx.stroke();
-  ctx.restore();
-}
-
-function drawFork(){
-  const rx=RX(),rw=RW(),rr=RR(),midX=rx+rw/2;
-  const FULL_MED=22; // median width at full split
-
-  // ── SIGN APPROACH: roadside signs scroll in from the top ─────────────────
-  if(forkState==='sign_approach'||forkState==='split_grow'){
-    const signProg=forkState==='sign_approach'?forkSignsScroll:(480+forkScrollY*0.4);
-    // First sign pair scrolls in faster (it was further away)
-    const sy1=H*0.10+signProg*0.55-H*0.1;
-    const sy2=H*0.32+signProg*0.75-H*0.32;
-    if(sy1>-50&&sy1<H*0.82) drawRoadsideSignPair(rx,rr,sy1,'ROAD SPLITS');
-    if(sy2>-50&&sy2<H*0.82) drawRoadsideSignPair(rx,rr,sy2,'KEEP LEFT / RIGHT');
-  }
-
-  // ── SPLIT GROW: median grows from top of screen downward ─────────────────
-  if(forkState==='split_grow'){
-    // reachY is how far down the median has grown (0=just started, H+50=fully down)
-    const reachY=Math.min(H+50,forkScrollY);
-    // Median starts narrow at the top and widens as it scrolls down
-    const medAtReach=Math.min(FULL_MED,6+forkScrollY*0.03);
-    // Only draw split section from y=0 to y=reachY
-    _drawSplitRoad(medAtReach,0,reachY);
-    // Choice indicator once split is more than halfway down
-    if(reachY>H*0.45){
-      _drawChoiceLabel(rx,rw,midX,medAtReach);
-    }
-  }
-
-  // ── SPLIT FULL: full-screen split road ───────────────────────────────────
-  if(forkState==='split_full'){
-    _drawSplitRoad(FULL_MED,0,H);
-    _drawChoiceLabel(rx,rw,midX,FULL_MED);
-    if(forkInMedian){
-      ctx.save();ctx.strokeStyle='rgba(255,80,0,0.75)';ctx.lineWidth=2.5;ctx.setLineDash([5,4]);
-      ctx.strokeRect(midX-FULL_MED/2-2,0,FULL_MED+4,H);ctx.setLineDash([]);ctx.restore();
-    }
-  }
-
-  // ── REFORM: median shrinks back from top downward (mirror of split_grow) ──
-  if(forkState==='reform'){
-    // forkScrollY goes 0→H+80. The clear zone grows from the top downward.
-    const clearY=Math.min(H+50,forkScrollY); // top 'clearY' pixels have no median
-    // Below clearY: still show the split road (it hasn't merged yet)
-    if(clearY<H){
-      const medAtBottom=Math.max(2,FULL_MED*(1-(clearY/(H*0.8))));
-      _drawSplitRoad(medAtBottom,clearY,H);
-    }
-    // The transition area right at clearY — draw merge signs
-    if(clearY>20&&clearY<H*0.85){
-      drawRoadsideSignPair(rx,rr,clearY-18,'LANES MERGE');
-    }
-  }
-}
-
-function _drawChoiceLabel(rx,rw,midX,medW){
-  // Dim the UNCHOSEN lane — no text, just a dark overlay on the wrong path
-  const {leftW,rightW}=_forkLaneGeom(medW);
-  ctx.save();
-  ctx.fillStyle='rgba(0,0,0,0.38)'; // subtle dark veil
-  if(forkChoice==='left'){
-    // Dim the RIGHT lane (not chosen)
-    ctx.fillRect(midX+medW/2,0,rightW,H);
-  } else {
-    // Dim the LEFT lane (not chosen)
-    ctx.fillRect(rx,0,leftW,H);
-  }
-  ctx.restore();
-}
-
-// Draw a pair of roadside signs on both curbs
-function drawRoadsideSignPair(rx,rr,y,txt){
-  _drawRoadsideSign(rx-62,y,'#1a5c1a',txt);
-  _drawRoadsideSign(rr+2,y,'#1a5c1a',txt);
-}
-function _drawRoadsideSign(x,y,col,txt){
-  if(y<-50||y>H+10) return;
-  ctx.save();
-  // Post
-  ctx.fillStyle='#999';ctx.fillRect(x+27,y+34,4,28);
-  ctx.fillStyle='#777';ctx.fillRect(x+28,y+34,2,28);
-  // Sign board
-  ctx.fillStyle=col;
-  ctx.beginPath();ctx.roundRect(x+2,y,56,30,4);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.roundRect(x+3,y+1,54,28,3);ctx.stroke();
-  // White left stripe accent
-  ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(x+3,y+1,8,28);
-  // Text
-  ctx.fillStyle='#fff';ctx.font='bold 5.5px Orbitron,sans-serif';
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(txt,x+30,y+15);
-  ctx.restore();
-}
-
-function drawFourLane(){
-  if(fourLaneState==='none') return;
-  const rx=RX(),rw=RW(),rr=RR();
-  const FULL_ADD=Math.round(rw*0.30); // extra px per side at full 4-lane
-
-  if(fourLaneState==='expand'){
-    // Road widens from TOP of screen downward, like you're driving into a wider road
-    const reachY=Math.min(H+10, fourLaneScroll); // how far down the 4-lane has reached
-    const addWFull=FULL_ADD;
-    // Draw the expanded road from y=0 down to reachY
-    // At top it's full width, tapers to 3-lane at reachY (wedge shape)
-    ctx.save();
-    ctx.fillStyle=biome.road;
-    // Left expansion wedge: x goes from (rx-addWFull) at y=0 → (rx) at y=reachY
-    ctx.beginPath();
-    ctx.moveTo(rx-addWFull,0); ctx.lineTo(rx,reachY);
-    ctx.lineTo(rx,0); ctx.closePath(); ctx.fill();
-    // Right expansion wedge
-    ctx.beginPath();
-    ctx.moveTo(rr+addWFull,0); ctx.lineTo(rr,reachY);
-    ctx.lineTo(rr,0); ctx.closePath(); ctx.fill();
-    // Full 4-lane block above the wedge bottom
-    ctx.fillRect(rx-addWFull,0,addWFull,reachY);
-    ctx.fillRect(rr,0,addWFull,reachY);
-    // Outer dashed lane line (left)
-    const lLaneX=rx-addWFull/2;
-    ctx.strokeStyle=biome.line;ctx.lineWidth=2;ctx.setLineDash([18,14]);ctx.lineDashOffset=-lineOff;
-    ctx.beginPath();ctx.moveTo(lLaneX,0);ctx.lineTo(lLaneX,reachY);ctx.stroke();
-    // Outer dashed lane line (right)
-    const rLaneX=rr+addWFull/2;
-    ctx.beginPath();ctx.moveTo(rLaneX,0);ctx.lineTo(rLaneX,reachY);ctx.stroke();
-    ctx.setLineDash([]);
-    // Outer shoulder
-    ctx.strokeStyle=biome.shoulder;ctx.lineWidth=2;ctx.setLineDash([22,10]);ctx.lineDashOffset=-lineOff;
-    ctx.beginPath();ctx.moveTo(rx-addWFull+1,0);ctx.lineTo(rx-addWFull+1,reachY);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(rr+addWFull-1,0);ctx.lineTo(rr+addWFull-1,reachY);ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-
-  } else if(fourLaneState==='hold'){
-    // Full 4-lane road, all the way down
-    const addW=FULL_ADD;
-    ctx.save();
-    ctx.fillStyle=biome.road;
-    ctx.fillRect(rx-addW,0,addW,H);
-    ctx.fillRect(rr,0,addW,H);
-    ctx.strokeStyle=biome.line;ctx.lineWidth=2;ctx.setLineDash([18,14]);ctx.lineDashOffset=-lineOff;
-    ctx.beginPath();ctx.moveTo(rx-addW/2,0);ctx.lineTo(rx-addW/2,H);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(rr+addW/2,0);ctx.lineTo(rr+addW/2,H);ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.strokeStyle=biome.shoulder;ctx.lineWidth=2;ctx.setLineDash([22,10]);ctx.lineDashOffset=-lineOff;
-    ctx.beginPath();ctx.moveTo(rx-addW+1,0);ctx.lineTo(rx-addW+1,H);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(rr+addW-1,0);ctx.lineTo(rr+addW-1,H);ctx.stroke();
-    ctx.setLineDash([]);
-    // "4-LANE EXPRESSWAY" banner — shows when hold first begins
-    if(fourLaneScroll<100){
-      const banY=H*0.35;
-      ctx.fillStyle='rgba(0,180,80,0.88)';
-      ctx.beginPath();ctx.roundRect(rx-addW+4,banY,rw+addW*2-8,22,4);ctx.fill();
-      ctx.fillStyle='#fff';ctx.font='bold 9px Orbitron,sans-serif';
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText('⬅  4-LANE EXPRESSWAY  ➡',rx+rw/2,banY+11);
-    }
-    ctx.restore();
-
-  } else if(fourLaneState==='contract'){
-    // 4-lane narrows back from TOP downward (mirror of expand)
-    const clearY=Math.min(H+10, fourLaneScroll); // top clearY pixels are back to 3 lanes
-    const addW=FULL_ADD;
-    // Below clearY: still full 4 lanes
-    if(clearY<H){
-      ctx.save();
-      ctx.fillStyle=biome.road;
-      ctx.fillRect(rx-addW,clearY,addW,H-clearY);
-      ctx.fillRect(rr,clearY,addW,H-clearY);
-      // Wedge at clearY: 4-lane at bottom tapers to 3-lane at top
-      ctx.beginPath();
-      ctx.moveTo(rx-addW,clearY); ctx.lineTo(rx,clearY);
-      ctx.lineTo(rx,clearY+Math.min(60,H-clearY)); ctx.closePath(); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(rr+addW,clearY); ctx.lineTo(rr,clearY);
-      ctx.lineTo(rr,clearY+Math.min(60,H-clearY)); ctx.closePath(); ctx.fill();
-      // Lane and shoulder lines for the remaining 4-lane section
-      ctx.strokeStyle=biome.line;ctx.lineWidth=2;ctx.setLineDash([18,14]);ctx.lineDashOffset=-lineOff;
-      ctx.beginPath();ctx.moveTo(rx-addW/2,clearY);ctx.lineTo(rx-addW/2,H);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(rr+addW/2,clearY);ctx.lineTo(rr+addW/2,H);ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.strokeStyle=biome.shoulder;ctx.lineWidth=2;ctx.setLineDash([22,10]);ctx.lineDashOffset=-lineOff;
-      ctx.beginPath();ctx.moveTo(rx-addW+1,clearY);ctx.lineTo(rx-addW+1,H);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(rr+addW-1,clearY);ctx.lineTo(rr+addW-1,H);ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
-  }
-}
 function drawPlanes(){
   planes.forEach(p=>{
     const facing=p.vx>0?1:-1;
@@ -2956,8 +2698,6 @@ function drawPlanes(){
 function draw(){
   drawEnv();
   if(planes.length>0) drawPlanes();
-  if(fourLaneState!=='none') drawFourLane();
-  if(forkState!=='none') drawFork();
   if(finishY>-200){ const fw=RW(),fx=RX(),sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
   obstacles.forEach(o=>drawTraffic(o));
   police.forEach(p=>drawPoliceCar(p.x,p.y,p.flashPhase,p.parked));
