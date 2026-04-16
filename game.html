@@ -68,6 +68,9 @@ canvas{display:block;width:100%;height:100%}
 
 
 #splash{position:absolute;inset:0;background:#000;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s}
+/* JOE IN TRAFFIC SEQUENCE */
+#joe-seq{position:absolute;inset:0;background:#1a1a2e;z-index:140;display:none;flex-direction:column;align-items:center;justify-content:center}
+#joe-canvas{display:block;margin:0 auto}
 /* GAS STATION INTERLUDE */
 #gas-station{position:absolute;inset:0;background:#1a1a2a;z-index:140;display:none;flex-direction:column;align-items:center;justify-content:center;font-family:monospace}
 #gas-canvas{display:block;margin:0 auto}
@@ -151,6 +154,15 @@ canvas{display:block;width:100%;height:100%}
 #btn-horn:active{background:rgba(37,99,235,.65);transform:scale(.91)}
 #btn-nitro:active{background:rgba(239,68,68,.65);transform:scale(.91)}
 .btn-icon{font-size:1.4rem;line-height:1}
+/* CONTROL ZONES — show faint hint when no touch active */
+#steer-l::before,#steer-r::before{content:'';position:absolute;inset:0;border-radius:8px;opacity:0;transition:opacity .3s}
+#steer-l::before{background:linear-gradient(90deg,rgba(0,212,255,.06),transparent)}
+#steer-r::before{background:linear-gradient(270deg,rgba(0,212,255,.06),transparent)}
+#ctrl-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.92);border:1px solid rgba(0,212,255,.4);border-radius:14px;padding:18px 22px;z-index:60;pointer-events:none;text-align:center;font-family:'Orbitron',sans-serif;transition:opacity .5s}
+#ctrl-hint h3{color:var(--cyan);font-size:.72rem;letter-spacing:3px;margin:0 0 10px}
+.ch-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.ch-icon{font-size:1.1rem;min-width:24px}
+.ch-txt{font-size:.58rem;color:#ccddee;text-align:left;letter-spacing:1px}
 </style>
 </head>
 <body>
@@ -220,8 +232,7 @@ canvas{display:block;width:100%;height:100%}
   <div class="sr" style="font-size:.62rem;color:#aaccee;font-family:'Orbitron';width:88%;justify-content:space-between;margin-bottom:8px;font-weight:700">
     <span>ALL-TIME BEST</span><span id="best-score">0</span>
   </div>
-  <div class="pit-nl">TRIVIA CHALLENGE IN</div>
-  <div id="pit-tmr">5</div>
+  <div class="pit-nl" style="animation:blink 0.9s step-end infinite">▶ TAP OR PRESS SPACE TO CONTINUE ◀</div>
 </div>
 
 <!-- TRIVIA PANEL -->
@@ -232,6 +243,11 @@ canvas{display:block;width:100%;height:100%}
   <div id="trivia-opts"></div>
   <div id="trivia-result"></div>
   <div id="trivia-sub"></div>
+</div>
+
+<!-- JOE IN TRAFFIC SEQUENCE -->
+<div id="joe-seq">
+  <canvas id="joe-canvas" width="320" height="280"></canvas>
 </div>
 
 <!-- GAS STATION -->
@@ -254,6 +270,7 @@ canvas{display:block;width:100%;height:100%}
 
 <div id="steer-l"></div>
 <div id="steer-r"></div>
+<div id="ctrl-hint" style="opacity:0"><h3>CONTROLS</h3><div class="ch-row"><span class="ch-icon">👈</span><span class="ch-txt">TOUCH LEFT SIDE to steer left<br>DRAG finger left to steer left</span></div><div class="ch-row"><span class="ch-icon">👉</span><span class="ch-txt">TOUCH RIGHT SIDE to steer right<br>DRAG finger right to steer right</span></div><div class="ch-row"><span class="ch-icon">🚀</span><span class="ch-txt">NITRO button — bottom right</span></div><div class="ch-row"><span class="ch-icon">📯</span><span class="ch-txt">HORN button — bottom left</span></div><div class="ch-row"><span class="ch-icon">⌨️</span><span class="ch-txt">Desktop: A/D or ← → to steer<br>Space=Nitro, H=Horn</span></div></div>
 <div id="touch-btns">
   <div class="t-btn" id="btn-horn"><div class="btn-icon">📯</div>HORN</div>
   <div class="t-btn" id="btn-nitro"><div class="btn-icon">🚀</div>NITRO</div>
@@ -272,6 +289,7 @@ canvas{display:block;width:100%;height:100%}
         <div class="ar"><span class="al">SPEED</span><div class="ab"><div class="af" style="width:75%;background:var(--cyan)"></div></div></div>
         <div class="ar"><span class="al">HANDLE</span><div class="ab"><div class="af" style="width:55%;background:var(--green)"></div></div></div>
         <div class="ar"><span class="al">NITRO</span><div class="ab"><div class="af" style="width:90%;background:var(--red)"></div></div></div>
+        <div class="ar"><span class="al">HORN</span><div class="ab"><div class="af" style="width:40%;background:#ffd700"></div></div></div>
       </div>
     </div>
     <div class="vc" id="card-will" onclick="selectVehicle('will')">
@@ -281,6 +299,7 @@ canvas{display:block;width:100%;height:100%}
         <div class="ar"><span class="al">SPEED</span><div class="ab"><div class="af" style="width:55%;background:var(--cyan)"></div></div></div>
         <div class="ar"><span class="al">HANDLE</span><div class="ab"><div class="af" style="width:88%;background:var(--green)"></div></div></div>
         <div class="ar"><span class="al">NITRO</span><div class="ab"><div class="af" style="width:60%;background:var(--red)"></div></div></div>
+        <div class="ar"><span class="al">HORN</span><div class="ab"><div class="af" style="width:95%;background:#ffd700"></div></div></div>
       </div>
     </div>
   </div>
@@ -433,9 +452,9 @@ setTimeout(()=>{splash.style.opacity='0';setTimeout(()=>splash.style.display='no
 
 // ── 8-BIT MUSIC TUNES ─────────────────────────────────────────────────────────
 const TUNES = [
-  {name:'Oh Susanna', bpm:120, waveM:'square', waveB:'triangle',
-   mel:[262,262,294,330, 262,330,294,0, 262,262,294,330, 262,0,0,0, 262,262,294,330, 392,330,294,262, 294,294,330,294, 262,0,0,0, 392,392,440,392, 330,392,0,0, 330,330,349,330, 294,0,0,0, 262,262,294,330, 262,330,294,262, 294,294,330,294, 262,0,0,0],
-   bass:[131,131,165,131, 131,165,131,131, 131,131,165,131, 131,131,131,131, 131,131,165,131, 196,165,131,131, 147,147,165,147, 131,131,131,131, 196,196,220,196, 165,196,196,196, 165,165,175,165, 147,147,147,147, 131,131,165,131, 131,165,131,131, 147,147,165,147, 131,131,131,131]},
+  {name:'Oh Susanna', bpm:115, waveM:'square', waveB:'triangle',
+   mel:[262,262,294,330, 262,330,294,0, 262,262,294,330, 262,0,0,0, 262,262,294,330, 392,330,294,262, 294,294,330,294, 262,0,0,0, 262,262,294,330, 262,330,294,0, 262,262,294,330, 262,0,0,0, 262,262,294,330, 392,330,294,262, 294,294,330,294, 262,0,0,0, 392,392,440,392, 330,392,0,392, 392,392,440,392, 330,0,0,0, 330,330,349,330, 294,0,0,294, 262,262,294,330, 262,330,294,262, 294,294,330,294, 262,0,0,0, 330,262,262,294, 330,262,330,294, 0,262,262,294, 330,262,0,0, 262,262,294,330, 392,330,294,262, 294,294,330,294, 262,0,0,0, 392,392,440,392, 330,392,0,392, 392,392,440,392, 330,0,0,0, 330,330,349,330, 294,0,0,294, 262,262,294,330, 262,330,294,262, 294,294,330,294, 262,0,0,0],
+   bass:[131,131,165,131, 131,165,131,131, 131,131,165,131, 131,131,131,131, 131,131,165,131, 196,165,131,131, 147,147,165,147, 131,131,131,131, 131,131,165,131, 131,165,131,131, 131,131,165,131, 131,131,131,131, 131,131,165,131, 196,165,131,131, 147,147,165,147, 131,131,131,131, 196,196,220,196, 165,196,196,196, 196,196,220,196, 165,165,165,165, 165,165,175,165, 147,147,147,147, 131,131,165,131, 131,165,131,131, 147,147,165,147, 131,131,131,131, 165,131,131,165, 165,131,165,147, 147,131,131,165, 165,131,131,131, 131,131,165,131, 196,165,131,131, 147,147,165,147, 131,131,131,131, 196,196,220,196, 165,196,196,196, 196,196,220,196, 165,165,165,165, 165,165,175,165, 147,147,147,147, 131,131,165,131, 131,165,131,131, 147,147,165,147, 131,131,131,131]},
   {name:'Camptown Races', bpm:126, waveM:'square', waveB:'triangle',
    mel:[392,392,392,330, 392,440,440,392, 330,262,294,294, 294,330,294,0, 392,392,392,330, 392,440,440,392, 330,262,294,294, 262,0,0,0, 330,330,330,330, 294,294,294,294, 330,330,330,330, 392,392,392,392, 392,440,440,392, 330,262,294,294, 392,392,330,262, 262,0,0,0],
    bass:[196,196,196,165, 196,220,220,196, 165,131,147,147, 147,165,147,147, 196,196,196,165, 196,220,220,196, 165,131,147,147, 131,131,131,131, 165,165,165,165, 147,147,147,147, 165,165,165,165, 196,196,196,196, 196,220,220,196, 165,131,147,147, 196,196,165,131, 131,131,131,131]},
@@ -445,18 +464,18 @@ const TUNES = [
   {name:'BINGO', bpm:120, waveM:'square', waveB:'triangle',
    mel:[392,392,392,330, 392,440,440,392, 330,262,294,294, 392,0,0,0, 392,392,392,330, 392,440,440,392, 330,262,294,294, 262,0,0,0, 392,440,494,392, 440,0,392,440, 494,392,440,0, 0,0,0,0, 392,440,494,392, 440,0,392,440, 494,392,440,0, 392,0,0,0],
    bass:[196,196,196,165, 196,220,220,196, 165,131,147,147, 196,196,196,196, 196,196,196,165, 196,220,220,196, 165,131,147,147, 131,131,131,131, 196,220,247,196, 220,220,196,220, 247,196,220,220, 220,220,220,220, 196,220,247,196, 220,220,196,220, 247,196,220,220, 196,196,196,196]},
-  {name:'Storm Chaser', bpm:150, waveM:'sawtooth', waveB:'sawtooth',
-   mel:[220,247,261,294, 330,294,261,247, 220,247,261,294, 330,370,440,392, 330,294,261,247, 220,247,294,330, 370,440,494,440, 370,330,294,220],
-   bass:[55,55,69,55, 55,55,69,55, 55,55,69,55, 55,69,62,55]},
-  {name:'Golden Dawn', bpm:145, waveM:'triangle', waveB:'triangle',
-   mel:[523,659,784,880, 1047,880,784,659, 523,587,659,698, 784,698,659,587, 523,659,784,1047, 1047,880,784,659, 784,880,1047,1175, 1047,880,784,523],
-   bass:[131,131,165,131, 196,175,165,131, 131,131,165,131, 196,165,175,131]},
-  {name:'Neon Strip', bpm:155, waveM:'square', waveB:'sawtooth',
-   mel:[659,698,784,698, 659,587,523,587, 659,698,784,880, 784,698,659,698, 784,880,988,880, 784,698,659,587, 523,587,659,698, 784,880,988,784],
-   bass:[165,165,196,165, 165,165,196,165, 165,165,196,165, 165,196,175,165]},
-  {name:'Fog Coast', bpm:120, waveM:'triangle', waveB:'sine',
-   mel:[440,494,523,494, 440,415,392,415, 440,494,523,587, 523,494,440,415, 392,440,494,523, 494,440,392,349, 392,415,440,494, 523,587,523,440],
-   bass:[110,110,131,110, 110,110,131,110, 110,110,131,110, 110,131,123,110]},
+  {name:'Green Hill', bpm:168, waveM:'square', waveB:'triangle',
+   mel:[330,370,415,440, 494,440,415,370, 330,370,415,554, 494,0,494,554, 659,554,494,440, 415,440,494,415, 370,415,440,370, 330,0,0,0, 330,370,415,440, 494,554,659,740, 659,554,494,440, 415,0,415,440, 494,440,415,370, 330,370,415,494, 440,415,370,330, 330,0,0,0],
+   bass:[165,165,208,165, 247,165,208,165, 165,165,208,165, 247,247,247,277, 330,277,247,220, 208,220,247,208, 185,208,220,185, 165,165,165,165, 165,165,208,165, 247,277,330,370, 330,277,247,220, 208,208,208,220, 247,220,208,185, 165,185,208,247, 220,208,185,165, 165,165,165,165]},
+  {name:'Mario Vibes', bpm:162, waveM:'square', waveB:'triangle',
+   mel:[330,262,330,262, 440,0,494,0, 466,0,392,0, 330,440,494,466, 440,392,330,392, 440,392,330,294, 262,0,0,0, 330,262,330,262, 440,0,494,0, 466,0,392,0, 330,440,494,466, 440,392,262,262, 330,294,262,0, 0,0,0,0, 392,392,392,349, 330,0,330,523, 523,494,440,415, 440,0,0,0, 349,349,415,392, 0,330,0,262, 294,330,262,262, 330,294,262,0],
+   bass:[131,131,131,131, 220,220,247,247, 233,233,196,196, 165,220,247,233, 220,196,165,196, 220,196,165,147, 131,131,131,131, 131,131,131,131, 220,220,247,247, 233,233,196,196, 165,220,247,233, 220,196,131,131, 165,147,131,131, 131,131,131,131, 196,196,196,175, 165,165,165,262, 262,247,220,208, 220,220,220,220, 175,175,208,196, 196,165,165,131, 147,165,131,131, 165,147,131,131]},
+  {name:'Chemical Plant', bpm:172, waveM:'square', waveB:'sawtooth',
+   mel:[784,784,698,784, 880,784,698,659, 698,698,622,698, 784,698,622,587, 622,622,554,622, 698,622,554,523, 554,587,622,698, 784,0,784,0, 784,784,698,784, 880,880,988,880, 784,784,880,784, 698,784,880,784, 698,698,784,880, 988,880,784,698, 784,880,988,1047, 988,0,0,0],
+   bass:[196,196,175,196, 220,196,175,165, 175,175,156,175, 196,175,156,147, 156,156,139,156, 175,156,139,131, 139,147,156,175, 196,196,196,196, 196,196,175,196, 220,220,247,220, 196,196,220,196, 175,196,220,196, 175,175,196,220, 247,220,196,175, 196,220,247,262, 247,247,247,247]},
+  {name:'Bowser Castle', bpm:144, waveM:'sawtooth', waveB:'sawtooth',
+   mel:[220,220,220,220, 247,0,233,0, 220,220,220,220, 175,196,220,0, 220,220,220,220, 247,0,247,261, 277,0,277,294, 220,0,0,0, 330,0,330,0, 294,0,294,0, 277,0,261,247, 220,247,261,277, 294,0,294,0, 330,0,330,350, 370,0,440,0, 392,0,0,0, 220,220,233,247, 220,0,196,0, 175,0,175,196, 220,247,220,196, 175,175,196,220, 247,0,261,0, 277,261,247,233, 220,0,0,0],
+   bass:[55,55,55,55, 62,55,58,55, 55,55,55,55, 44,49,55,55, 55,55,55,55, 62,55,62,65, 69,55,69,73, 55,55,55,55, 82,82,82,82, 73,73,73,73, 69,69,65,62, 55,62,65,69, 73,73,73,73, 82,82,82,87, 92,92,110,110, 98,98,98,98, 55,55,58,62, 55,55,49,49, 44,44,44,49, 55,62,55,49, 44,44,49,55, 62,62,65,65, 69,65,62,58, 55,55,55,55]},
 ];
 
 const BIOMES=[
@@ -907,8 +926,8 @@ function _drawCastleProp(x,y,t,ph){
 }
 
 const VEH={
-  joe:{w:34,h:64,speedBonus:.18,steer:5.8,nitroMult:3.0,nitroDur:3000},
-  will:{w:38,h:72,speedBonus:0,steer:8.2,nitroMult:2.2,nitroDur:2200}
+  joe:{w:34,h:64,speedBonus:.18,steer:5.8,nitroMult:3.0,nitroDur:3000,hornRate:3}, // 1 in 3 honks
+  will:{w:38,h:72,speedBonus:0,steer:8.2,nitroMult:2.2,nitroDur:2200,hornRate:1}  // every honk
 };
 let selVeh='joe',playerColor='#f5c518';
 
@@ -924,6 +943,14 @@ let milesPerLvl=10,origSpd=1.0,maxSpd=1.0;
 let onSide=false,sideTimer=0,lastHornT=0,isInvincible=false,heartsSpawned=false;
 let touchSteer=0,parts=[],floats=[],snowflakes=[],sandDrifts=[],rainDrops=[],stars=[],buildings=[];
 let combo=0,comboTimer=0,bestCombo=0;
+let planes=[],planeSpawnTimer=0;
+let oilSlicks=[]; // {x,y,r,hit}
+let spinTimer=0; // ms remaining in spin
+let spinAngle=0; // current spin rotation in radians
+let spinVel=0;  // spin velocity
+// 4-lane expansion — integrated into fork transitions
+let fourLaneState='none'; // 'none'|'expand'|'hold'|'contract'
+let fourLaneScroll=0;     // scroll progress within current 4-lane phase
 let lightAlpha=0,lightTimer=0;
 let biome=BIOMES[0];
 let player={x:203,y:550,w:34,h:64};
@@ -975,6 +1002,14 @@ function resetLvlStats(){
   lvlStats={scoreAtStart:score,passStart:passCollected,nitrosUsed:0,sideHits:0,nitrosStart:nitros,startTime:performance.now(),topSpd:0,hornHonks:0};
   forkState='none'; forkScrollY=0; forkChoice=null; forkSignsScroll=0;
   buildForkSchedule();
+  fourLaneState='none'; fourLaneScroll=0;
+  // Seed oil slicks: 1-3 per level, spread across the level distance
+  oilSlicks=[];
+  const numSlicks=1+Math.floor(Math.random()*3);
+  for(let si=0;si<numSlicks;si++){
+    const slickMile=milesPerLvl*(0.15+si*(0.7/numSlicks)+Math.random()*0.15);
+    oilSlicks.push({mile:slickMile,y:-9999,active:false,hit:false,r:22+Math.random()*16});
+  }
 }
 
 function selectVehicle(v){
@@ -1061,7 +1096,8 @@ function horn(){
 
 function triggerHornTraffic(){
   hornPressCount++;
-  if(hornPressCount%4!==0)return;
+  const _hRate=VEH[selVeh].hornRate||3;
+  if(hornPressCount%_hRate!==0)return;
   const px=player.x,py=player.y,laneW=RW()/3,rx=RX();
   const candidates=[];
   obstacles.forEach(o=>{
@@ -1164,6 +1200,24 @@ function updEnv(dt,norm){
   if(biome.storm){ rainDrops.forEach(r=>{ r.y+=r.vy*norm; r.x-=.6*norm; if(r.y>H){r.y=-10;r.x=Math.random()*W;} }); lightTimer-=dt; if(lightTimer<=0&&Math.random()<.004){ lightTimer=3000+Math.random()*5000; lightAlpha=.38; setTimeout(()=>lightAlpha=0,110); setTimeout(()=>{lightAlpha=.28;setTimeout(()=>lightAlpha=0,80);},170); } }
   stars.forEach(s=>{ s.t=(s.t+.018)%(Math.PI*2); });
   if(comboTimer>0){ comboTimer-=dt; if(comboTimer<=0) breakCombo(); }
+  // Plane spawning in final 3 miles
+  const _milesLeft3=milesPerLvl-(totalMiles-milesAtStart);
+  const _planeAllowed=![4,6].includes(level);
+  if(_planeAllowed&&_milesLeft3<=3&&_milesLeft3>0&&!isInvincible){
+    planeSpawnTimer-=dt;
+    if(planeSpawnTimer<=0){
+      const side=Math.random()<0.5?-1:1;
+      planes.push({x:side<0?-80:W+80,y:30+Math.random()*H*0.28,vy:(Math.random()-0.5)*0.4,vx:side*(2.2+Math.random()*1.8),type:Math.floor(Math.random()*3),trail:[]});
+      planeSpawnTimer=3500+Math.random()*4000;
+    }
+  }
+  planes.forEach(p=>{
+    p.x+=p.vx*norm; p.y+=p.vy*norm;
+    p.trail.push({x:p.x,y:p.y,life:1});
+    p.trail.forEach(t=>t.life-=0.015);
+    p.trail=p.trail.filter(t=>t.life>0);
+  });
+  planes=planes.filter(p=>p.x>-150&&p.x<W+150);
   if(biome.mario) updMarioProps(norm);
   else if(biome.sideTheme) updSideProps(norm);
   if(damageCooldown>0) damageCooldown--;
@@ -1568,6 +1622,41 @@ function drawCoin(x,y){
   ctx.restore();
 }
 
+function drawOilSlick(o){
+  if(!o.active||o.hit) return;
+  ctx.save();
+  // RC Pro Am style: black cartoon blob, white skull, bright outline
+  // Base black puddle
+  ctx.fillStyle='#111';
+  ctx.beginPath();ctx.ellipse(o.x,o.y,o.r,o.r*0.5,0,0,Math.PI*2);ctx.fill();
+  // Dark edge highlight
+  ctx.strokeStyle='#333';ctx.lineWidth=2.5;ctx.stroke();
+  // Chunky irregular blobs to make it look hand-drawn
+  ctx.fillStyle='#0a0a0a';
+  ctx.beginPath();ctx.ellipse(o.x-o.r*0.3,o.y-2,o.r*0.4,o.r*0.28,0.3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(o.x+o.r*0.35,o.y+2,o.r*0.35,o.r*0.22,-0.2,0,Math.PI*2);ctx.fill();
+  // RC Pro Am white outline dot pattern
+  const dots=[[-0.5,-0.1],[0.4,-0.2],[0,0.15],[-0.2,0.2],[0.5,0.05]];
+  dots.forEach(([dx,dy])=>{
+    ctx.fillStyle='rgba(255,255,255,0.55)';
+    ctx.beginPath();ctx.arc(o.x+dx*o.r,o.y+dy*o.r,2.5,0,Math.PI*2);ctx.fill();
+  });
+  // Cartoon skull icon in center
+  const sx=o.x,sy=o.y;
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.beginPath();ctx.arc(sx,sy-2,5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.fillRect(sx-4,sy+2,8,4);
+  // Skull eyes
+  ctx.fillStyle='#111';
+  ctx.beginPath();ctx.arc(sx-2,sy-2,1.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(sx+2,sy-2,1.5,0,Math.PI*2);ctx.fill();
+  // Skull teeth
+  ctx.fillStyle='#111';
+  [sx-3,sx-1,sx+1,sx+3].forEach(tx=>{ctx.fillRect(tx,sy+3,1.5,2);});
+  ctx.restore();
+}
+
 function drawBoostPad(x,y){
   const t=Date.now()/300,pulse=0.7+0.3*Math.sin(t);
   ctx.save(); ctx.globalAlpha=pulse;
@@ -1780,6 +1869,123 @@ function _drawPrincess(c,x,y,t,stopped){
   c.restore();
 }
 
+// ── JOE IN TRAFFIC SEQUENCE (after level 2) ──────────────────────────────────
+function showJoeSequence(onDone){
+  if(selVeh!=='joe'){onDone();return;} // Will players skip this
+  const js=document.getElementById('joe-seq');
+  js.style.display='flex';
+  const jc=document.getElementById('joe-canvas');
+  const jx=jc.getContext('2d');
+  let jt=0;
+  let bubblePhase=0; // 0=empty, 1=growing, 2=text showing, 3=holding
+  let bubblePct=0;
+  let tapMsg=null;
+
+  function drawJoe(){
+    jt++;
+    // Bubble grows in after 60 frames
+    if(jt>60&&bubblePhase===0) bubblePhase=1;
+    if(bubblePhase===1){bubblePct+=0.04;if(bubblePct>=1){bubblePct=1;bubblePhase=2;}}
+    jx.clearRect(0,0,320,280);
+    // Night city sky
+    const sky=jx.createLinearGradient(0,0,0,120);
+    sky.addColorStop(0,'#050510');sky.addColorStop(1,'#0a0828');
+    jx.fillStyle=sky;jx.fillRect(0,0,320,280);
+    // City buildings silhouette
+    [[0,80,28,140],[32,100,22,120],[58,60,35,160],[96,88,18,132],[118,72,30,148],[152,90,25,130],[180,55,38,165],[222,78,28,142],[254,95,24,125],[282,65,32,155]].forEach(([bx,by,bw,bh])=>{
+      jx.fillStyle='#0a0a22';jx.fillRect(bx,by,bw,bh);
+      // Window lights
+      for(let wy=by+6;wy<by+bh-10;wy+=10) for(let wx=bx+3;wx<bx+bw-3;wx+=6){
+        if(Math.random()<0.45){jx.fillStyle='rgba(255,230,80,0.7)';jx.fillRect(wx,wy,3,3);}
+      }
+    });
+    // Road
+    jx.fillStyle='#1a1a2e';jx.fillRect(0,170,320,110);
+    jx.strokeStyle='rgba(255,200,0,.35)';jx.lineWidth=2;jx.setLineDash([18,12]);
+    jx.beginPath();jx.moveTo(0,215);jx.lineTo(320,215);jx.stroke();jx.setLineDash([]);
+    // Traffic jam — 4 cars ahead
+    const carCols=['#cc3300','#225599','#228822','#888888'];
+    [[30,155],[90,155],[160,155],[235,155]].forEach(([cx,cy],i)=>{
+      jx.fillStyle=carCols[i];
+      jx.beginPath();jx.roundRect(cx,cy,42,28,4);jx.fill();
+      jx.beginPath();jx.roundRect(cx+6,cy-10,28,14,6);jx.fill();
+      jx.fillStyle='rgba(140,200,255,0.5)';jx.fillRect(cx+8,cy-9,24,10);
+      jx.fillStyle='#ffffcc';jx.fillRect(cx+2,cy+2,5,3);jx.fillRect(cx+35,cy+2,5,3);
+      jx.fillStyle='#ff2222';jx.fillRect(cx+2,cy+23,8,3);jx.fillRect(cx+32,cy+23,8,3);
+      jx.fillStyle='#111';
+      jx.beginPath();jx.roundRect(cx-2,cy+6,5,10,2);jx.fill();
+      jx.beginPath();jx.roundRect(cx+39,cy+6,5,10,2);jx.fill();
+    });
+    // Joe's black SUV (player car) at bottom center
+    const joex=128,joey=194;
+    jx.fillStyle='#111';jx.beginPath();jx.ellipse(joex+20,joey+34,24,5,0,0,Math.PI*2);jx.fill();
+    jx.fillStyle='#1a1a1a'; // black SUV
+    jx.beginPath();jx.roundRect(joex,joey+10,40,24,4);jx.fill();
+    jx.beginPath();jx.roundRect(joex+4,joey,32,16,8);jx.fill();
+    jx.fillStyle='rgba(140,200,255,0.55)';jx.beginPath();jx.moveTo(joex+6,joey+1);jx.lineTo(joex+34,joey+1);jx.lineTo(joex+32,joey+14);jx.lineTo(joex+8,joey+14);jx.closePath();jx.fill();
+    jx.fillStyle='#ffd700';jx.fillRect(joex+12,joey-4,16,4);
+    jx.fillStyle='#000';jx.font='bold 4px Orbitron,monospace';jx.textAlign='center';jx.fillText('TAXI',joex+20,joey-2);
+    jx.fillStyle='#ffffcc';jx.fillRect(joex+2,joey+10,6,3);jx.fillRect(joex+32,joey+10,6,3);
+    jx.fillStyle='#ff2222';jx.fillRect(joex+2,joey+31,10,3);jx.fillRect(joex+28,joey+31,10,3);
+    jx.fillStyle='#111';
+    [joex-3,joex+35].forEach(wx=>{jx.beginPath();jx.roundRect(wx,joey+13,4,12,2);jx.fill();jx.beginPath();jx.roundRect(wx,joey+25,4,12,2);jx.fill();});
+    // Driver silhouette in Joe's car
+    jx.fillStyle='#333';jx.beginPath();jx.arc(joex+16,joey+7,5,0,Math.PI*2);jx.fill();
+    jx.beginPath();jx.roundRect(joex+11,joey+11,10,8,2);jx.fill();
+    // THOUGHT BUBBLE
+    if(bubblePhase>=1){
+      const bp=bubblePct;
+      const bx2=joex+36,by2=joey-8;
+      // Bubble dots leading up
+      [[bx2+4,by2-4,3],[bx2+12,by2-14,5],[bx2+22,by2-26,8]].forEach(([dx,dy,dr],i)=>{
+        if(bp>(i*0.25)){
+          jx.globalAlpha=Math.min(1,bp*3-i*0.5);
+          jx.fillStyle='rgba(255,255,255,0.9)';
+          jx.beginPath();jx.arc(dx,dy,dr*bp,0,Math.PI*2);jx.fill();
+        }
+      });
+      jx.globalAlpha=1;
+      // Main bubble
+      const bw=172,bh=80;
+      const btx=bx2+36,bty=by2-100;
+      if(bp>0.4){
+        const bpA=Math.min(1,(bp-0.4)*2.5);
+        jx.globalAlpha=bpA;
+        jx.fillStyle='rgba(255,255,255,0.95)';
+        jx.beginPath();jx.roundRect(btx,bty,bw*bpA,bh,12);jx.fill();
+        jx.strokeStyle='rgba(100,100,200,0.5)';jx.lineWidth=2;jx.stroke();
+        if(bubblePhase>=2&&bpA>0.8){
+          jx.fillStyle='#222';jx.font='bold 9px Orbitron,sans-serif';
+          jx.textAlign='left';jx.textBaseline='top';
+          const lines=["I can't wait till","she'll let us move","to Florida!"];
+          lines.forEach((ln,li)=>{jx.fillText(ln,btx+10,bty+10+li*22);});
+        }
+        jx.globalAlpha=1;
+      }
+    }
+    // Tap prompt
+    if(jt>120&&Math.floor(jt/30)%2===0){
+      jx.fillStyle='rgba(255,215,0,0.9)';jx.font='bold 7px Orbitron,monospace';jx.textAlign='center';
+      jx.fillText('TAP OR SPACE TO CONTINUE',160,268);
+    }
+    requestAnimationFrame(drawJoe);
+  }
+  let joeAnimId=requestAnimationFrame(drawJoe);
+  function _joeAdvance(){
+    cancelAnimationFrame(joeAnimId);
+    js.style.display='none';
+    document.removeEventListener('keydown',_joeKey);
+    js.removeEventListener('touchstart',_joeTap);
+    onDone();
+  }
+  function _joeKey(e){ if(e.code==='Space'||e.code==='Enter'){e.preventDefault();_joeAdvance();} }
+  function _joeTap(e){ e.preventDefault(); _joeAdvance(); }
+  setTimeout(()=>{
+    document.addEventListener('keydown',_joeKey);
+    js.addEventListener('touchstart',_joeTap,{passive:false});
+  },1200);
+}
+
 // ── GAS STATION SEQUENCE (after level 4) ─────────────────────────────────────
 function showGasStation(onDone){
   const gs=document.getElementById('gas-station');
@@ -1822,7 +2028,7 @@ function showGasStation(onDone){
     gx.fillStyle='#ff4400';gx.fillRect(50,108,120,28);
     gx.strokeStyle='#ff6600';gx.lineWidth=2;gx.strokeRect(51,109,118,26);
     gx.fillStyle='#fff';gx.font='bold 9px monospace';gx.textAlign='center';gx.textBaseline='middle';
-    gx.fillText('GAS  STOP',110,122);
+    gx.fillText("FARMER JOEL'S",110,122);
     // Windows
     [[40,140,30,28],[90,140,30,28],[140,140,30,28]].forEach(([wx,wy,ww,wh])=>{
       gx.fillStyle='rgba(0,150,255,0.2)';gx.fillRect(wx,wy,ww,wh);
@@ -1923,12 +2129,28 @@ function showGasStation(onDone){
 
     requestAnimationFrame(drawGas);
   }
-  const gasAnim=requestAnimationFrame(drawGas);
-  setTimeout(()=>{
-    cancelAnimationFrame(gasAnim);
+  // Add tap/space prompt
+  const tapMsg=document.createElement('div');
+  tapMsg.id='gas-tap-msg';
+  tapMsg.style.cssText='position:absolute;bottom:28px;left:0;right:0;text-align:center;font-family:Orbitron,sans-serif;font-size:.65rem;font-weight:900;color:#ffd700;letter-spacing:3px;animation:blink 0.9s step-end infinite;pointer-events:none';
+  tapMsg.textContent='▶ TAP OR PRESS SPACE TO CONTINUE ◀';
+  gs.appendChild(tapMsg);
+  let gasAnimId=requestAnimationFrame(drawGas);
+  function _gasAdvance(){
+    cancelAnimationFrame(gasAnimId);
     gs.style.display='none';
+    if(tapMsg.parentNode) tapMsg.parentNode.removeChild(tapMsg);
+    document.removeEventListener('keydown',_gasKeyHandler);
+    gs.removeEventListener('touchstart',_gasTouchHandler);
     onDone();
-  },6000);
+  }
+  function _gasKeyHandler(e){ if(e.code==='Space'||e.code==='Enter'){ e.preventDefault(); _gasAdvance(); } }
+  function _gasTouchHandler(e){ e.preventDefault(); _gasAdvance(); }
+  // Small delay so accidental tap from level end doesn't skip
+  setTimeout(()=>{
+    document.addEventListener('keydown',_gasKeyHandler);
+    gs.addEventListener('touchstart',_gasTouchHandler,{passive:false});
+  },800);
 }
 
 function saveRec(){ if(score>parseInt(localStorage.getItem('joesBest')||0)) localStorage.setItem('joesBest',score); if(totalMiles>parseInt(localStorage.getItem('joesMiles')||0)) localStorage.setItem('joesMiles',Math.floor(totalMiles)); refreshRec(); }
@@ -2101,70 +2323,75 @@ function update(dt){
         score+=1500; nitros++; nitroCountEl.innerText=nitros;
         $('pit-flawless').style.display='block';
       } else { $('pit-flawless').style.display='none'; }
+      // ── Pit advance: tap/space → trivia. Defined once, used by _showPit ───────
+      // Guard so double-tap doesn't fire twice
+      let _pitFired=false;
+      function _pitAdvance(){
+        if(_pitFired) return; _pitFired=true;
+        document.removeEventListener('keydown',_pitKeyHandler);
+        pitUI.removeEventListener('touchstart',_pitTouchHandler);
+        pitUI.style.display='none';
+        const _lvlAtAdvance=level; // capture level NOW before async
+        showTrivia(
+          _lvlAtAdvance+1,
+          ()=>{
+            if(_lvlAtAdvance>=8){
+              inPitStop=false; gameActive=false;
+              pitUI.style.display='none';
+              if(musicTimer) clearInterval(musicTimer);
+              showPrincessEnding();
+              return;
+            }
+            inPitStop=false;
+            const vd2=VEH[selVeh];
+            level=_lvlAtAdvance+1; levelEl.innerText=level; updateRank();
+            milesPerLvl=milesForLvl(level);
+            maxSpd=1.0+(level*(0.15+vd2.speedBonus));
+            spd=maxSpd*.7; milesAtStart=totalMiles; finishY=-2000;
+            destEl.innerText=AIRPORTS[(level-1)%AIRPORTS.length];
+            isInvincible=false; heartsSpawned=false; hearts=[]; pb.style.width='0%';
+            const _pp=$('prog-pct');if(_pp)_pp.textContent='0%';
+            bestCombo=0; combo=0; police=[]; policeSpawnedThisLevel=0;
+            specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[];
+            planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0;
+            playerHP=Math.min(MAX_HP,playerHP+30); updateDmgBar(); hornPressCount=0;
+            initBiome(); showLvlAnn(); lvlUpSnd(); startMusic(); resetLvlStats();
+          },
+          ()=>{
+            inPitStop=false; gameActive=false; saveRec();
+            overlay.style.display='flex';
+            $('msg').innerText='TRIVIA FAIL!';
+            $('msg').style.color='#ff3131';
+            $('msg').style.textShadow='0 0 20px #ff3131';
+          }
+        );
+      }
+      function _pitKeyHandler(e){ if(e.code==='Space'||e.code==='Enter'){e.preventDefault();_pitAdvance();} }
+      function _pitTouchHandler(e){ e.preventDefault(); _pitAdvance(); }
+
+      // _showPit: fill stats, show pit UI, register listeners
       const _showPit=()=>{
         pitUI.style.display='flex';
         $('pit-ttl-txt').textContent=biome.icon+' FARE DELIVERED!';
-      $('pit-dest').innerText=AIRPORTS[(level-1)%AIRPORTS.length].toUpperCase();
-      $('pit-lvl-miles').innerText=lvlMiles+' mi';
-      $('pit-total-miles').innerText=Math.floor(totalMiles)+' mi total';
-      $('pit-pass').innerText=lvlPass+' this level';
-      $('pit-total-pass').innerText=passCollected+' total';
-      $('pit-carhits').innerText=lvlStats.carHits===0?'NONE — CLEAN DRIVE! 🌟':lvlStats.carHits+'x';
-      $('pit-topspd').innerText=lvlStats.topSpd+' MPH';
-      $('pit-hp').innerText=Math.ceil(playerHP)+'%';
-      $('pit-lvl-score').innerText='+'+lvlScore+(flawless?' (+1500 FLAWLESS)':'');
-      $('pit-total').innerText=score;
-      };// end _showPit
-      if(level===4){showGasStation(_showPit);}else{_showPit();}
+        $('pit-dest').innerText=AIRPORTS[(level-1)%AIRPORTS.length].toUpperCase();
+        $('pit-lvl-miles').innerText=lvlMiles+' mi';
+        $('pit-total-miles').innerText=Math.floor(totalMiles)+' mi total';
+        $('pit-pass').innerText=lvlPass+' this level';
+        $('pit-total-pass').innerText=passCollected+' total';
+        $('pit-carhits').innerText=lvlStats.carHits===0?'NONE — CLEAN DRIVE! 🌟':lvlStats.carHits+'x';
+        $('pit-topspd').innerText=lvlStats.topSpd+' MPH';
+        $('pit-hp').innerText=Math.ceil(playerHP)+'%';
+        $('pit-lvl-score').innerText='+'+lvlScore+(flawless?' (+1500 FLAWLESS)':'');
+        $('pit-total').innerText=score;
+        // Small delay prevents level-end touch from firing immediately
+        setTimeout(()=>{
+          document.addEventListener('keydown',_pitKeyHandler);
+          pitUI.addEventListener('touchstart',_pitTouchHandler,{passive:false});
+        },700);
+      };
 
-      // ── 5-second countdown then trivia ───────────────────────────────────
-      let tl=5;
-      $('pit-tmr').innerText=tl;
-      const tmr=setInterval(()=>{
-        tl--; $('pit-tmr').innerText=tl;
-        if(tl<=0){
-          clearInterval(tmr);
-          pitUI.style.display='none';
-
-          const nextLvl = level + 1;
-
-          showTrivia(
-            nextLvl,
-            // onPass — correct answer: advance (or end game after level 8)
-            () => {
-              if(level>=8){
-                inPitStop=false; gameActive=false;
-                pitUI.style.display='none';
-                if(musicTimer) clearInterval(musicTimer);
-                showPrincessEnding();
-                return;
-              }
-              inPitStop=false;
-              const vd2=VEH[selVeh];
-              level++; levelEl.innerText=level; updateRank();
-              milesPerLvl=milesForLvl(level);
-              maxSpd=1.0+(level*(0.15+vd2.speedBonus));
-              spd=maxSpd*.7; milesAtStart=totalMiles; finishY=-2000;
-              destEl.innerText=AIRPORTS[(level-1)%AIRPORTS.length];
-              isInvincible=false; heartsSpawned=false; hearts=[]; pb.style.width='0%';const _pp=$('prog-pct');if(_pp)_pp.textContent='0%';
-              bestCombo=0; combo=0; police=[]; policeSpawnedThisLevel=0;
-              specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[];
-              playerHP=Math.min(MAX_HP,playerHP+30);updateDmgBar();hornPressCount=0;
-              initBiome(); showLvlAnn(); lvlUpSnd(); startMusic(); resetLvlStats();
-            },
-            // onFail — wrong answer: game over
-            () => {
-              inPitStop=false;
-              gameActive=false;
-              saveRec();
-              overlay.style.display='flex';
-              $('msg').innerText='TRIVIA FAIL!';
-              $('msg').style.color='#ff3131';
-              $('msg').style.textShadow='0 0 20px #ff3131';
-            }
-          );
-        }
-      },1000);
+      if(level===4){showGasStation(_showPit);}
+      else{_showPit();}
     }
   }
 
@@ -2325,6 +2552,36 @@ function update(dt){
   boostPads.forEach((bp,i)=>{ bp.y+=spd*norm; if(player.x+player.w/2>bp.x-18&&player.x+player.w/2<bp.x+18&&player.y+player.h>bp.y&&player.y<bp.y+28){ spd=Math.min(maxSpd*1.4,spd*1.35); spawnFloat(bp.x,bp.y,'BOOST!','#00ff96'); boostPads.splice(i,1); } });
   boostPads=boostPads.filter(bp=>bp.y<H+30);
 
+  // ── OIL SLICK UPDATE ────────────────────────────────────────────────────────
+  const _miOil=totalMiles-milesAtStart;
+  oilSlicks.forEach(o=>{
+    // Activate when player reaches the slick's mile marker
+    if(!o.active&&_miOil>=o.mile){
+      const lx=RX()+Math.round(RW()/6)+Math.floor(Math.random()*3)*Math.round(RW()/3);
+      o.x=lx+(Math.random()-0.5)*40; o.y=-60; o.active=true;
+    }
+    if(o.active&&!o.hit){
+      o.y+=spd*2.2*norm;
+      if(o.y>H+50){o.active=false;o.hit=true;return;}
+      // Collision with player
+      if(spinTimer<=0&&!isInvincible){
+        const dx=player.x+player.w/2-o.x, dy=player.y+player.h/2-o.y;
+        if(Math.sqrt(dx*dx+dy*dy)<o.r+14){
+          o.hit=true; spinTimer=2800; spinAngle=0; spinVel=0.18;
+          spawnFloat(player.x+player.w/2,player.y-10,'SLICK! 🌀','#44aaff');
+          tone(220,0.3,'sawtooth',0.08);
+        }
+      }
+    }
+  });
+  // Spin effect
+  if(spinTimer>0){
+    spinTimer-=dt;
+    spinVel*=0.996;
+    spinAngle+=spinVel;
+    spd=Math.max(0.2,spd*0.998);
+    if(spinTimer<=0){spinTimer=0;spinAngle=0;spinVel=0;}
+  }
   updateSpeedTrail();
 
   // ── FORK SYSTEM UPDATE ────────────────────────────────────────────────────
@@ -2375,6 +2632,28 @@ function update(dt){
       forkState='none'; forkScrollY=0; forkInMedian=false;
       forkMilestoneIdx++; // advance to next fork in schedule
     }
+  }
+
+  // ── 4-LANE EXPANSION: tied to fork transitions ─────────────────────────────
+  // expand: triggered when sign_approach begins → road widens top→down
+  // hold:   stays 4 lanes through the entire fork (split_grow, split_full)
+  // contract: triggered when reform ends → road narrows top→down back to 3
+  if(forkState==='sign_approach' && fourLaneState==='none'){
+    fourLaneState='expand'; fourLaneScroll=0;
+  }
+  if(forkState==='reform' && (fourLaneState==='hold'||fourLaneState==='expand')){
+    fourLaneState='contract'; fourLaneScroll=0;
+  }
+  if(fourLaneState==='expand'){
+    fourLaneScroll+=spd*3*norm;
+    if(fourLaneScroll>H+20){fourLaneState='hold'; fourLaneScroll=0;}
+  }
+  if(fourLaneState==='hold'){
+    fourLaneScroll+=spd*2*norm; // used for banner timing only
+  }
+  if(fourLaneState==='contract'){
+    fourLaneScroll+=spd*3*norm;
+    if(fourLaneScroll>H+20){fourLaneState='none'; fourLaneScroll=0;}
   }
 
   // Median damage
@@ -2530,9 +2809,154 @@ function _drawRoadsideSign(x,y,col,txt){
   ctx.restore();
 }
 
+function drawFourLane(){
+  if(fourLaneState==='none') return;
+  const rx=RX(),rw=RW(),rr=RR();
+  const FULL_ADD=Math.round(rw*0.30); // extra px per side at full 4-lane
+
+  if(fourLaneState==='expand'){
+    // Road widens from TOP of screen downward, like you're driving into a wider road
+    const reachY=Math.min(H+10, fourLaneScroll); // how far down the 4-lane has reached
+    const addWFull=FULL_ADD;
+    // Draw the expanded road from y=0 down to reachY
+    // At top it's full width, tapers to 3-lane at reachY (wedge shape)
+    ctx.save();
+    ctx.fillStyle=biome.road;
+    // Left expansion wedge: x goes from (rx-addWFull) at y=0 → (rx) at y=reachY
+    ctx.beginPath();
+    ctx.moveTo(rx-addWFull,0); ctx.lineTo(rx,reachY);
+    ctx.lineTo(rx,0); ctx.closePath(); ctx.fill();
+    // Right expansion wedge
+    ctx.beginPath();
+    ctx.moveTo(rr+addWFull,0); ctx.lineTo(rr,reachY);
+    ctx.lineTo(rr,0); ctx.closePath(); ctx.fill();
+    // Full 4-lane block above the wedge bottom
+    ctx.fillRect(rx-addWFull,0,addWFull,reachY);
+    ctx.fillRect(rr,0,addWFull,reachY);
+    // Outer dashed lane line (left)
+    const lLaneX=rx-addWFull/2;
+    ctx.strokeStyle=biome.line;ctx.lineWidth=2;ctx.setLineDash([18,14]);ctx.lineDashOffset=-lineOff;
+    ctx.beginPath();ctx.moveTo(lLaneX,0);ctx.lineTo(lLaneX,reachY);ctx.stroke();
+    // Outer dashed lane line (right)
+    const rLaneX=rr+addWFull/2;
+    ctx.beginPath();ctx.moveTo(rLaneX,0);ctx.lineTo(rLaneX,reachY);ctx.stroke();
+    ctx.setLineDash([]);
+    // Outer shoulder
+    ctx.strokeStyle=biome.shoulder;ctx.lineWidth=2;ctx.setLineDash([22,10]);ctx.lineDashOffset=-lineOff;
+    ctx.beginPath();ctx.moveTo(rx-addWFull+1,0);ctx.lineTo(rx-addWFull+1,reachY);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(rr+addWFull-1,0);ctx.lineTo(rr+addWFull-1,reachY);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+  } else if(fourLaneState==='hold'){
+    // Full 4-lane road, all the way down
+    const addW=FULL_ADD;
+    ctx.save();
+    ctx.fillStyle=biome.road;
+    ctx.fillRect(rx-addW,0,addW,H);
+    ctx.fillRect(rr,0,addW,H);
+    ctx.strokeStyle=biome.line;ctx.lineWidth=2;ctx.setLineDash([18,14]);ctx.lineDashOffset=-lineOff;
+    ctx.beginPath();ctx.moveTo(rx-addW/2,0);ctx.lineTo(rx-addW/2,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(rr+addW/2,0);ctx.lineTo(rr+addW/2,H);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle=biome.shoulder;ctx.lineWidth=2;ctx.setLineDash([22,10]);ctx.lineDashOffset=-lineOff;
+    ctx.beginPath();ctx.moveTo(rx-addW+1,0);ctx.lineTo(rx-addW+1,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(rr+addW-1,0);ctx.lineTo(rr+addW-1,H);ctx.stroke();
+    ctx.setLineDash([]);
+    // "4-LANE EXPRESSWAY" banner — shows when hold first begins
+    if(fourLaneScroll<100){
+      const banY=H*0.35;
+      ctx.fillStyle='rgba(0,180,80,0.88)';
+      ctx.beginPath();ctx.roundRect(rx-addW+4,banY,rw+addW*2-8,22,4);ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='bold 9px Orbitron,sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('⬅  4-LANE EXPRESSWAY  ➡',rx+rw/2,banY+11);
+    }
+    ctx.restore();
+
+  } else if(fourLaneState==='contract'){
+    // 4-lane narrows back from TOP downward (mirror of expand)
+    const clearY=Math.min(H+10, fourLaneScroll); // top clearY pixels are back to 3 lanes
+    const addW=FULL_ADD;
+    // Below clearY: still full 4 lanes
+    if(clearY<H){
+      ctx.save();
+      ctx.fillStyle=biome.road;
+      ctx.fillRect(rx-addW,clearY,addW,H-clearY);
+      ctx.fillRect(rr,clearY,addW,H-clearY);
+      // Wedge at clearY: 4-lane at bottom tapers to 3-lane at top
+      ctx.beginPath();
+      ctx.moveTo(rx-addW,clearY); ctx.lineTo(rx,clearY);
+      ctx.lineTo(rx,clearY+Math.min(60,H-clearY)); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(rr+addW,clearY); ctx.lineTo(rr,clearY);
+      ctx.lineTo(rr,clearY+Math.min(60,H-clearY)); ctx.closePath(); ctx.fill();
+      // Lane and shoulder lines for the remaining 4-lane section
+      ctx.strokeStyle=biome.line;ctx.lineWidth=2;ctx.setLineDash([18,14]);ctx.lineDashOffset=-lineOff;
+      ctx.beginPath();ctx.moveTo(rx-addW/2,clearY);ctx.lineTo(rx-addW/2,H);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(rr+addW/2,clearY);ctx.lineTo(rr+addW/2,H);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle=biome.shoulder;ctx.lineWidth=2;ctx.setLineDash([22,10]);ctx.lineDashOffset=-lineOff;
+      ctx.beginPath();ctx.moveTo(rx-addW+1,clearY);ctx.lineTo(rx-addW+1,H);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(rr+addW-1,clearY);ctx.lineTo(rr+addW-1,H);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }
+}
+function drawPlanes(){
+  planes.forEach(p=>{
+    const facing=p.vx>0?1:-1;
+    // Contrail — wide fluffy white trail
+    p.trail.forEach(t=>{
+      ctx.globalAlpha=t.life*0.18;
+      ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.arc(t.x,t.y,4+t.life*3,0,Math.PI*2);ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    if(facing<0) ctx.scale(-1,1);
+    const col=p.type===0?'#e8e8ee':p.type===1?'#b8d8f8':'#f8e8c8';
+    const wingCol=p.type===0?'#c8c8d8':p.type===1?'#90b8e0':'#d8c8a8';
+    // Shadow on ground (faint)
+    // Main fuselage — wide, clearly visible
+    ctx.fillStyle=col;
+    ctx.beginPath();ctx.ellipse(0,0,30,7,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=1;ctx.stroke();
+    // Nose
+    ctx.fillStyle='#aaa';
+    ctx.beginPath();ctx.moveTo(30,0);ctx.lineTo(38,-2);ctx.lineTo(38,2);ctx.closePath();ctx.fill();
+    // Wide swept wings
+    ctx.fillStyle=wingCol;
+    ctx.beginPath();ctx.moveTo(-8,-6);ctx.lineTo(10,-6);ctx.lineTo(18,0);ctx.lineTo(10,6);ctx.lineTo(-8,6);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.2)';ctx.lineWidth=0.8;ctx.stroke();
+    // Tail vertical fin
+    ctx.fillStyle=wingCol;
+    ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-18,-14);ctx.lineTo(-14,-14);ctx.lineTo(-14,0);ctx.closePath();ctx.fill();
+    // Horizontal stabiliser
+    ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-18,5);ctx.lineTo(-12,5);ctx.lineTo(-12,0);ctx.closePath();ctx.fill();
+    // Windows row
+    ctx.fillStyle='rgba(140,200,255,0.9)';
+    for(let w=-8;w<=14;w+=5){ctx.beginPath();ctx.roundRect(w,-3,3,4,1);ctx.fill();}
+    // Twin engine pods
+    [6,-6].forEach(ey=>{
+      ctx.fillStyle='#888';
+      ctx.beginPath();ctx.ellipse(4,ey+ey*0.4,10,3.5,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#444';ctx.beginPath();ctx.ellipse(12,ey+ey*0.4,4,2.5,0,0,Math.PI*2);ctx.fill();
+    });
+    // Airline colour stripe
+    const stripeCol=p.type===0?'#003399':p.type===1?'#cc0000':'#009933';
+    ctx.fillStyle=stripeCol;ctx.fillRect(-22,1,50,3);
+    ctx.restore();
+  });
+}
+
 // ── DRAW ──────────────────────────────────────────────────────────────────────
 function draw(){
   drawEnv();
+  if(planes.length>0) drawPlanes();
+  if(fourLaneState!=='none') drawFourLane();
   if(forkState!=='none') drawFork();
   if(finishY>-200){ const fw=RW(),fx=RX(),sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
   obstacles.forEach(o=>drawTraffic(o));
@@ -2544,10 +2968,18 @@ function draw(){
   });
   boostPads.forEach(bp=>drawBoostPad(bp.x,bp.y));
   coins.forEach(c=>drawCoin(c.x,c.y));
+  oilSlicks.forEach(o=>drawOilSlick(o));
   drawSpeedTrail();
   drawHeadlights();
   const hlOn=biome.night;
+  // Apply spin rotation if on oil slick
+  if(spinTimer>0){
+    ctx.save();
+    const scx=player.x+player.w/2,scy=player.y+player.h/2;
+    ctx.translate(scx,scy);ctx.rotate(spinAngle);ctx.translate(-scx,-scy);
+  }
   selVeh==='joe'?drawSUV(ctx,player.x,player.y,playerColor,'JOE',isInvincible,isNitroActive,hlOn):drawMinivan(ctx,player.x,player.y,playerColor,'WILL',isInvincible,isNitroActive,hlOn);
+  if(spinTimer>0){ctx.restore();}
   if(isNitroActive){ const fx=player.x+player.w/2,fy=player.y+player.h,fH=22+Math.random()*26,fg=ctx.createRadialGradient(fx,fy,0,fx,fy+fH,fH); fg.addColorStop(0,'rgba(255,200,0,.9)'); fg.addColorStop(.4,'rgba(255,80,0,.6)'); fg.addColorStop(1,'rgba(255,0,0,0)'); ctx.fillStyle=fg; ctx.beginPath(); ctx.ellipse(fx,fy+fH/2,11,fH/2,0,0,Math.PI*2); ctx.fill(); }
   hearts.forEach(h=>{ if(h.collected) return; ctx.save(); ctx.fillStyle='#ff69b4'; ctx.shadowBlur=18; ctx.shadowColor='#ff69b4'; ctx.beginPath(); ctx.moveTo(h.x,h.y+10); ctx.bezierCurveTo(h.x,h.y,h.x-14,h.y,h.x-14,h.y+10); ctx.bezierCurveTo(h.x-14,h.y+24,h.x,h.y+30,h.x,h.y+38); ctx.bezierCurveTo(h.x,h.y+30,h.x+14,h.y+24,h.x+14,h.y+10); ctx.bezierCurveTo(h.x+14,h.y,h.x,h.y,h.x,h.y+10); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.font='bold 7px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+HP',h.x,h.y+20); ctx.restore(); });
   passengers.forEach(p=>{ ctx.save(); ctx.strokeStyle='#00f3ff'; ctx.fillStyle='#00f3ff'; ctx.shadowBlur=12; ctx.shadowColor='#00f3ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y-24,5,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.moveTo(p.x,p.y-19); ctx.lineTo(p.x,p.y-6); ctx.moveTo(p.x-7,p.y-14); ctx.lineTo(p.x+7,p.y-14); ctx.moveTo(p.x,p.y-6); ctx.lineTo(p.x-5,p.y+4); ctx.moveTo(p.x,p.y-6); ctx.lineTo(p.x+5,p.y+4); ctx.stroke(); ctx.restore(); });
@@ -2569,7 +3001,7 @@ startBtn.onclick=()=>{
   maxSpd=1.0+vd.speedBonus; spd=1.0; nitros=selVeh==='will'?3:1; passCollected=0;
   playerHP=MAX_HP;updateDmgBar();damageCooldown=0;hornPressCount=0;
   obstacles=[]; passengers=[]; pickups=[]; hearts=[]; heartsSpawned=false; police=[]; policeSpawnedThisLevel=0;
-  specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[]; closeCallCooldown=0;
+  specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[]; closeCallCooldown=0; planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0;
   parts=[]; floats=[]; combo=0; bestCombo=0;
   player.w=vd.w; player.h=vd.h; player.x=Math.round(W/2-vd.w/2); player.y=Math.round(H*0.71);
   levelEl.innerText=1; destEl.innerText=AIRPORTS[0]; updateRank();
@@ -2579,6 +3011,8 @@ startBtn.onclick=()=>{
   initBiome(); showLvlAnn(); startMusic(); resetLvlStats();
   requestAnimationFrame(loop);
   refreshRec();
+  // Show controls hint on first play
+  if(!localStorage.getItem('hintsShown')){const ch=$('ctrl-hint');ch.style.opacity='1';setTimeout(()=>{ch.style.opacity='0';},5000);localStorage.setItem('hintsShown','1');}
 };
 
 // ── TOUCH CONTROLS ────────────────────────────────────────────────────────────
@@ -2616,13 +3050,17 @@ document.querySelectorAll('.sw').forEach(s=>{
 
 $('startBtn').addEventListener('touchend',e=>{ e.preventDefault(); e.stopPropagation(); $('startBtn').click(); },{passive:false});
 
+// Touch: both side-tap AND drag supported
+// Store touch start X for drag detection
+const touchStartX={};
 document.addEventListener('touchstart',e=>{
   if(!gameActive) return;
   const t0=e.changedTouches[0];
   const el=document.elementFromPoint(t0.clientX,t0.clientY);
-  if(el&&(el.closest('#overlay')||el.closest('#pit')||el.closest('#trivia'))) return;
+  if(el&&(el.closest('#overlay')||el.closest('#pit')||el.closest('#trivia')||el.closest('#joe-seq')||el.closest('#gas-station'))) return;
   e.preventDefault();
   [...e.changedTouches].forEach(t=>{
+    touchStartX[t.identifier]=t.clientX;
     const el2=document.elementFromPoint(t.clientX,t.clientY);
     if(!el2) return;
     const sl=el2.closest('#steer-l'),sr=el2.closest('#steer-r');
@@ -2641,7 +3079,14 @@ document.addEventListener('touchmove',e=>{
     const sl=el.closest('#steer-l'),sr=el.closest('#steer-r');
     if(sl) activeTouches[t.identifier]='left';
     else if(sr) activeTouches[t.identifier]='right';
-    else delete activeTouches[t.identifier];
+    else{
+      // Drag-to-steer: if dragged significantly left/right from start
+      const startX=touchStartX[t.identifier]||t.clientX;
+      const dx=t.clientX-startX;
+      if(dx<-18) activeTouches[t.identifier]='left';
+      else if(dx>18) activeTouches[t.identifier]='right';
+      else delete activeTouches[t.identifier];
+    }
   });
   recalcSteer();
 },{passive:false});
