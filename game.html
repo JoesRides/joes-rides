@@ -70,14 +70,14 @@ canvas{display:block;width:100%;height:100%}
 #mountain-canvas{display:block;margin:0 auto}
 #mountain-msg{font-family:'Orbitron',sans-serif;color:#ffd700;font-size:.72rem;font-weight:900;letter-spacing:2px;margin-top:8px;text-align:center}
 /* CONTROLS GUIDE */
-#ctrl-overlay{position:absolute;inset:0;background:rgba(0,0,0,.97);z-index:160;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
-#ctrl-overlay h2{font-family:'Orbitron',sans-serif;color:var(--gold);font-size:1rem;font-weight:900;letter-spacing:3px;margin-bottom:18px}
-.ctrl-section{width:100%;max-width:340px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:12px;padding:14px 16px;margin-bottom:12px}
-.ctrl-section h3{font-family:'Orbitron',sans-serif;color:var(--cyan);font-size:.65rem;letter-spacing:2px;margin-bottom:10px}
-.ctrl-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+#ctrl-overlay{position:absolute;inset:0;background:rgba(0,0,0,.97);z-index:160;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:max(10px,env(safe-area-inset-top)) 16px max(10px,env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;text-align:center}
+#ctrl-overlay h2{font-family:'Orbitron',sans-serif;color:var(--gold);font-size:.85rem;font-weight:900;letter-spacing:2px;margin:10px 0 10px}
+.ctrl-section{width:100%;max-width:340px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.ctrl-section h3{font-family:'Orbitron',sans-serif;color:var(--cyan);font-size:.58rem;letter-spacing:2px;margin-bottom:6px}
+.ctrl-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
 .ctrl-key{background:#222;border:1.5px solid #555;border-radius:5px;padding:3px 8px;font-family:monospace;font-size:.75rem;color:#eee;min-width:40px;text-align:center}
-.ctrl-desc{font-size:.7rem;color:#aabbcc;text-align:left;font-family:'Rajdhani',sans-serif;font-weight:600}
-.btn-ctrl-close{background:linear-gradient(135deg,#0088cc,#00aaff);color:#fff;border:none;padding:12px 0;width:80%;font-family:'Orbitron',sans-serif;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:900;letter-spacing:2px;margin-top:8px;touch-action:manipulation}
+.ctrl-desc{font-size:.62rem;color:#aabbcc;text-align:left;font-family:'Rajdhani',sans-serif;font-weight:600}
+.btn-ctrl-close{background:linear-gradient(135deg,#0088cc,#00aaff);color:#fff;border:none;padding:12px 0;width:88%;font-family:'Orbitron',sans-serif;border-radius:10px;cursor:pointer;font-size:.75rem;font-weight:900;letter-spacing:2px;margin-top:8px;margin-bottom:16px;touch-action:manipulation;flex-shrink:0}
 
 
 #splash{position:absolute;inset:0;background:#000;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s}
@@ -1059,6 +1059,7 @@ let planes=[],planeSpawnTimer=0;
 let oilSlicks=[]; // {x,y,r,hit}
 let spinTimer=0; // ms remaining in spin
 let iceVx=0; // lateral ice drift velocity for player
+let animals=[]; // {type,x,y,active,hit,level}
 // Bridges and tunnels
 let roadFeature='none'; // 'none'|'bridge'|'tunnel'
 let roadFeatureScroll=0;
@@ -1297,40 +1298,42 @@ function updEnv(dt,norm){
   if(biome.mario) updMarioProps(norm);
   else if(biome.sideTheme) updSideProps(norm);
   if(damageCooldown>0) damageCooldown--;
-  // ── NPC autonomous lane-change signals ──────────────────────────────────────
+  // ── NPC autonomous lane-change signals (quota per level) ────────────────────
+  // Quota: lvl1=0, lvl2=1, lvl3-4=2, lvl5-7=3, lvl8=5
+  const _npcQuota=[0,0,1,2,2,3,3,3,5][Math.min(level,8)];
   const _laneW=RW()/3, _rx=RX();
+  // Count how many are currently signalling or have moved this level
+  const _activeSig=obstacles.filter(o=>o.signalPhase==='signalling'||o.signalPhase==='moving').length;
   obstacles.forEach((o,i)=>{
     // Horn-target movement (existing)
     if(o.hornTarget!==undefined){
       o.x=o.x+(o.hornTarget-o.x)*0.12;
       if(Math.abs(o.x-o.hornTarget)<2){delete o.hornTarget;delete o.hornTween;}
     }
-    // Autonomous signal: randomly decide to change lanes
-    if(o.signalTimer===undefined){ o.signalTimer=0; o.signalDir=0; o.laneTarget=null; o.signalPhase='none'; }
-    if(o.signalPhase==='none'&&o.hornTarget===undefined){
-      o.signalTimer-=16; // approx dt
-      if(o.signalTimer<=0){
-        // Pick random signal interval 6000-14000ms
-        o.signalTimer=6000+Math.random()*8000;
-        // Determine current lane
-        const curLane=Math.max(0,Math.min(2,Math.floor((o.x+14-_rx)/_laneW)));
-        const opts=[0,1,2].filter(l=>l!==curLane);
-        const newLane=opts[Math.floor(Math.random()*opts.length)];
-        const newX=_rx+newLane*_laneW+_laneW*0.3;
-        // Only signal if target lane is clear
-        const blocked=obstacles.some((b,j)=>j!==i&&Math.abs(b.x+14-(newX+14))<_laneW*0.6&&Math.abs(b.y-o.y)<80);
-        if(!blocked){ o.signalDir=newLane>curLane?1:-1; o.laneTarget=newX; o.signalPhase='signalling'; o.signalBlinkT=0; o.signalMoveTimer=4000; }
+    // Autonomous signal: respect per-level quota
+    if(o.signalTimer===undefined){ o.signalTimer=8000+Math.random()*6000; o.signalDir=0; o.laneTarget=null; o.signalPhase='none'; o.signalsDone=0; }
+    if(o.signalPhase==='none'&&o.hornTarget===undefined&&(o.signalsDone||0)<_npcQuota){
+      // Only trigger if total active signals < quota
+      if(_activeSig<_npcQuota){
+        o.signalTimer-=16;
+        if(o.signalTimer<=0){
+          o.signalTimer=10000+Math.random()*8000;
+          const curLane=Math.max(0,Math.min(2,Math.floor((o.x+14-_rx)/_laneW)));
+          const opts=[0,1,2].filter(l=>l!==curLane);
+          const newLane=opts[Math.floor(Math.random()*opts.length)];
+          const newX=_rx+newLane*_laneW+_laneW*0.3;
+          const blocked=obstacles.some((b,j)=>j!==i&&Math.abs(b.x+14-(newX+14))<_laneW*0.6&&Math.abs(b.y-o.y)<80);
+          if(!blocked){ o.signalDir=newLane>curLane?1:-1; o.laneTarget=newX; o.signalPhase='signalling'; o.signalBlinkT=0; o.signalMoveTimer=4000; }
+        }
       }
     }
     if(o.signalPhase==='signalling'){
       o.signalMoveTimer-=16;
       o.signalBlinkT=(o.signalBlinkT||0)+16;
-      if(o.signalMoveTimer<=0){
-        o.hornTarget=o.laneTarget; o.signalPhase='moving';
-      }
+      if(o.signalMoveTimer<=0){ o.hornTarget=o.laneTarget; o.signalPhase='moving'; }
     }
     if(o.signalPhase==='moving'){
-      if(o.hornTarget===undefined){ o.signalPhase='none'; o.signalDir=0; o.laneTarget=null; o.signalTimer=4000+Math.random()*6000; }
+      if(o.hornTarget===undefined){ o.signalPhase='none'; o.signalDir=0; o.laneTarget=null; o.signalsDone=(o.signalsDone||0)+1; o.signalTimer=15000; }
     }
   });
   [...specialVehicles].forEach(o=>{
@@ -1691,20 +1694,20 @@ function drawTraffic(o){ const x=o.x,y=o.y,col=o.col;
   ctx.beginPath(); ctx.roundRect(x+w-2,y+18,4,12,1); ctx.fill();
   ctx.beginPath(); ctx.roundRect(x-2,y+40,4,12,1); ctx.fill();
   ctx.beginPath(); ctx.roundRect(x+w-2,y+40,4,12,1); ctx.fill();
-  // Horn indicator / lane-change arrow
-  if(o.hornTarget!==undefined){const dir=o.hornTarget>o.x?1:-1;ctx.fillStyle='#ffd700';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(dir>0?'▶':'◀',x+w/2,y-7);}
-  // Turn signal indicator (autonomous lane change)
+  // Tail-light turn signal — blink left or right taillight only (no side indicator, no arrow)
   if(o.signalPhase==='signalling'&&o.signalDir!==0){
-    const blinkOn=Math.floor((o.signalBlinkT||0)/350)%2===0;
+    const blinkOn=Math.floor((o.signalBlinkT||0)/400)%2===0;
     if(blinkOn){
-      const sigX=o.signalDir>0?(x+w-5):(x-2);
-      ctx.fillStyle='#ff8800'; ctx.shadowBlur=8; ctx.shadowColor='#ff8800';
-      ctx.beginPath(); ctx.roundRect(sigX,y+8,5,6,1); ctx.fill();
+      // Left taillight blinks for left turn, right for right turn
+      ctx.fillStyle='#ff8800'; ctx.shadowBlur=10; ctx.shadowColor='#ff6600';
+      if(o.signalDir<0){
+        // Left taillight — replaces the red with amber
+        ctx.beginPath(); ctx.roundRect(x+2,y+h-4,5,3,1); ctx.fill();
+      } else {
+        // Right taillight — replaces the red with amber
+        ctx.beginPath(); ctx.roundRect(x+w-5,y+h-4,5,3,1); ctx.fill();
+      }
       ctx.shadowBlur=0;
-      // Arrow showing direction
-      ctx.fillStyle='#ff8800';
-      ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(o.signalDir>0?'→':'←', x+w/2, y-8);
     }
   }
 }
@@ -2929,6 +2932,29 @@ function update(dt){
     spd=Math.max(0.2,spd*0.998);
     if(spinTimer<=0){spinTimer=0;spinAngle=0;spinVel=0;}
   }
+  // ── ANIMALS UPDATE ────────────────────────────────────────────────────────────
+  animals.forEach(a=>{
+    if(a.hit) return;
+    const _milesInA=totalMiles-milesAtStart;
+    const _expectedMile=milesPerLvl*a.mile;
+    if(!a.active&&a.level===level&&_milesInA>=_expectedMile&&finishY<-600){
+      // Pick a random lane position on the road
+      const lx=RX()+Math.floor(Math.random()*3)*Math.round(RW()/3)+Math.round(RW()/6);
+      a.x=lx+(Math.random()-0.5)*20; a.y=-50; a.active=true;
+    }
+    if(a.active){
+      a.y+=spd*1.8*norm; // animals move with road but a bit slower
+      if(a.y>H+30){a.active=false;a.hit=true;return;}
+      // Collision
+      if(!isInvincible&&player.x<a.x+16&&player.x+player.w>a.x-16&&player.y<a.y+16&&player.y+player.h>a.y-16){
+        a.hit=true;
+        const dmg=Math.round(MAX_HP*0.10);
+        takeDamage(dmg);
+        spawnFloat(a.x,a.y-(a.type==='cat'?10:8),(a.type==='cat'?'🐱':'🐶')+' -'+dmg,'#ff9900');
+      }
+    }
+  });
+
   // ── ROAD FEATURE UPDATE (bridge / tunnel) ────────────────────────────────────
   const _miFeat=totalMiles-milesAtStart;
   if(roadFeature==='none'&&_miFeat>=roadFeatureMile&&finishY<-600){
@@ -2994,53 +3020,76 @@ function drawPlanes(){
 // ── BRIDGE DRAWING ────────────────────────────────────────────────────────────
 function drawBridge(){
   if(roadFeature!=='bridge') return;
-  const rx=RX(),rw=RW(),rr=RR();
+  const rx=RX(),rw=RW(),rr=RR(),midX=rx+rw/2;
   const scroll=roadFeatureScroll;
-  // The bridge deck appears at top and scrolls down with traffic
-  // It's a raised section: draw guardrails on each side, bridge deck below road
-  const BRIDGE_LEN=H*2; // total length of bridge in scroll units
+  const BRIDGE_LEN=H*2;
   if(scroll>BRIDGE_LEN) return;
 
-  // Bridge scrolls top-down: entrance at y=0 when scroll=0, grows downward
-  // When scroll=BRIDGE_LEN the whole bridge has passed
-  const bridgeTop=Math.max(0, -scroll + 0);          // leading edge: starts at 0, goes negative (off top)
-  const bridgeBot=Math.min(H, BRIDGE_LEN - scroll);  // trailing edge: starts at BRIDGE_LEN, shrinks down
-  // Clamp properly: the visible strip is max(0,bridgeTop) to min(H,bridgeBot)
-  const from=Math.max(0, BRIDGE_LEN-scroll > H ? 0 : H-(BRIDGE_LEN-scroll));
-  const to=Math.min(H, scroll < H ? scroll : H);
+  const from=Math.max(0, BRIDGE_LEN-scroll>H ? 0 : H-(BRIDGE_LEN-scroll));
+  const to=Math.min(H, scroll<H ? scroll : H);
   if(from>=to) return;
+  const bh=to-from;
 
-  // Bridge deck — slightly lighter than road, with a warm concrete tint
-  ctx.fillStyle='rgba(200,190,170,0.18)';
-  ctx.fillRect(rx,from,rw,to-from);
+  // ── WATER on both sides ────────────────────────────────────────────────────
+  const wt=Date.now()/1200;
+  ctx.fillStyle='#0a2840';
+  ctx.fillRect(0,from,W,bh);
+  for(let wy=from;wy<to;wy+=14){
+    const shimmer=0.04+0.03*Math.sin(wt+wy*0.08);
+    ctx.fillStyle=`rgba(20,120,180,${shimmer})`;
+    ctx.fillRect(0,wy,W,7);
+  }
+  const sparkOff=(lineOff*0.5)%60;
+  ctx.fillStyle='rgba(180,230,255,0.5)';
+  for(let sy=from-sparkOff;sy<to;sy+=60){
+    if(sy<from) continue;
+    [14,28,42,60].forEach(sx=>{ctx.beginPath();ctx.arc(sx,sy+6,1.2,0,Math.PI*2);ctx.fill();});
+    [W-14,W-28,W-44,W-60].forEach(sx=>{ctx.beginPath();ctx.arc(sx,sy+6,1.2,0,Math.PI*2);ctx.fill();});
+  }
 
-  // Left guardrail
-  const grW=8;
-  ctx.fillStyle='#888';
-  ctx.fillRect(rx-grW,from,grW,to-from);
-  // Right guardrail
-  ctx.fillRect(rr,from,grW,to-from);
-  // Guardrail top highlights
-  ctx.fillStyle='#aaa';
-  ctx.fillRect(rx-grW,from,grW,2);
-  ctx.fillRect(rr,from,grW,2);
-  // Guardrail posts every 40px
-  ctx.fillStyle='#666';
-  for(let py=from;py<to;py+=40){
-    ctx.fillRect(rx-grW-2,py,4,12);
-    ctx.fillRect(rr+grW-2,py,4,12);
+  // ── METAL GRATE ROAD SURFACE ──────────────────────────────────────────────
+  ctx.fillStyle='#484850';
+  ctx.fillRect(rx,from,rw,bh);
+  const gOff=(lineOff*1.2)%16;
+  ctx.save();
+  ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1.5;
+  for(let gy=from-gOff;gy<to;gy+=16){
+    if(gy>=from){ctx.beginPath();ctx.moveTo(rx,gy);ctx.lineTo(rr,gy);ctx.stroke();}
   }
-  // Cable lines (suspension style) — two arching lines
-  if(to-from>60){
-    const midY=(from+to)/2;
-    ctx.strokeStyle='rgba(150,150,150,0.5)'; ctx.lineWidth=1.5; ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(rx-4,from); ctx.quadraticCurveTo(rx+rw/4,midY+20,rx+rw/2,midY); ctx.quadraticCurveTo(rx+rw*3/4,midY-20,rr+4,from); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(rx-4,from+8); ctx.quadraticCurveTo(rx+rw/4,midY+28,rx+rw/2,midY+8); ctx.quadraticCurveTo(rx+rw*3/4,midY-12,rr+4,from+8); ctx.stroke();
+  for(let gx=rx;gx<=rr;gx+=12){
+    ctx.beginPath();ctx.moveTo(gx,from);ctx.lineTo(gx,to);ctx.stroke();
   }
-  // Under-bridge shadow at edges
-  ctx.fillStyle='rgba(0,0,0,0.12)';
-  ctx.fillRect(rx,from,20,to-from);
-  ctx.fillRect(rr-20,from,20,to-from);
+  ctx.restore();
+  ctx.fillStyle='rgba(10,40,70,0.14)';
+  for(let gy=from-gOff+8;gy<to;gy+=16){
+    if(gy>=from) ctx.fillRect(rx+2,gy,rw-4,7);
+  }
+
+  // ── STEEL GUARDRAILS ──────────────────────────────────────────────────────
+  const grW=7;
+  ctx.fillStyle='#9a9aaa';
+  ctx.fillRect(rx-grW,from,grW,bh);
+  ctx.fillRect(rr,from,grW,bh);
+  ctx.fillStyle='#ccccdd';
+  ctx.fillRect(rx-grW,from,2,bh);
+  ctx.fillRect(rr+grW-2,from,2,bh);
+  ctx.fillStyle='#707080';
+  for(let py=from;py<to;py+=36){
+    ctx.fillRect(rx-grW-3,py,4,14);
+    ctx.fillRect(rr+grW-1,py,4,14);
+  }
+
+  // ── ENTRY/EXIT BEAM ────────────────────────────────────────────────────────
+  function _bridgeBeam(by,isEntry){
+    if(by<-12||by>H+4) return;
+    ctx.fillStyle='#38383f'; ctx.fillRect(0,by,W,12);
+    ctx.fillStyle='rgba(255,255,255,0.07)'; ctx.fillRect(0,by,W,2);
+    ctx.fillStyle='rgba(200,220,255,0.6)';
+    ctx.font='bold 7px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(isEntry?'BRIDGE →':'← BRIDGE',midX,by+6);
+  }
+  _bridgeBeam(from,true);
+  _bridgeBeam(to-12,false);
 }
 
 // ── TUNNEL DRAWING ────────────────────────────────────────────────────────────
@@ -3106,43 +3155,52 @@ function drawTunnel(){
   const entranceArchY = scroll < ARCH_H+H ? covTop : -9999;
   const exitArchY     = scroll > ARCH_H+TUNNEL_BODY-H ? covBot - ARCH_H : 9999;
 
-  function drawArchFace(ay){
-    if(ay<-ARCH_H||ay>H) return;
-    // Stone arch surround — full width stone face
-    ctx.fillStyle='#5a5560';
+  function drawPortalFace(ay, isExit){
+    // Cool portal: concrete header beam + neon edge lines + speed-line flash
+    if(ay<-ARCH_H-10||ay>H+10) return;
+    // Concrete header spanning full road width plus wall overhang
+    ctx.fillStyle='#2a2a32';
     ctx.fillRect(0,ay,W,ARCH_H);
-    // Arch opening (the dark hole you drive into)
-    ctx.fillStyle='#1a1a22';
-    ctx.beginPath();
-    ctx.arc(midX,ay+ARCH_H+4,rw/2+6,Math.PI,0,false);
-    ctx.rect(rx-6,ay,rw+12,ARCH_H+4);
-    ctx.fill();
-    // Stone block texture on the face
-    ctx.fillStyle='rgba(0,0,0,0.2)';
-    for(let brow=0;brow<3;brow++){
-      const rowY=ay+brow*14;
-      const off=(brow%2)*18;
-      for(let bcol=off;bcol<W;bcol+=36){
-        ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=1;
-        ctx.strokeRect(bcol,rowY,35,13);
-      }
+    // Dark opening rectangle behind the road
+    ctx.fillStyle='#0a0a12';
+    ctx.fillRect(rx-2,ay,rw+4,ARCH_H+2);
+    // Neon edge lines on opening
+    const neonCol=isExit?'rgba(0,255,150,0.85)':'rgba(0,180,255,0.85)';
+    ctx.strokeStyle=neonCol; ctx.lineWidth=2.5; ctx.shadowBlur=12; ctx.shadowColor=neonCol;
+    // Left edge
+    ctx.beginPath(); ctx.moveTo(rx-2,ay); ctx.lineTo(rx-2,ay+ARCH_H); ctx.stroke();
+    // Right edge
+    ctx.beginPath(); ctx.moveTo(rr+2,ay); ctx.lineTo(rr+2,ay+ARCH_H); ctx.stroke();
+    // Top bar
+    ctx.beginPath(); ctx.moveTo(rx-2,ay); ctx.lineTo(rr+2,ay); ctx.stroke();
+    // Bottom edge (road entry line)
+    ctx.beginPath(); ctx.moveTo(rx-2,ay+ARCH_H); ctx.lineTo(rr+2,ay+ARCH_H); ctx.stroke();
+    ctx.shadowBlur=0;
+    // Concrete ribbing on the wall sections
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    for(let rib=0;rib<2;rib++){
+      ctx.fillRect(0,ay+rib*18,rx-2,3);
+      ctx.fillRect(rr+2,ay+rib*18,W-rr-2,3);
     }
-    // Arch keystone highlight
-    ctx.fillStyle='rgba(255,255,255,0.12)';
-    ctx.beginPath();
-    ctx.arc(midX,ay+ARCH_H+4,14,Math.PI,0,false);
-    ctx.fill();
-    // Light spill from inside
-    const glow=ctx.createRadialGradient(midX,ay+ARCH_H+4,0,midX,ay+ARCH_H+4,rw/2);
-    glow.addColorStop(0,'rgba(180,200,220,0.18)');
-    glow.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=glow;
-    ctx.beginPath();
-    ctx.arc(midX,ay+ARCH_H+4,rw/2+6,Math.PI,0,false);
-    ctx.fill();
+    // Label text in header
+    const lbl=isExit?'EXIT':'TUNNEL';
+    ctx.fillStyle=neonCol; ctx.shadowBlur=6; ctx.shadowColor=neonCol;
+    ctx.font='bold 8px Orbitron,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(lbl, midX, ay+ARCH_H/2);
+    ctx.shadowBlur=0;
+    // Flashing speed lines (entry excitement)
+    if(!isExit){
+      const flashT=Date.now()/80;
+      ctx.globalAlpha=0.12+0.08*Math.sin(flashT);
+      ctx.fillStyle='#fff';
+      [-rw*0.28,-rw*0.08,rw*0.08,rw*0.28].forEach(ox=>{
+        ctx.fillRect(midX+ox-1,ay+ARCH_H,2,H*0.18);
+      });
+      ctx.globalAlpha=1;
+    }
   }
 
-  drawArchFace(entranceArchY);
+  drawPortalFace(entranceArchY, false);
 
   // ── TUNNEL INTERIOR (covered zone) ───────────────────────────────────────────
   if(hasCovered){
@@ -3211,9 +3269,84 @@ function drawTunnel(){
     ctx.fillStyle=edgeShadow2; ctx.fillRect(rr-40,from,40,h);
   }
 
-  // Draw exit arch face (at the bottom of covered zone as you exit)
-  drawArchFace(exitArchY);
+  // Draw exit portal face
+  drawPortalFace(exitArchY, true);
 
+  ctx.restore();
+}
+
+// ── ANIMAL DRAWING ───────────────────────────────────────────────────────────
+function _drawAnimal(a){
+  const x=a.x,y=a.y;
+  ctx.save();
+  if(a.type==='cat'){
+    // Cat: orange tabby, sitting pose, pixel-art
+    // Body
+    ctx.fillStyle='#e07030'; ctx.beginPath(); ctx.ellipse(x,y+4,8,6,0,0,Math.PI*2); ctx.fill();
+    // Head
+    ctx.beginPath(); ctx.arc(x,y-4,7,0,Math.PI*2); ctx.fill();
+    // Ears (triangles)
+    ctx.fillStyle='#c05020';
+    ctx.beginPath(); ctx.moveTo(x-5,y-9); ctx.lineTo(x-2,y-15); ctx.lineTo(x-1,y-9); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x+5,y-9); ctx.lineTo(x+2,y-15); ctx.lineTo(x+1,y-9); ctx.closePath(); ctx.fill();
+    // Inner ear
+    ctx.fillStyle='#ff8060';
+    ctx.beginPath(); ctx.moveTo(x-4,y-10); ctx.lineTo(x-2.5,y-13); ctx.lineTo(x-1.5,y-10); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x+4,y-10); ctx.lineTo(x+2.5,y-13); ctx.lineTo(x+1.5,y-10); ctx.closePath(); ctx.fill();
+    // Stripes on body
+    ctx.strokeStyle='#b05020'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x-4,y+1); ctx.lineTo(x-6,y+6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x,y+0); ctx.lineTo(x,y+8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+4,y+1); ctx.lineTo(x+6,y+6); ctx.stroke();
+    // Eyes — green slit pupils
+    ctx.fillStyle='#88cc22'; ctx.beginPath(); ctx.ellipse(x-2.5,y-5,2,2,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x+2.5,y-5,2,2,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#111'; ctx.beginPath(); ctx.ellipse(x-2.5,y-5,0.6,1.5,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x+2.5,y-5,0.6,1.5,0,0,Math.PI*2); ctx.fill();
+    // Nose
+    ctx.fillStyle='#ff6666'; ctx.beginPath(); ctx.arc(x,y-2,1.5,0,Math.PI*2); ctx.fill();
+    // Whiskers
+    ctx.strokeStyle='rgba(255,255,220,0.8)'; ctx.lineWidth=0.8;
+    [[-6,-2.5],[-5,-1.5],[-6,-0.5]].forEach(([dx,dy])=>{ ctx.beginPath(); ctx.moveTo(x+dx,y+dy); ctx.lineTo(x-1,y-2); ctx.stroke(); });
+    [[6,-2.5],[5,-1.5],[6,-0.5]].forEach(([dx,dy])=>{ ctx.beginPath(); ctx.moveTo(x+dx,y+dy); ctx.lineTo(x+1,y-2); ctx.stroke(); });
+    // Tail curve
+    ctx.strokeStyle='#e07030'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(x+6,y+6); ctx.quadraticCurveTo(x+18,y+4,x+14,y-4); ctx.stroke();
+    // Paws
+    ctx.fillStyle='#d06020';
+    ctx.beginPath(); ctx.ellipse(x-5,y+9,3,2,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x+5,y+9,3,2,0,0,Math.PI*2); ctx.fill();
+  } else {
+    // Dog: golden retriever, sitting, side-on
+    // Body
+    ctx.fillStyle='#d4902a'; ctx.beginPath(); ctx.ellipse(x,y+5,10,7,0,0,Math.PI*2); ctx.fill();
+    // Chest fluff
+    ctx.fillStyle='#f0c060';
+    ctx.beginPath(); ctx.ellipse(x-4,y+3,5,5,0.3,0,Math.PI*2); ctx.fill();
+    // Head
+    ctx.fillStyle='#d4902a'; ctx.beginPath(); ctx.arc(x+2,y-5,8,0,Math.PI*2); ctx.fill();
+    // Snout
+    ctx.fillStyle='#c07820'; ctx.beginPath(); ctx.ellipse(x+7,y-3,4,3,-0.2,0,Math.PI*2); ctx.fill();
+    // Nose
+    ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(x+11,y-4,2,0,Math.PI*2); ctx.fill();
+    // Eyes
+    ctx.fillStyle='#4a2800'; ctx.beginPath(); ctx.arc(x+4,y-7,2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.arc(x+5,y-8,0.8,0,Math.PI*2); ctx.fill();
+    // Ear (floppy)
+    ctx.fillStyle='#b07020';
+    ctx.beginPath(); ctx.moveTo(x-3,y-12); ctx.quadraticCurveTo(x-10,y-8,x-8,y-1); ctx.quadraticCurveTo(x-4,y-3,x-2,y-9); ctx.closePath(); ctx.fill();
+    // Tail (wagging — animated)
+    const waggle=Math.sin(Date.now()/120)*0.5;
+    ctx.strokeStyle='#d4902a'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.moveTo(x-8,y+4); ctx.quadraticCurveTo(x-16,y-2+waggle*8,x-18,y-10+waggle*6); ctx.stroke();
+    // Legs
+    ctx.fillStyle='#c07820';
+    ctx.beginPath(); ctx.roundRect(x-6,y+10,5,8,2); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x+3,y+10,5,8,2); ctx.fill();
+    // Tongue
+    ctx.fillStyle='#ff8888';
+    ctx.beginPath(); ctx.ellipse(x+9,y-1,2,3,0.3,0,Math.PI*2); ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -3225,6 +3358,8 @@ function draw(){
   if(roadFeature==='tunnel') drawTunnel();
   // Oil slicks drawn FIRST so everything drives over them
   oilSlicks.forEach(o=>drawOilSlick(o));
+  // Animals (cats & dogs)
+  animals.forEach(a=>{ if(!a.active||a.hit) return; _drawAnimal(a); });
   if(finishY>-200){ const fw=RW(),fx=RX(),sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
   obstacles.forEach(o=>drawTraffic(o));
   police.forEach(p=>drawPoliceCar(p.x,p.y,p.flashPhase,p.parked));
@@ -3268,6 +3403,14 @@ startBtn.onclick=()=>{
   playerHP=MAX_HP;updateDmgBar();damageCooldown=0;hornPressCount=0;
   obstacles=[]; passengers=[]; pickups=[]; hearts=[]; heartsSpawned=false; police=[]; policeSpawnedThisLevel=0;
   specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[]; closeCallCooldown=0; planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0; roadFeature='none'; roadFeatureScroll=0;
+  // Spawn 3 cats + 2 dogs randomly across all 8 levels (different every game)
+  animals=[];
+  const _anTypes=['cat','cat','cat','dog','dog'];
+  _anTypes.forEach(type=>{
+    const anLevel=1+Math.floor(Math.random()*8);
+    const anMile=0.2+Math.random()*0.75; // 20-95% through that level
+    animals.push({type,level:anLevel,mile:anMile,x:0,y:-9999,active:false,hit:false});
+  });
   parts=[]; floats=[]; combo=0; bestCombo=0;
   player.w=vd.w; player.h=vd.h; player.x=Math.round(W/2-vd.w/2); player.y=Math.round(H*0.71);
   levelEl.innerText=1; destEl.innerText=AIRPORTS[0]; updateRank();
