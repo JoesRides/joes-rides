@@ -97,8 +97,8 @@ canvas{display:block;width:100%;height:100%}
 #ending-score{font-family:'Orbitron',sans-serif;color:#00ffcc;font-size:1.3rem;font-weight:900;margin-top:10px}
 #ending-btn{background:linear-gradient(135deg,#7b2fff,#ff69b4);color:#fff;border:none;padding:14px 0;width:80%;font-family:'Orbitron',sans-serif;border-radius:12px;cursor:pointer;font-size:.85rem;font-weight:900;letter-spacing:2px;margin-top:16px;touch-action:manipulation}
 #ending-btn:active{transform:scale(.97)}
-.sp-logo{font-family:'Orbitron',sans-serif;font-size:3rem;font-weight:900;color:var(--gold);text-shadow:0 0 30px var(--gold),0 0 60px rgba(255,215,0,.3);line-height:1}
-.sp-taxi{font-family:'Orbitron',sans-serif;font-size:1.4rem;font-weight:700;color:var(--cyan);letter-spacing:10px;margin-top:6px}
+.sp-logo{font-family:'Orbitron',sans-serif;font-size:clamp(1.5rem,8vw,3rem);font-weight:900;color:var(--gold);text-shadow:0 0 30px var(--gold),0 0 60px rgba(255,215,0,.3);line-height:1;text-align:center;width:100%;padding:0 8px}
+.sp-taxi{font-family:'Orbitron',sans-serif;font-size:clamp(.75rem,4vw,1.4rem);font-weight:700;color:var(--cyan);letter-spacing:clamp(3px,2vw,10px);margin-top:6px;text-align:center;width:100%}
 .sp-sub{font-size:.82rem;color:#88aacc;letter-spacing:5px;margin-top:14px;font-weight:600}
 
 #overlay{position:absolute;inset:0;background:rgba(0,0,0,.94);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;z-index:100;padding:14px 16px 20px;backdrop-filter:blur(4px);overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
@@ -1058,6 +1058,11 @@ let combo=0,comboTimer=0,bestCombo=0;
 let planes=[],planeSpawnTimer=0;
 let oilSlicks=[]; // {x,y,r,hit}
 let spinTimer=0; // ms remaining in spin
+let iceVx=0; // lateral ice drift velocity for player
+// Bridges and tunnels
+let roadFeature='none'; // 'none'|'bridge'|'tunnel'
+let roadFeatureScroll=0;
+let roadFeatureMile=0;
 let spinAngle=0; // current spin rotation in radians
 let spinVel=0;  // spin velocity
 let lightAlpha=0,lightTimer=0;
@@ -1072,6 +1077,9 @@ function milesForLvl(l){ return Math.round(10*Math.pow(1.5,l-1)); }
 function resetLvlStats(){
   lvlStats={scoreAtStart:score,passStart:passCollected,nitrosUsed:0,sideHits:0,nitrosStart:nitros,startTime:performance.now(),topSpd:0,hornHonks:0};
   // Seed oil slicks: 1-3 per level, spread across the level distance
+  // Schedule one road feature per level (bridge or tunnel) at 35-65% through
+  roadFeature='none'; roadFeatureScroll=0;
+  roadFeatureMile=milesPerLvl*(0.35+Math.random()*0.30);
   oilSlicks=[];
   const numSlicks=1+Math.floor(Math.random()*3);
   for(let si=0;si<numSlicks;si++){
@@ -1289,7 +1297,43 @@ function updEnv(dt,norm){
   if(biome.mario) updMarioProps(norm);
   else if(biome.sideTheme) updSideProps(norm);
   if(damageCooldown>0) damageCooldown--;
-  [...obstacles,...specialVehicles].forEach(o=>{
+  // ── NPC autonomous lane-change signals ──────────────────────────────────────
+  const _laneW=RW()/3, _rx=RX();
+  obstacles.forEach((o,i)=>{
+    // Horn-target movement (existing)
+    if(o.hornTarget!==undefined){
+      o.x=o.x+(o.hornTarget-o.x)*0.12;
+      if(Math.abs(o.x-o.hornTarget)<2){delete o.hornTarget;delete o.hornTween;}
+    }
+    // Autonomous signal: randomly decide to change lanes
+    if(o.signalTimer===undefined){ o.signalTimer=0; o.signalDir=0; o.laneTarget=null; o.signalPhase='none'; }
+    if(o.signalPhase==='none'&&o.hornTarget===undefined){
+      o.signalTimer-=16; // approx dt
+      if(o.signalTimer<=0){
+        // Pick random signal interval 6000-14000ms
+        o.signalTimer=6000+Math.random()*8000;
+        // Determine current lane
+        const curLane=Math.max(0,Math.min(2,Math.floor((o.x+14-_rx)/_laneW)));
+        const opts=[0,1,2].filter(l=>l!==curLane);
+        const newLane=opts[Math.floor(Math.random()*opts.length)];
+        const newX=_rx+newLane*_laneW+_laneW*0.3;
+        // Only signal if target lane is clear
+        const blocked=obstacles.some((b,j)=>j!==i&&Math.abs(b.x+14-(newX+14))<_laneW*0.6&&Math.abs(b.y-o.y)<80);
+        if(!blocked){ o.signalDir=newLane>curLane?1:-1; o.laneTarget=newX; o.signalPhase='signalling'; o.signalBlinkT=0; o.signalMoveTimer=4000; }
+      }
+    }
+    if(o.signalPhase==='signalling'){
+      o.signalMoveTimer-=16;
+      o.signalBlinkT=(o.signalBlinkT||0)+16;
+      if(o.signalMoveTimer<=0){
+        o.hornTarget=o.laneTarget; o.signalPhase='moving';
+      }
+    }
+    if(o.signalPhase==='moving'){
+      if(o.hornTarget===undefined){ o.signalPhase='none'; o.signalDir=0; o.laneTarget=null; o.signalTimer=4000+Math.random()*6000; }
+    }
+  });
+  [...specialVehicles].forEach(o=>{
     if(o.hornTarget!==undefined){
       o.x=o.x+(o.hornTarget-o.x)*0.1;
       if(Math.abs(o.x-o.hornTarget)<1){delete o.hornTarget;delete o.hornTween;}
@@ -1647,8 +1691,22 @@ function drawTraffic(o){ const x=o.x,y=o.y,col=o.col;
   ctx.beginPath(); ctx.roundRect(x+w-2,y+18,4,12,1); ctx.fill();
   ctx.beginPath(); ctx.roundRect(x-2,y+40,4,12,1); ctx.fill();
   ctx.beginPath(); ctx.roundRect(x+w-2,y+40,4,12,1); ctx.fill();
-  // Horn indicator
+  // Horn indicator / lane-change arrow
   if(o.hornTarget!==undefined){const dir=o.hornTarget>o.x?1:-1;ctx.fillStyle='#ffd700';ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(dir>0?'▶':'◀',x+w/2,y-7);}
+  // Turn signal indicator (autonomous lane change)
+  if(o.signalPhase==='signalling'&&o.signalDir!==0){
+    const blinkOn=Math.floor((o.signalBlinkT||0)/350)%2===0;
+    if(blinkOn){
+      const sigX=o.signalDir>0?(x+w-5):(x-2);
+      ctx.fillStyle='#ff8800'; ctx.shadowBlur=8; ctx.shadowColor='#ff8800';
+      ctx.beginPath(); ctx.roundRect(sigX,y+8,5,6,1); ctx.fill();
+      ctx.shadowBlur=0;
+      // Arrow showing direction
+      ctx.fillStyle='#ff8800';
+      ctx.font='bold 8px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(o.signalDir>0?'→':'←', x+w/2, y-8);
+    }
+  }
 }
 
 function drawPoliceCar(x,y,flashPhase,parked){
@@ -2478,7 +2536,13 @@ function showTrivia(nextLevel, onPass, onFail){
   const q = getTrivia();
   const labels = ['A','B','C','D'];
 
-  $('trivia-next-lvl').textContent = nextLevel;
+  // Level 8 trivia: override text to "SAVE THE PRINCESS"
+  if(nextLevel > 8){
+    $('trivia-lvl').innerHTML = '👑 ANSWER CORRECTLY TO <span style="color:#ff69b4">SAVE THE PRINCESS!</span>';
+  } else {
+    $('trivia-lvl').innerHTML = 'ANSWER TO ADVANCE TO LEVEL <span id="trivia-next-lvl">' + nextLevel + '</span>';
+  }
+  $('trivia-next-lvl') && ($('trivia-next-lvl').textContent = nextLevel);
   $('trivia-q').textContent = q.q;
   $('trivia-result').classList.remove('show');
   $('trivia-sub').classList.remove('show');
@@ -2542,7 +2606,17 @@ function update(dt){
   if(touchSteer!==0) steer=touchSteer;
   let sm=vd.steer;
   if(biome.snow) sm*=.72; if(biome.sand) sm*=.82;
-  player.x=Math.max(RX(),Math.min(RR()-player.w,player.x+steer*sm*norm));
+  // Ice physics: snow biome adds slippery lateral drift
+  if(biome.snow){
+    // Steering accelerates ice drift; friction is very low
+    iceVx += steer * 0.18 * norm;
+    iceVx *= 0.965; // ice friction (low)
+    player.x += iceVx * norm;
+  } else {
+    iceVx = 0;
+    player.x=Math.max(RX(),Math.min(RR()-player.w,player.x+steer*sm*norm));
+  }
+  player.x=Math.max(RX(),Math.min(RR()-player.w,player.x));
   if(player.x<RX()||(player.x+player.w)>RR()){
     if(!onSide){ score=Math.max(0,score-4); penGain.gain.setTargetAtTime(.04,audioCtx.currentTime,.05); onSide=true; breakCombo(); spawnFloat(player.x+player.w/2,player.y,'-4','#ff3131'); lvlStats.sideHits++; }
     sideTimer+=dt;
@@ -2625,7 +2699,7 @@ function update(dt){
             const _pp=$('prog-pct');if(_pp)_pp.textContent='0%';
             bestCombo=0; combo=0; police=[]; policeSpawnedThisLevel=0;
             specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[];
-            planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0;
+            planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0; iceVx=0; roadFeature='none'; roadFeatureScroll=0;
             playerHP=Math.min(MAX_HP,playerHP+30); updateDmgBar(); hornPressCount=0;
             initBiome(); showLvlAnn(); lvlUpSnd(); startMusic(); resetLvlStats();
           },
@@ -2855,6 +2929,16 @@ function update(dt){
     spd=Math.max(0.2,spd*0.998);
     if(spinTimer<=0){spinTimer=0;spinAngle=0;spinVel=0;}
   }
+  // ── ROAD FEATURE UPDATE (bridge / tunnel) ────────────────────────────────────
+  const _miFeat=totalMiles-milesAtStart;
+  if(roadFeature==='none'&&_miFeat>=roadFeatureMile&&finishY<-600){
+    roadFeature=Math.random()<0.5?'bridge':'tunnel';
+    roadFeatureScroll=0;
+  }
+  if(roadFeature!=='none'){
+    roadFeatureScroll+=spd*2*norm;
+    if(roadFeatureScroll>H*3){ roadFeature='none'; roadFeatureScroll=0; }
+  }
   updateSpeedTrail();
 
 }
@@ -2907,10 +2991,238 @@ function drawPlanes(){
   });
 }
 
+// ── BRIDGE DRAWING ────────────────────────────────────────────────────────────
+function drawBridge(){
+  if(roadFeature!=='bridge') return;
+  const rx=RX(),rw=RW(),rr=RR();
+  const scroll=roadFeatureScroll;
+  // The bridge deck appears at top and scrolls down with traffic
+  // It's a raised section: draw guardrails on each side, bridge deck below road
+  const BRIDGE_LEN=H*2; // total length of bridge in scroll units
+  if(scroll>BRIDGE_LEN) return;
+
+  // Bridge scrolls top-down: entrance at y=0 when scroll=0, grows downward
+  // When scroll=BRIDGE_LEN the whole bridge has passed
+  const bridgeTop=Math.max(0, -scroll + 0);          // leading edge: starts at 0, goes negative (off top)
+  const bridgeBot=Math.min(H, BRIDGE_LEN - scroll);  // trailing edge: starts at BRIDGE_LEN, shrinks down
+  // Clamp properly: the visible strip is max(0,bridgeTop) to min(H,bridgeBot)
+  const from=Math.max(0, BRIDGE_LEN-scroll > H ? 0 : H-(BRIDGE_LEN-scroll));
+  const to=Math.min(H, scroll < H ? scroll : H);
+  if(from>=to) return;
+
+  // Bridge deck — slightly lighter than road, with a warm concrete tint
+  ctx.fillStyle='rgba(200,190,170,0.18)';
+  ctx.fillRect(rx,from,rw,to-from);
+
+  // Left guardrail
+  const grW=8;
+  ctx.fillStyle='#888';
+  ctx.fillRect(rx-grW,from,grW,to-from);
+  // Right guardrail
+  ctx.fillRect(rr,from,grW,to-from);
+  // Guardrail top highlights
+  ctx.fillStyle='#aaa';
+  ctx.fillRect(rx-grW,from,grW,2);
+  ctx.fillRect(rr,from,grW,2);
+  // Guardrail posts every 40px
+  ctx.fillStyle='#666';
+  for(let py=from;py<to;py+=40){
+    ctx.fillRect(rx-grW-2,py,4,12);
+    ctx.fillRect(rr+grW-2,py,4,12);
+  }
+  // Cable lines (suspension style) — two arching lines
+  if(to-from>60){
+    const midY=(from+to)/2;
+    ctx.strokeStyle='rgba(150,150,150,0.5)'; ctx.lineWidth=1.5; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(rx-4,from); ctx.quadraticCurveTo(rx+rw/4,midY+20,rx+rw/2,midY); ctx.quadraticCurveTo(rx+rw*3/4,midY-20,rr+4,from); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rx-4,from+8); ctx.quadraticCurveTo(rx+rw/4,midY+28,rx+rw/2,midY+8); ctx.quadraticCurveTo(rx+rw*3/4,midY-12,rr+4,from+8); ctx.stroke();
+  }
+  // Under-bridge shadow at edges
+  ctx.fillStyle='rgba(0,0,0,0.12)';
+  ctx.fillRect(rx,from,20,to-from);
+  ctx.fillRect(rr-20,from,20,to-from);
+}
+
+// ── TUNNEL DRAWING ────────────────────────────────────────────────────────────
+// scroll=0  → tunnel entrance arch sits at y=0 (top of screen), road is normal below
+// scroll increases → the covered "inside tunnel" zone grows downward from y=0
+// scroll=H  → entire screen is inside tunnel
+// scroll=H*2 → tunnel exit arch is at y=0, covered zone is bottom half
+// scroll=H*3 → tunnel fully passed
+function drawTunnel(){
+  if(roadFeature!=='tunnel') return;
+  const rx=RX(),rw=RW(),rr=RR(),midX=rx+rw/2;
+  const scroll=roadFeatureScroll;
+  const ARCH_H=44;           // height of the arch frame at entrance/exit
+  const TUNNEL_BODY=H*2;     // how long the "inside" section is in scroll units
+  const TOTAL=TUNNEL_BODY+ARCH_H*2;
+
+  // Phase 1: entrance arch scrolling in from top (scroll 0 → ARCH_H)
+  //   The arch face appears at y=0 and the covered zone grows from top downward
+  // Phase 2: full tunnel interior (scroll ARCH_H → ARCH_H+TUNNEL_BODY)
+  //   The whole screen is inside — ceiling + lights + walls
+  // Phase 3: exit arch (scroll ARCH_H+TUNNEL_BODY → TOTAL)
+  //   The exit arch face has scrolled to the bottom and passes off screen
+
+  if(scroll>=TOTAL) return;
+
+  ctx.save();
+
+  // ── DETERMINE covered region ─────────────────────────────────────────────────
+  // "covered" = the region of screen that is inside the tunnel (ceiling overhead)
+  // It starts at y=0 and its bottom edge grows downward as scroll increases,
+  // then once the body fills the screen, the top edge starts retreating (exit).
+
+  let covTop=0, covBot=0;
+
+  if(scroll < ARCH_H){
+    // Entrance arch just arriving — covered zone is 0 tall yet, arch face at top
+    covTop=0;
+    covBot=0; // nothing covered yet — just the arch face at y=0
+  } else if(scroll < ARCH_H + H){
+    // Entrance: covered zone grows from 0 down to H
+    covTop=0;
+    covBot=scroll - ARCH_H;
+  } else if(scroll < ARCH_H + TUNNEL_BODY - H){
+    // Deep inside — entire screen covered
+    covTop=0;
+    covBot=H;
+  } else if(scroll < ARCH_H + TUNNEL_BODY){
+    // Exit approaching: top edge of covered zone retreats upward
+    const exitProgress = scroll - (ARCH_H + TUNNEL_BODY - H);
+    covTop=exitProgress;
+    covBot=H;
+  } else {
+    // Exit arch scrolling off — covered zone shrinking from top, arch at covTop
+    covTop=H;
+    covBot=H;
+  }
+
+  const hasCovered=(covBot-covTop)>0;
+
+  // ── ENTRANCE ARCH FACE ────────────────────────────────────────────────────────
+  // The arch face is drawn at the entrance of the covered zone (covTop when entering)
+  // It's a stone portal — visible just before you drive into it
+  const entranceArchY = scroll < ARCH_H+H ? covTop : -9999;
+  const exitArchY     = scroll > ARCH_H+TUNNEL_BODY-H ? covBot - ARCH_H : 9999;
+
+  function drawArchFace(ay){
+    if(ay<-ARCH_H||ay>H) return;
+    // Stone arch surround — full width stone face
+    ctx.fillStyle='#5a5560';
+    ctx.fillRect(0,ay,W,ARCH_H);
+    // Arch opening (the dark hole you drive into)
+    ctx.fillStyle='#1a1a22';
+    ctx.beginPath();
+    ctx.arc(midX,ay+ARCH_H+4,rw/2+6,Math.PI,0,false);
+    ctx.rect(rx-6,ay,rw+12,ARCH_H+4);
+    ctx.fill();
+    // Stone block texture on the face
+    ctx.fillStyle='rgba(0,0,0,0.2)';
+    for(let brow=0;brow<3;brow++){
+      const rowY=ay+brow*14;
+      const off=(brow%2)*18;
+      for(let bcol=off;bcol<W;bcol+=36){
+        ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=1;
+        ctx.strokeRect(bcol,rowY,35,13);
+      }
+    }
+    // Arch keystone highlight
+    ctx.fillStyle='rgba(255,255,255,0.12)';
+    ctx.beginPath();
+    ctx.arc(midX,ay+ARCH_H+4,14,Math.PI,0,false);
+    ctx.fill();
+    // Light spill from inside
+    const glow=ctx.createRadialGradient(midX,ay+ARCH_H+4,0,midX,ay+ARCH_H+4,rw/2);
+    glow.addColorStop(0,'rgba(180,200,220,0.18)');
+    glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glow;
+    ctx.beginPath();
+    ctx.arc(midX,ay+ARCH_H+4,rw/2+6,Math.PI,0,false);
+    ctx.fill();
+  }
+
+  drawArchFace(entranceArchY);
+
+  // ── TUNNEL INTERIOR (covered zone) ───────────────────────────────────────────
+  if(hasCovered){
+    const from=covTop, to=covBot;
+    const h=to-from;
+
+    // Stone walls replacing sidewalks
+    ctx.fillStyle='#4a4850';
+    ctx.fillRect(0,from,rx,h);
+    ctx.fillRect(rr,from,W-rr,h);
+
+    // Brick/stone texture on walls — staggered rows that scroll with lineOff
+    const texOff=Math.floor(lineOff/16)*16;
+    ctx.fillStyle='rgba(0,0,0,0.18)';
+    for(let ty=from-texOff%32;ty<to;ty+=16){
+      if(ty<from) continue;
+      const off=(Math.floor(ty/16)%2)*12;
+      for(let tx=off;tx<rx;tx+=24){ ctx.fillRect(tx,ty,22,14); }
+      for(let tx=rr+off%12;tx<W;tx+=24){ ctx.fillRect(tx,ty,22,14); }
+    }
+
+    // Overhead ceiling — translucent so car is still visible
+    ctx.fillStyle='rgba(30,32,44,0.60)';
+    ctx.fillRect(rx,from,rw,h);
+
+    // Concrete ceiling beams (cross-ribs) scrolling with road
+    ctx.fillStyle='rgba(0,0,0,0.28)';
+    const beamSpacing=60;
+    const beamOff=(lineOff*2)%beamSpacing;
+    for(let by=from-beamOff;by<to;by+=beamSpacing){
+      if(by>=from) ctx.fillRect(rx,by,rw,7);
+    }
+
+    // Fluorescent ceiling lights — two rows scrolling with road
+    ctx.shadowBlur=10; ctx.shadowColor='rgba(160,200,240,0.9)';
+    ctx.fillStyle='rgba(200,230,255,0.85)';
+    const lightSpacing=80;
+    const lightOff=(lineOff*2)%lightSpacing;
+    for(let ly=from-lightOff;ly<to;ly+=lightSpacing){
+      if(ly>=from){
+        ctx.beginPath(); ctx.ellipse(rx+rw*0.28,ly+10,5,2.5,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(rx+rw*0.72,ly+10,5,2.5,0,0,Math.PI*2); ctx.fill();
+      }
+    }
+    ctx.shadowBlur=0;
+
+    // Light pool glow on road below each lamp
+    for(let ly=from-lightOff;ly<to;ly+=lightSpacing){
+      if(ly>=from&&ly<to-10){
+        const lgPool=ctx.createRadialGradient(midX,ly+26,0,midX,ly+26,rw*0.42);
+        lgPool.addColorStop(0,'rgba(180,210,255,0.08)');
+        lgPool.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=lgPool;
+        ctx.fillRect(rx,ly,rw,52);
+      }
+    }
+
+    // Tunnel wall edge shadow (depth on road edges inside tunnel)
+    const edgeShadow=ctx.createLinearGradient(rx,0,rx+40,0);
+    edgeShadow.addColorStop(0,'rgba(0,0,0,0.22)');
+    edgeShadow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=edgeShadow; ctx.fillRect(rx,from,40,h);
+    const edgeShadow2=ctx.createLinearGradient(rr,0,rr-40,0);
+    edgeShadow2.addColorStop(0,'rgba(0,0,0,0.22)');
+    edgeShadow2.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=edgeShadow2; ctx.fillRect(rr-40,from,40,h);
+  }
+
+  // Draw exit arch face (at the bottom of covered zone as you exit)
+  drawArchFace(exitArchY);
+
+  ctx.restore();
+}
+
 // ── DRAW ──────────────────────────────────────────────────────────────────────
 function draw(){
   drawEnv();
   if(planes.length>0) drawPlanes();
+  drawBridge();
+  if(roadFeature==='tunnel') drawTunnel();
   // Oil slicks drawn FIRST so everything drives over them
   oilSlicks.forEach(o=>drawOilSlick(o));
   if(finishY>-200){ const fw=RW(),fx=RX(),sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
@@ -2955,7 +3267,7 @@ startBtn.onclick=()=>{
   maxSpd=1.2+vd.speedBonus; spd=1.2; nitros=selVeh==='will'?3:1; passCollected=0;
   playerHP=MAX_HP;updateDmgBar();damageCooldown=0;hornPressCount=0;
   obstacles=[]; passengers=[]; pickups=[]; hearts=[]; heartsSpawned=false; police=[]; policeSpawnedThisLevel=0;
-  specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[]; closeCallCooldown=0; planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0;
+  specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[]; closeCallCooldown=0; planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0; roadFeature='none'; roadFeatureScroll=0;
   parts=[]; floats=[]; combo=0; bestCombo=0;
   player.w=vd.w; player.h=vd.h; player.x=Math.round(W/2-vd.w/2); player.y=Math.round(H*0.71);
   levelEl.innerText=1; destEl.innerText=AIRPORTS[0]; updateRank();
