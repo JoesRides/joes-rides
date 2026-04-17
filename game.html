@@ -65,6 +65,19 @@ canvas{display:block;width:100%;height:100%}
 #pbw{display:none}
 #dmgflash{position:absolute;inset:0;background:rgba(255,80,0,.18);pointer-events:none;z-index:8;opacity:0;transition:opacity .18s}
 #dmgflash.on{opacity:1}
+/* LEVEL 7 MOUNTAIN SEQUENCE */
+#mountain-seq{position:absolute;inset:0;background:#000;z-index:140;display:none;flex-direction:column;align-items:center;justify-content:center}
+#mountain-canvas{display:block;margin:0 auto}
+#mountain-msg{font-family:'Orbitron',sans-serif;color:#ffd700;font-size:.72rem;font-weight:900;letter-spacing:2px;margin-top:8px;text-align:center}
+/* CONTROLS GUIDE */
+#ctrl-overlay{position:absolute;inset:0;background:rgba(0,0,0,.97);z-index:160;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+#ctrl-overlay h2{font-family:'Orbitron',sans-serif;color:var(--gold);font-size:1rem;font-weight:900;letter-spacing:3px;margin-bottom:18px}
+.ctrl-section{width:100%;max-width:340px;background:rgba(255,255,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.ctrl-section h3{font-family:'Orbitron',sans-serif;color:var(--cyan);font-size:.65rem;letter-spacing:2px;margin-bottom:10px}
+.ctrl-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ctrl-key{background:#222;border:1.5px solid #555;border-radius:5px;padding:3px 8px;font-family:monospace;font-size:.75rem;color:#eee;min-width:40px;text-align:center}
+.ctrl-desc{font-size:.7rem;color:#aabbcc;text-align:left;font-family:'Rajdhani',sans-serif;font-weight:600}
+.btn-ctrl-close{background:linear-gradient(135deg,#0088cc,#00aaff);color:#fff;border:none;padding:12px 0;width:80%;font-family:'Orbitron',sans-serif;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:900;letter-spacing:2px;margin-top:8px;touch-action:manipulation}
 
 
 #splash{position:absolute;inset:0;background:#000;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s}
@@ -266,6 +279,40 @@ canvas{display:block;width:100%;height:100%}
   <button id="ending-btn" onclick="location.reload()">PLAY AGAIN</button>
 </div>
 
+<!-- MOUNTAIN SEQUENCE (after level 7) -->
+<div id="mountain-seq">
+  <canvas id="mountain-canvas" width="320" height="280"></canvas>
+  <div id="mountain-msg">BOWSER'S CASTLE AWAITS...</div>
+</div>
+
+<!-- CONTROLS GUIDE OVERLAY -->
+<div id="ctrl-overlay">
+  <h2>🎮 HOW TO PLAY</h2>
+  <div class="ctrl-section">
+    <h3>📱 MOBILE TOUCH</h3>
+    <div class="ctrl-row"><span class="ctrl-key">◀ LEFT</span><span class="ctrl-desc">Tap the left half of the screen to steer left</span></div>
+    <div class="ctrl-row"><span class="ctrl-key">RIGHT ▶</span><span class="ctrl-desc">Tap the right half of the screen to steer right</span></div>
+    <div class="ctrl-row"><span class="ctrl-key">N2O</span><span class="ctrl-desc">Tap the NITRO button (bottom left) for a speed burst</span></div>
+    <div class="ctrl-row"><span class="ctrl-key">📯</span><span class="ctrl-desc">Tap the HORN button to honk — makes cars switch lanes!</span></div>
+  </div>
+  <div class="ctrl-section">
+    <h3>⌨️ KEYBOARD (DESKTOP)</h3>
+    <div class="ctrl-row"><span class="ctrl-key">← →</span><span class="ctrl-desc">Arrow keys OR A/D to steer</span></div>
+    <div class="ctrl-row"><span class="ctrl-key">SPACE</span><span class="ctrl-desc">Nitro boost</span></div>
+    <div class="ctrl-row"><span class="ctrl-key">H</span><span class="ctrl-desc">Horn — honk at cars ahead</span></div>
+  </div>
+  <div class="ctrl-section">
+    <h3>💡 TIPS</h3>
+    <div class="ctrl-row"><span class="ctrl-desc">🟡 Pick up glowing passengers for points &amp; combos</span></div>
+    <div class="ctrl-row"><span class="ctrl-desc">🔴 Grab N2O canisters to stock extra nitro</span></div>
+    <div class="ctrl-row"><span class="ctrl-desc">⚫ Avoid black oil slicks — they'll spin your car!</span></div>
+    <div class="ctrl-row"><span class="ctrl-desc">❤️ Collect hearts to restore HP at level end</span></div>
+    <div class="ctrl-row"><span class="ctrl-desc">✅ Answer trivia correctly to advance each level</span></div>
+    <div class="ctrl-row"><span class="ctrl-desc">🚐 WILL'S HORN is stronger — honks every car ahead</span></div>
+  </div>
+  <button class="btn-ctrl-close" onclick="document.getElementById('ctrl-overlay').style.display='none'">GOT IT — LET'S DRIVE!</button>
+</div>
+
 <canvas id="gameCanvas"></canvas>
 
 <div id="steer-l"></div>
@@ -315,6 +362,7 @@ canvas{display:block;width:100%;height:100%}
     <div class="sw" style="background:#e2e8f0" data-color="#e2e8f0"></div>
   </div>
   <button class="btn-go" id="startBtn">DISPATCH!</button>
+  <button onclick="document.getElementById('ctrl-overlay').style.display='flex'" style="background:rgba(0,180,255,.15);color:#00ccff;border:1.5px solid rgba(0,180,255,.4);padding:10px 0;width:88%;font-family:'Orbitron',sans-serif;border-radius:10px;cursor:pointer;font-size:.7rem;font-weight:900;letter-spacing:2px;margin-top:8px;touch-action:manipulation">🎮 HOW TO PLAY</button>
 </div>
 </div>
 
@@ -450,32 +498,96 @@ const mainBestEl=$('main-best-score'),mainBestMiEl=$('main-best-miles'),bestScor
 
 setTimeout(()=>{splash.style.opacity='0';setTimeout(()=>splash.style.display='none',900);},2200);
 
-// ── 8-BIT MUSIC TUNES ─────────────────────────────────────────────────────────
+// ── 8-BIT MUSIC TUNES — Sonic/Mario inspired ─────────────────────────────────
+// Notes: C4=262 D=294 E=330 F=349 G=392 A=440 B=494 C5=523 D5=587 E5=659 F5=698 G5=784 A5=880
 const TUNES = [
-  {name:'Oh Susanna', bpm:115, waveM:'square', waveB:'triangle',
-   mel:[262,262,294,330, 262,330,294,0, 262,262,294,330, 262,0,0,0, 262,262,294,330, 392,330,294,262, 294,294,330,294, 262,0,0,0, 262,262,294,330, 262,330,294,0, 262,262,294,330, 262,0,0,0, 262,262,294,330, 392,330,294,262, 294,294,330,294, 262,0,0,0, 392,392,440,392, 330,392,0,392, 392,392,440,392, 330,0,0,0, 330,330,349,330, 294,0,0,294, 262,262,294,330, 262,330,294,262, 294,294,330,294, 262,0,0,0, 330,262,262,294, 330,262,330,294, 0,262,262,294, 330,262,0,0, 262,262,294,330, 392,330,294,262, 294,294,330,294, 262,0,0,0, 392,392,440,392, 330,392,0,392, 392,392,440,392, 330,0,0,0, 330,330,349,330, 294,0,0,294, 262,262,294,330, 262,330,294,262, 294,294,330,294, 262,0,0,0],
-   bass:[131,131,165,131, 131,165,131,131, 131,131,165,131, 131,131,131,131, 131,131,165,131, 196,165,131,131, 147,147,165,147, 131,131,131,131, 131,131,165,131, 131,165,131,131, 131,131,165,131, 131,131,131,131, 131,131,165,131, 196,165,131,131, 147,147,165,147, 131,131,131,131, 196,196,220,196, 165,196,196,196, 196,196,220,196, 165,165,165,165, 165,165,175,165, 147,147,147,147, 131,131,165,131, 131,165,131,131, 147,147,165,147, 131,131,131,131, 165,131,131,165, 165,131,165,147, 147,131,131,165, 165,131,131,131, 131,131,165,131, 196,165,131,131, 147,147,165,147, 131,131,131,131, 196,196,220,196, 165,196,196,196, 196,196,220,196, 165,165,165,165, 165,165,175,165, 147,147,147,147, 131,131,165,131, 131,165,131,131, 147,147,165,147, 131,131,131,131]},
-  {name:'Camptown Races', bpm:126, waveM:'square', waveB:'triangle',
-   mel:[392,392,392,330, 392,440,440,392, 330,262,294,294, 294,330,294,0, 392,392,392,330, 392,440,440,392, 330,262,294,294, 262,0,0,0, 330,330,330,330, 294,294,294,294, 330,330,330,330, 392,392,392,392, 392,440,440,392, 330,262,294,294, 392,392,330,262, 262,0,0,0],
-   bass:[196,196,196,165, 196,220,220,196, 165,131,147,147, 147,165,147,147, 196,196,196,165, 196,220,220,196, 165,131,147,147, 131,131,131,131, 165,165,165,165, 147,147,147,147, 165,165,165,165, 196,196,196,196, 196,220,220,196, 165,131,147,147, 196,196,165,131, 131,131,131,131]},
-  {name:'We Wish You Merry Xmas', bpm:132, waveM:'square', waveB:'triangle',
-   mel:[262,349,349, 392,349,330, 294,294,294, 392,392,440, 392,349,262, 440,440,440, 494,440,392, 349,0,0, 262,349,349, 392,349,330, 294,294,294, 392,392,440, 392,349,262, 523,494,440, 440,392,0, 0,0,0, 440,440,440, 494,440,392, 349,349,349, 440,392,349, 330,330,330, 440,349,330, 294,0,0, 0,0,0, 262,349,349, 392,349,330, 294,294,294, 392,392,440, 392,349,262, 523,494,440, 440,392,0, 0,0,0],
-   bass:[131,175,175, 196,175,165, 147,147,147, 196,196,220, 196,175,131, 220,220,220, 247,220,196, 175,175,175, 131,175,175, 196,175,165, 147,147,147, 196,196,220, 196,175,131, 262,247,220, 220,196,196, 196,196,196, 220,220,220, 247,220,196, 175,175,175, 220,196,175, 165,165,165, 220,175,165, 147,147,147, 147,147,147, 131,175,175, 196,175,165, 147,147,147, 196,196,220, 196,175,131, 262,247,220, 220,196,196, 196,196,196]},
-  {name:'BINGO', bpm:120, waveM:'square', waveB:'triangle',
-   mel:[392,392,392,330, 392,440,440,392, 330,262,294,294, 392,0,0,0, 392,392,392,330, 392,440,440,392, 330,262,294,294, 262,0,0,0, 392,440,494,392, 440,0,392,440, 494,392,440,0, 0,0,0,0, 392,440,494,392, 440,0,392,440, 494,392,440,0, 392,0,0,0],
-   bass:[196,196,196,165, 196,220,220,196, 165,131,147,147, 196,196,196,196, 196,196,196,165, 196,220,220,196, 165,131,147,147, 131,131,131,131, 196,220,247,196, 220,220,196,220, 247,196,220,220, 220,220,220,220, 196,220,247,196, 220,220,196,220, 247,196,220,220, 196,196,196,196]},
-  {name:'Green Hill', bpm:168, waveM:'square', waveB:'triangle',
-   mel:[330,370,415,440, 494,440,415,370, 330,370,415,554, 494,0,494,554, 659,554,494,440, 415,440,494,415, 370,415,440,370, 330,0,0,0, 330,370,415,440, 494,554,659,740, 659,554,494,440, 415,0,415,440, 494,440,415,370, 330,370,415,494, 440,415,370,330, 330,0,0,0],
-   bass:[165,165,208,165, 247,165,208,165, 165,165,208,165, 247,247,247,277, 330,277,247,220, 208,220,247,208, 185,208,220,185, 165,165,165,165, 165,165,208,165, 247,277,330,370, 330,277,247,220, 208,208,208,220, 247,220,208,185, 165,185,208,247, 220,208,185,165, 165,165,165,165]},
-  {name:'Mario Vibes', bpm:162, waveM:'square', waveB:'triangle',
-   mel:[330,262,330,262, 440,0,494,0, 466,0,392,0, 330,440,494,466, 440,392,330,392, 440,392,330,294, 262,0,0,0, 330,262,330,262, 440,0,494,0, 466,0,392,0, 330,440,494,466, 440,392,262,262, 330,294,262,0, 0,0,0,0, 392,392,392,349, 330,0,330,523, 523,494,440,415, 440,0,0,0, 349,349,415,392, 0,330,0,262, 294,330,262,262, 330,294,262,0],
-   bass:[131,131,131,131, 220,220,247,247, 233,233,196,196, 165,220,247,233, 220,196,165,196, 220,196,165,147, 131,131,131,131, 131,131,131,131, 220,220,247,247, 233,233,196,196, 165,220,247,233, 220,196,131,131, 165,147,131,131, 131,131,131,131, 196,196,196,175, 165,165,165,262, 262,247,220,208, 220,220,220,220, 175,175,208,196, 196,165,165,131, 147,165,131,131, 165,147,131,131]},
-  {name:'Chemical Plant', bpm:172, waveM:'square', waveB:'sawtooth',
-   mel:[784,784,698,784, 880,784,698,659, 698,698,622,698, 784,698,622,587, 622,622,554,622, 698,622,554,523, 554,587,622,698, 784,0,784,0, 784,784,698,784, 880,880,988,880, 784,784,880,784, 698,784,880,784, 698,698,784,880, 988,880,784,698, 784,880,988,1047, 988,0,0,0],
-   bass:[196,196,175,196, 220,196,175,165, 175,175,156,175, 196,175,156,147, 156,156,139,156, 175,156,139,131, 139,147,156,175, 196,196,196,196, 196,196,175,196, 220,220,247,220, 196,196,220,196, 175,196,220,196, 175,175,196,220, 247,220,196,175, 196,220,247,262, 247,247,247,247]},
-  {name:'Bowser Castle', bpm:144, waveM:'sawtooth', waveB:'sawtooth',
-   mel:[220,220,220,220, 247,0,233,0, 220,220,220,220, 175,196,220,0, 220,220,220,220, 247,0,247,261, 277,0,277,294, 220,0,0,0, 330,0,330,0, 294,0,294,0, 277,0,261,247, 220,247,261,277, 294,0,294,0, 330,0,330,350, 370,0,440,0, 392,0,0,0, 220,220,233,247, 220,0,196,0, 175,0,175,196, 220,247,220,196, 175,175,196,220, 247,0,261,0, 277,261,247,233, 220,0,0,0],
-   bass:[55,55,55,55, 62,55,58,55, 55,55,55,55, 44,49,55,55, 55,55,55,55, 62,55,62,65, 69,55,69,73, 55,55,55,55, 82,82,82,82, 73,73,73,73, 69,69,65,62, 55,62,65,69, 73,73,73,73, 82,82,82,87, 92,92,110,110, 98,98,98,98, 55,55,58,62, 55,55,49,49, 44,44,44,49, 55,62,55,49, 44,44,49,55, 62,62,65,65, 69,65,62,58, 55,55,55,55]},
+  // 0 — City Day: Green Hill Zone vibe — bright, bouncy major key
+  {name:'Green Hill Groove', bpm:160, waveM:'square', waveB:'triangle',
+   mel:[659,0,659,0,523,659,0,784, 0,392,0,0,0,262,0,330,
+        294,0,0,0,0,247,0,0, 262,0,0,196,0,0,165,0,
+        659,0,659,0,523,659,0,784, 0,392,0,0,0,523,0,659,
+        698,0,659,0,0,587,0,0, 523,330,440,392,0,0,0,0],
+   bass:[131,131,131,131,131,131,131,196, 196,196,131,131,131,131,165,165,
+         147,147,147,147,147,123,123,123, 131,131,131,98,98,98,82,82,
+         131,131,131,131,131,131,131,196, 196,196,131,131,131,131,131,262,
+         175,175,175,175,175,175,165,165, 131,165,220,196,196,196,196,196]},
+
+  // 1 — Night City: Sonic Chemical Plant vibe — fast synth, minor
+  {name:'Night Drive', bpm:170, waveM:'square', waveB:'sawtooth',
+   mel:[880,784,659,784, 880,0,880,784, 659,0,784,0, 659,523,494,523,
+        659,784,880,784, 659,523,494,440, 392,440,494,523, 587,659,587,523,
+        880,784,659,784, 880,880,1047,880, 784,659,784,0, 659,523,494,0,
+        523,587,659,784, 880,784,659,523, 440,494,523,587, 659,0,659,0],
+   bass:[220,220,165,165, 220,220,220,196, 165,165,196,196, 165,131,123,131,
+         165,196,220,196, 165,131,123,110, 98,110,123,131, 147,165,147,131,
+         220,220,165,165, 220,220,262,220, 196,165,196,196, 165,131,123,123,
+         131,147,165,196, 220,196,165,131, 110,123,131,147, 165,165,165,165]},
+
+  // 2 — Blizzard: We Wish You Merry Christmas — 3/4 waltz, bright
+  {name:'Merry Christmas', bpm:132, waveM:'square', waveB:'triangle',
+   mel:[262,349,349, 392,349,330, 294,294,294, 392,392,440, 392,349,262, 440,440,440,
+        494,440,392, 349,0,0, 262,349,349, 392,349,330, 294,294,294, 392,392,440,
+        392,349,262, 523,494,440, 440,392,0, 0,0,0,
+        440,440,440, 494,440,392, 349,349,349, 440,392,349, 330,330,330, 440,349,330, 294,0,0],
+   bass:[131,175,175, 196,175,165, 147,147,147, 196,196,220, 196,175,131, 220,220,220,
+         247,220,196, 175,175,175, 131,175,175, 196,175,165, 147,147,147, 196,196,220,
+         196,175,131, 262,247,220, 220,196,196, 196,196,196,
+         220,220,220, 247,220,196, 175,175,175, 220,196,175, 165,165,165, 220,175,165, 147,147,147]},
+
+  // 3 — Desert: BINGO march, punchy 4/4
+  {name:'BINGO', bpm:122, waveM:'square', waveB:'triangle',
+   mel:[392,392,392,330, 392,440,440,392, 330,262,294,294, 392,0,0,0,
+        392,392,392,330, 392,440,440,392, 330,262,294,294, 262,0,0,0,
+        392,440,494,392, 440,0,392,440, 494,392,440,0, 392,0,392,0,
+        392,392,330,392, 440,440,392,330, 262,294,294,294, 262,0,0,0],
+   bass:[196,196,196,165, 196,220,220,196, 165,131,147,147, 196,196,196,196,
+         196,196,196,165, 196,220,220,196, 165,131,147,147, 131,131,131,131,
+         196,220,247,196, 220,220,196,220, 247,196,220,220, 196,196,196,196,
+         196,196,165,196, 220,220,196,165, 131,147,147,147, 131,131,131,131]},
+
+  // 4 — Midnight Storm: Sonic Labyrinth Zone vibe — tense, driving minor
+  {name:'Storm Chase', bpm:145, waveM:'sawtooth', waveB:'square',
+   mel:[440,494,523,494, 440,392,440,494, 523,587,659,587, 523,494,440,0,
+        440,494,523,587, 659,587,523,494, 440,494,523,494, 440,0,0,0,
+        698,659,587,523, 494,523,587,659, 698,784,698,659, 587,523,494,440,
+        523,587,659,587, 523,494,440,392, 330,349,392,440, 494,0,494,0],
+   bass:[110,110,131,110, 110,98,110,110, 131,147,165,147, 131,123,110,110,
+         110,110,131,147, 165,147,131,123, 110,110,131,110, 110,110,110,110,
+         175,165,147,131, 123,131,147,165, 175,196,175,165, 147,131,123,110,
+         131,147,165,147, 131,123,110,98, 82,87,98,110, 123,123,123,123]},
+
+  // 5 — Golden Dawn: Mario World map theme vibe — triumphant, warm
+  {name:'Golden Sunrise', bpm:138, waveM:'triangle', waveB:'triangle',
+   mel:[523,659,784,880, 784,659,523,440, 392,440,523,659, 784,0,784,0,
+        523,659,784,1047, 880,784,659,523, 587,659,698,784, 698,659,587,523,
+        440,523,659,784, 880,784,659,523, 494,523,587,659, 784,880,784,659,
+        523,587,659,698, 784,698,659,587, 523,440,392,440, 523,0,523,0],
+   bass:[131,165,196,220, 196,165,131,110, 98,110,131,165, 196,196,196,196,
+         131,165,196,262, 220,196,165,131, 147,165,175,196, 175,165,147,131,
+         110,131,165,196, 220,196,165,131, 123,131,147,165, 196,220,196,165,
+         131,147,165,175, 196,175,165,147, 131,110,98,110, 131,131,131,131]},
+
+  // 6 — Neon Strip: Sonic Starlight Zone vibe — jazzy, fast, syncopated
+  {name:'Neon Jazz', bpm:168, waveM:'square', waveB:'sawtooth',
+   mel:[784,0,659,784, 880,784,659,0, 523,587,659,0, 784,0,0,784,
+        880,0,784,880, 1047,880,784,0, 659,698,784,0, 880,0,880,0,
+        784,659,523,440, 494,523,587,659, 784,659,523,440, 392,440,494,523,
+        587,659,784,880, 1047,880,784,659, 523,587,659,784, 880,0,880,0],
+   bass:[196,196,165,196, 220,196,165,165, 131,147,165,165, 196,196,196,196,
+         220,220,196,220, 262,220,196,196, 165,175,196,196, 220,220,220,220,
+         196,165,131,110, 123,131,147,165, 196,165,131,110, 98,110,123,131,
+         147,165,196,220, 262,220,196,165, 131,147,165,196, 220,220,220,220]},
+
+  // 7 — Fog Coast / Bowser: Mario Castle theme feel — ominous, minor march
+  {name:'Dark Castle March', bpm:128, waveM:'square', waveB:'square',
+   mel:[220,0,220,0, 220,0,220,0, 220,0,262,0, 247,0,0,0,
+        220,0,294,0, 262,0,247,0, 196,0,0,0, 0,0,0,0,
+        220,0,220,0, 220,0,262,247, 220,196,0,0, 0,0,0,0,
+        175,0,196,0, 220,0,247,0, 262,330,311,294, 220,0,0,0],
+   bass:[55,55,55,55, 55,55,55,55, 55,55,65,65, 62,62,62,62,
+         55,55,73,73, 65,65,62,62, 49,49,49,49, 49,49,49,49,
+         55,55,55,55, 55,55,65,62, 55,49,49,49, 49,49,49,49,
+         44,44,49,49, 55,55,62,62, 65,82,78,73, 55,55,55,55]},
 ];
 
 const BIOMES=[
@@ -1159,7 +1271,7 @@ function updEnv(dt,norm){
   // Plane spawning in final 3 miles
   const _milesLeft3=milesPerLvl-(totalMiles-milesAtStart);
   const _planeAllowed=![4,6].includes(level);
-  if(_planeAllowed&&_milesLeft3<=3&&_milesLeft3>0&&!isInvincible){
+  if(_planeAllowed&&_milesLeft3<=2&&_milesLeft3>0&&!isInvincible){
     planeSpawnTimer-=dt;
     if(planeSpawnTimer<=0){
       const side=Math.random()<0.5?-1:1;
@@ -1264,20 +1376,6 @@ function drawEnv(){
       ctx.fillRect(tx,ty,3,2);
     }
   }
-  ctx.restore();
-
-  // ── TYRE WEAR TRACKS in each lane (subtle lighter ruts) ───────────────────────
-  ctx.save();
-  ctx.globalAlpha=0.055;
-  ctx.fillStyle='#b0b8c0';
-  // Left and right tyre lines per lane
-  [0,1,2].forEach(li=>{
-    const lx=rx+li*laneW;
-    const t1=lx+laneW*0.25;
-    const t2=lx+laneW*0.72;
-    ctx.fillRect(t1,0,4,H);
-    ctx.fillRect(t2,0,4,H);
-  });
   ctx.restore();
 
   // ── BIOME ROAD SURFACE EFFECTS ────────────────────────────────────────────────
@@ -2224,6 +2322,120 @@ function showGasStation(onDone){
   },800);
 }
 
+// ── LEVEL 7 MOUNTAIN APPROACH SEQUENCE ───────────────────────────────────────
+function showMountainSequence(onDone){
+  const ms=document.getElementById('mountain-seq');
+  ms.style.display='flex';
+  const mc=document.getElementById('mountain-canvas');
+  const mx=mc.getContext('2d');
+  let mt=0, carX=320;
+  function drawMountain(){
+    mt++;
+    mx.clearRect(0,0,320,280);
+    // Sky — deep red/orange volcanic
+    const skyG=mx.createLinearGradient(0,0,0,280);
+    skyG.addColorStop(0,'#0a0000'); skyG.addColorStop(0.5,'#2d0800'); skyG.addColorStop(1,'#5a1000');
+    mx.fillStyle=skyG; mx.fillRect(0,0,320,280);
+    // Stars
+    [[20,10],[60,25],[100,8],[160,20],[220,12],[280,18],[40,35],[140,30],[260,28]].forEach(([sx,sy])=>{
+      mx.fillStyle='rgba(255,200,100,0.7)'; mx.beginPath(); mx.arc(sx,sy,1,0,Math.PI*2); mx.fill();
+    });
+    // Moon — blood orange
+    mx.fillStyle='#ff6600'; mx.beginPath(); mx.arc(260,28,18,0,Math.PI*2); mx.fill();
+    mx.fillStyle='#cc3300'; mx.beginPath(); mx.arc(267,24,14,0,Math.PI*2); mx.fill();
+    // Distant mountains silhouette
+    mx.fillStyle='#1a0400';
+    mx.beginPath(); mx.moveTo(0,180); mx.lineTo(40,100); mx.lineTo(80,140); mx.lineTo(120,80); mx.lineTo(160,120); mx.lineTo(200,90); mx.lineTo(240,130); mx.lineTo(280,70); mx.lineTo(320,110); mx.lineTo(320,280); mx.lineTo(0,280); mx.closePath(); mx.fill();
+    // Main fire mountain — centre
+    mx.fillStyle='#220800';
+    mx.beginPath(); mx.moveTo(0,240); mx.lineTo(80,240); mx.quadraticCurveTo(120,220,160,60); mx.quadraticCurveTo(200,220,240,240); mx.lineTo(320,240); mx.lineTo(320,280); mx.lineTo(0,280); mx.closePath(); mx.fill();
+    // Lava glow on mountain face
+    const lavaG=mx.createLinearGradient(160,60,160,240);
+    lavaG.addColorStop(0,'rgba(255,80,0,0)'); lavaG.addColorStop(0.6,'rgba(200,40,0,0.18)'); lavaG.addColorStop(1,'rgba(255,100,0,0.28)');
+    mx.fillStyle=lavaG;
+    mx.beginPath(); mx.moveTo(80,240); mx.quadraticCurveTo(120,220,160,60); mx.quadraticCurveTo(200,220,240,240); mx.closePath(); mx.fill();
+    // Lava streams on mountain
+    [[155,80],[165,80],[158,70]].forEach(([lx,ly])=>{
+      const lg=mx.createLinearGradient(lx,ly,lx+8,240);
+      lg.addColorStop(0,'rgba(255,150,0,0.8)'); lg.addColorStop(1,'rgba(255,50,0,0)');
+      mx.fillStyle=lg; mx.fillRect(lx,ly,5,160);
+    });
+    // Lava glow at base
+    const baseG=mx.createRadialGradient(160,240,0,160,240,80);
+    baseG.addColorStop(0,'rgba(255,100,0,0.35)'); baseG.addColorStop(1,'rgba(0,0,0,0)');
+    mx.fillStyle=baseG; mx.fillRect(80,180,160,100);
+    // ── CASTLE on mountain top ────────────────────────────────────────────────
+    const cx=148, cy=22;
+    // Castle base
+    mx.fillStyle='#1a0800';
+    mx.fillRect(cx,cy+20,32,28);
+    // Left tower
+    mx.fillRect(cx-6,cy+10,14,38);
+    mx.fillRect(cx-6,cy+6,5,6); mx.fillRect(cx+1,cy+6,5,6); mx.fillRect(cx+7,cy+6,5,6); // battlements
+    // Right tower
+    mx.fillRect(cx+24,cy+10,14,38);
+    mx.fillRect(cx+24,cy+6,5,6); mx.fillRect(cx+31,cy+6,5,6); mx.fillRect(cx+37,cy+6,5,6);
+    // Main gate arch
+    mx.fillStyle='#0a0000';
+    mx.beginPath(); mx.arc(cx+16,cy+40,7,Math.PI,0); mx.fill();
+    mx.fillRect(cx+9,cy+40,14,10);
+    // Castle windows — glowing orange
+    const pulse=0.6+0.4*Math.sin(mt*0.08);
+    mx.fillStyle=`rgba(255,${Math.floor(100*pulse)},0,${pulse})`;
+    [[cx+3,cy+16],[cx+27,cy+16],[cx+13,cy+28],[cx+21,cy+28]].forEach(([wx,wy])=>{
+      mx.beginPath(); mx.arc(wx,wy,2.5,0,Math.PI*2); mx.fill();
+    });
+    // ── ROAD approaching mountain ─────────────────────────────────────────────
+    mx.fillStyle='#1a1a1a'; mx.beginPath();
+    mx.moveTo(100,280); mx.lineTo(160,200); mx.lineTo(220,280); mx.closePath(); mx.fill();
+    // Road lane line
+    mx.strokeStyle='rgba(255,200,0,0.5)'; mx.lineWidth=1.5; mx.setLineDash([6,8]);
+    mx.beginPath(); mx.moveTo(160,200); mx.lineTo(160,280); mx.stroke(); mx.setLineDash([]);
+    // ── TAXI driving up road ──────────────────────────────────────────────────
+    carX = Math.max(152, carX - 0.6);
+    const taxiScale = 0.55 + (320-carX)/320*0.15;
+    const ty = 220 + (carX-152)/160 * 52;
+    mx.save(); mx.translate(carX,ty); mx.scale(taxiScale,taxiScale);
+    // Simple taxi silhouette
+    mx.fillStyle=playerColor||'#f5c518';
+    mx.beginPath(); mx.roundRect(-18,0,36,20,3); mx.fill();
+    mx.beginPath(); mx.roundRect(-13,-10,26,14,6); mx.fill();
+    mx.fillStyle='rgba(140,200,255,.5)'; mx.fillRect(-10,-9,22,10);
+    mx.fillStyle='#111';
+    mx.beginPath(); mx.roundRect(-21,3,5,10,2); mx.fill();
+    mx.beginPath(); mx.roundRect(16,3,5,10,2); mx.fill();
+    mx.beginPath(); mx.roundRect(-21,12,5,10,2); mx.fill();
+    mx.beginPath(); mx.roundRect(16,12,5,10,2); mx.fill();
+    mx.fillStyle='#ffd700'; mx.fillRect(-6,-14,12,4);
+    mx.fillStyle='#000'; mx.font='bold 5px monospace'; mx.textAlign='center'; mx.fillText('TAXI',0,-11);
+    mx.restore();
+    // Ember particles drifting up
+    if(mt%6===0){
+      mx._embers=mx._embers||[];
+      mx._embers.push({x:140+Math.random()*40,y:240,vy:-0.8-Math.random()*0.5,life:1,size:1+Math.random()*2});
+    }
+    (mx._embers=mx._embers||[]).forEach(e=>{e.y+=e.vy;e.life-=0.012;});
+    mx._embers=mx._embers.filter(e=>e.life>0);
+    mx._embers.forEach(e=>{
+      mx.globalAlpha=e.life*0.8;
+      mx.fillStyle=Math.random()<0.5?'#ff6600':'#ffaa00';
+      mx.beginPath(); mx.arc(e.x,e.y,e.size,0,Math.PI*2); mx.fill();
+    });
+    mx.globalAlpha=1;
+    requestAnimationFrame(drawMountain);
+  }
+  // Tap/space to continue
+  const tapMsg=document.createElement('div');
+  tapMsg.style.cssText='position:absolute;bottom:28px;left:0;right:0;text-align:center;font-family:Orbitron,sans-serif;font-size:.62rem;font-weight:900;color:#ff8800;letter-spacing:3px;animation:blink 0.9s step-end infinite;pointer-events:none';
+  tapMsg.textContent='▶ TAP TO CONTINUE ◀';
+  ms.appendChild(tapMsg);
+  let animId=requestAnimationFrame(drawMountain);
+  function _advance(){ cancelAnimationFrame(animId); ms.style.display='none'; if(tapMsg.parentNode) tapMsg.parentNode.removeChild(tapMsg); document.removeEventListener('keydown',_kh); ms.removeEventListener('touchstart',_th); onDone(); }
+  function _kh(e){ if(e.code==='Space'||e.code==='Enter'){e.preventDefault();_advance();} }
+  function _th(e){ e.preventDefault(); _advance(); }
+  setTimeout(()=>{ document.addEventListener('keydown',_kh); ms.addEventListener('touchstart',_th,{passive:false}); },800);
+}
+
 function saveRec(){ if(score>parseInt(localStorage.getItem('joesBest')||0)) localStorage.setItem('joesBest',score); if(totalMiles>parseInt(localStorage.getItem('joesMiles')||0)) localStorage.setItem('joesMiles',Math.floor(totalMiles)); refreshRec(); }
 function refreshRec(){ const s=localStorage.getItem('joesBest')||0,m=localStorage.getItem('joesMiles')||0; mainBestEl.innerText=s; mainBestMiEl.innerText=m; bestScoreEl.innerText=s; }
 refreshRec();
@@ -2343,7 +2555,7 @@ function update(dt){
   } else { onSide=false; sideTimer=0; penGain.gain.setTargetAtTime(0,audioCtx.currentTime,.15); }
   const curSpdMph=Math.floor(spd*35); if(curSpdMph>lvlStats.topSpd) lvlStats.topSpd=curSpdMph;
 
-  if(!isNitroActive&&!isInvincible) spd=Math.min(maxSpd,spd+.0002*norm);
+  if(!isNitroActive&&!isInvincible) spd=Math.min(maxSpd,spd+.00035*norm);
   if(biome.snow) spd=Math.min(spd,maxSpd*.78);
   engUpd();
 
@@ -2351,7 +2563,7 @@ function update(dt){
   const curM=Math.floor(totalMiles),milesIn=totalMiles-milesAtStart,milesLeft=milesPerLvl-milesIn;
   const _pct=Math.min(1,milesIn/milesPerLvl);pb.style.width=(_pct*100)+'%';const _ppct=document.getElementById('prog-pct');if(_ppct)_ppct.textContent=Math.round(_pct*100)+'%';
 
-  if(milesLeft<=1&&milesLeft>0){ isInvincible=true; obstacles=[]; spawnHearts(); spd=Math.max(.05,spd*Math.pow(.998,norm)); } else if(!isNitroActive){ isInvincible=false; }
+  if(milesLeft<=1&&milesLeft>0){ isInvincible=true; obstacles=[]; spawnHearts(); } else if(!isNitroActive){ isInvincible=false; }
   if(curM>lastMileCheck){ score+=10; lastMileCheck=curM; }
   milesEl.innerText=curM; speedEl.innerText=Math.floor(spd*35); scoreEl.innerText=score;
   lineOff=(lineOff+spd*4*norm)%40;
@@ -2451,6 +2663,7 @@ function update(dt){
       };
 
       if(level===4){showGasStation(_showPit);}
+      else if(level===7){showMountainSequence(_showPit);}
       else{_showPit();}
     }
   }
@@ -2627,7 +2840,7 @@ function update(dt){
       if(spinTimer<=0&&!isInvincible){
         const dx=player.x+player.w/2-o.x, dy=player.y+player.h/2-o.y;
         if(Math.sqrt(dx*dx+dy*dy)<o.r+14){
-          o.hit=true; spinTimer=2800; spinAngle=0; spinVel=0.18;
+          o.hit=true; spinTimer=2700; spinAngle=0; spinVel=0.18;
           spawnFloat(player.x+player.w/2,player.y-10,'SLICK! 🌀','#44aaff');
           tone(220,0.3,'sawtooth',0.08);
         }
@@ -2698,6 +2911,8 @@ function drawPlanes(){
 function draw(){
   drawEnv();
   if(planes.length>0) drawPlanes();
+  // Oil slicks drawn FIRST so everything drives over them
+  oilSlicks.forEach(o=>drawOilSlick(o));
   if(finishY>-200){ const fw=RW(),fx=RX(),sw=fw/14; for(let i=0;i<14;i++){ ctx.fillStyle=i%2===0?'#fff':'#000'; ctx.fillRect(fx+i*sw,finishY,sw+1,18); } ctx.shadowBlur=20; ctx.shadowColor='#fff'; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.strokeRect(fx,finishY,fw,18); ctx.shadowBlur=0; }
   obstacles.forEach(o=>drawTraffic(o));
   police.forEach(p=>drawPoliceCar(p.x,p.y,p.flashPhase,p.parked));
@@ -2708,7 +2923,6 @@ function draw(){
   });
   boostPads.forEach(bp=>drawBoostPad(bp.x,bp.y));
   coins.forEach(c=>drawCoin(c.x,c.y));
-  oilSlicks.forEach(o=>drawOilSlick(o));
   drawSpeedTrail();
   drawHeadlights();
   const hlOn=biome.night;
@@ -2730,7 +2944,7 @@ function draw(){
 
 // ── GAME LOOP ─────────────────────────────────────────────────────────────────
 let lastTime=0;
-function loop(ts){ if(!gameActive) return; let dt=ts-lastTime; if(dt>100)dt=16.67; lastTime=ts; update(dt); draw(); requestAnimationFrame(loop); }
+function loop(ts){ if(!gameActive) return; let dt=ts-lastTime; if(dt>50)dt=16.67; lastTime=ts; update(dt); draw(); requestAnimationFrame(loop); }
 
 // ── START ─────────────────────────────────────────────────────────────────────
 startBtn.onclick=()=>{
@@ -2738,7 +2952,7 @@ startBtn.onclick=()=>{
   initAudio(); gameActive=true; overlay.style.display='none';
   $('msg').style.color='var(--gold)'; $('msg').innerText="Weinstein's Way Out";
   score=0; totalMiles=0; level=1; milesPerLvl=milesForLvl(1);
-  maxSpd=1.0+vd.speedBonus; spd=1.0; nitros=selVeh==='will'?3:1; passCollected=0;
+  maxSpd=1.2+vd.speedBonus; spd=1.2; nitros=selVeh==='will'?3:1; passCollected=0;
   playerHP=MAX_HP;updateDmgBar();damageCooldown=0;hornPressCount=0;
   obstacles=[]; passengers=[]; pickups=[]; hearts=[]; heartsSpawned=false; police=[]; policeSpawnedThisLevel=0;
   specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[]; closeCallCooldown=0; planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0;
