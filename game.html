@@ -1060,6 +1060,7 @@ let oilSlicks=[]; // {x,y,r,hit}
 let spinTimer=0; // ms remaining in spin
 let iceVx=0; // lateral ice drift velocity for player
 let animals=[]; // {type,x,y,active,hit,level}
+let npcLaneChangesThisLevel=0; // global counter for lane changes this level
 // Bridges and tunnels
 let roadFeature='none'; // 'none'|'bridge'|'tunnel'
 let roadFeatureScroll=0;
@@ -1077,6 +1078,8 @@ function milesForLvl(l){ return Math.round(10*Math.pow(1.5,l-1)); }
 
 function resetLvlStats(){
   lvlStats={scoreAtStart:score,passStart:passCollected,nitrosUsed:0,sideHits:0,nitrosStart:nitros,startTime:performance.now(),topSpd:0,hornHonks:0};
+  planeSpawnTimer=0; // reset so first plane spawns immediately in final 2 miles
+  npcLaneChangesThisLevel=0;
   // Seed oil slicks: 1-3 per level, spread across the level distance
   // Schedule one road feature per level (bridge or tunnel) at 35-65% through
   roadFeature='none'; roadFeatureScroll=0;
@@ -1278,14 +1281,24 @@ function updEnv(dt,norm){
   stars.forEach(s=>{ s.t=(s.t+.018)%(Math.PI*2); });
   if(comboTimer>0){ comboTimer-=dt; if(comboTimer<=0) breakCombo(); }
   // Plane spawning in final 3 miles
+  // ── PLANE SPAWNING: final 2 miles of every level ────────────────────────────
   const _milesLeft3=milesPerLvl-(totalMiles-milesAtStart);
-  const _planeAllowed=![4,6].includes(level);
-  if(_planeAllowed&&_milesLeft3<=2&&_milesLeft3>0&&!isInvincible){
+  if(_milesLeft3<=2&&_milesLeft3>0){
     planeSpawnTimer-=dt;
     if(planeSpawnTimer<=0){
+      // Spawn from left OR right side, crossing the full screen
       const side=Math.random()<0.5?-1:1;
-      planes.push({x:side<0?-80:W+80,y:30+Math.random()*H*0.28,vy:(Math.random()-0.5)*0.4,vx:side*(2.2+Math.random()*1.8),type:Math.floor(Math.random()*3),trail:[]});
-      planeSpawnTimer=3500+Math.random()*4000;
+      // Speed: faster so player can see them clearly — 3.5-5.5 px/frame
+      const vx=side*(3.5+Math.random()*2.0);
+      // Start fully offscreen, at sky height (top 25% of screen)
+      const startX=side<0?(-100):W+100;
+      const startY=H*0.04+Math.random()*H*0.22;
+      planes.push({x:startX,y:startY,vy:(Math.random()-0.5)*0.3,vx,type:Math.floor(Math.random()*3),trail:[]});
+      // Spawn 2-3 planes per interval so there's always something visible
+      if(Math.random()<0.4){
+        planes.push({x:startX,y:startY+Math.random()*40-20,vy:(Math.random()-0.5)*0.2,vx:vx*0.85,type:Math.floor(Math.random()*3),trail:[]});
+      }
+      planeSpawnTimer=1800+Math.random()*2200; // spawn every 1.8-4s
     }
   }
   planes.forEach(p=>{
@@ -1298,42 +1311,68 @@ function updEnv(dt,norm){
   if(biome.mario) updMarioProps(norm);
   else if(biome.sideTheme) updSideProps(norm);
   if(damageCooldown>0) damageCooldown--;
-  // ── NPC autonomous lane-change signals (quota per level) ────────────────────
-  // Quota: lvl1=0, lvl2=1, lvl3-4=2, lvl5-7=3, lvl8=5
-  const _npcQuota=[0,0,1,2,2,3,3,3,5][Math.min(level,8)];
+  // ── NPC autonomous lane-change signals ──────────────────────────────────────
+  // Quota per level: 1=2, 2=4, 3=8, 4=15, 5+=20
+  const _npcQuota=[2,2,4,8,15,20,20,20,20][Math.min(level-1,8)];
   const _laneW=RW()/3, _rx=RX();
-  // Count how many are currently signalling or have moved this level
-  const _activeSig=obstacles.filter(o=>o.signalPhase==='signalling'||o.signalPhase==='moving').length;
-  obstacles.forEach((o,i)=>{
-    // Horn-target movement (existing)
+  obstacles.forEach((o,oi)=>{
+    // ── Horn/hornTarget smooth movement ──────────────────────────────────────
     if(o.hornTarget!==undefined){
-      o.x=o.x+(o.hornTarget-o.x)*0.12;
+      o.x+=(o.hornTarget-o.x)*0.12;
       if(Math.abs(o.x-o.hornTarget)<2){delete o.hornTarget;delete o.hornTween;}
     }
-    // Autonomous signal: respect per-level quota
-    if(o.signalTimer===undefined){ o.signalTimer=8000+Math.random()*6000; o.signalDir=0; o.laneTarget=null; o.signalPhase='none'; o.signalsDone=0; }
-    if(o.signalPhase==='none'&&o.hornTarget===undefined&&(o.signalsDone||0)<_npcQuota){
-      // Only trigger if total active signals < quota
-      if(_activeSig<_npcQuota){
-        o.signalTimer-=16;
+    // ── Initialize signal state on first frame ────────────────────────────────
+    if(o.signalTimer===undefined){
+      // Stagger first signal so not all NPCs fire at once
+      o.signalTimer=800+Math.random()*3000;
+      o.signalDir=0; o.laneTarget=null; o.signalPhase='none'; o.signalBlinkT=0; o.signalMoveTimer=0;
+    }
+    // ── Idle: count down to next signal ──────────────────────────────────────
+    if(o.signalPhase==='none'&&o.hornTarget===undefined){
+      if(npcLaneChangesThisLevel<_npcQuota){
+        o.signalTimer-=dt;
         if(o.signalTimer<=0){
-          o.signalTimer=10000+Math.random()*8000;
+          // Reset for next time
+          o.signalTimer=2000+Math.random()*4000;
+          // Compute current lane (0,1,2)
           const curLane=Math.max(0,Math.min(2,Math.floor((o.x+14-_rx)/_laneW)));
+          // Pick a random adjacent or any other lane
           const opts=[0,1,2].filter(l=>l!==curLane);
           const newLane=opts[Math.floor(Math.random()*opts.length)];
-          const newX=_rx+newLane*_laneW+_laneW*0.3;
-          const blocked=obstacles.some((b,j)=>j!==i&&Math.abs(b.x+14-(newX+14))<_laneW*0.6&&Math.abs(b.y-o.y)<80);
-          if(!blocked){ o.signalDir=newLane>curLane?1:-1; o.laneTarget=newX; o.signalPhase='signalling'; o.signalBlinkT=0; o.signalMoveTimer=4000; }
+          const newX=_rx+newLane*_laneW+_laneW*0.25+Math.random()*_laneW*0.35;
+          // Check target lane is not crowded
+          const blocked=obstacles.some((b,bj)=>bj!==oi&&Math.abs(b.x+14-(newX+14))<_laneW*0.55&&Math.abs(b.y-o.y)<90);
+          if(!blocked){
+            o.signalDir=newLane>curLane?1:-1;
+            o.laneTarget=newX;
+            o.signalPhase='signalling';
+            o.signalBlinkT=0;
+            o.signalMoveTimer=4000; // 4 second signal before moving
+          }
         }
       }
     }
+    // ── Signalling: blink for 4 seconds then execute move ────────────────────
     if(o.signalPhase==='signalling'){
-      o.signalMoveTimer-=16;
-      o.signalBlinkT=(o.signalBlinkT||0)+16;
-      if(o.signalMoveTimer<=0){ o.hornTarget=o.laneTarget; o.signalPhase='moving'; }
+      o.signalMoveTimer-=dt;
+      o.signalBlinkT+=dt;
+      if(o.signalMoveTimer<=0){
+        // Time to move — set hornTarget so existing smooth-move logic handles it
+        o.hornTarget=o.laneTarget;
+        o.signalPhase='moving';
+      }
     }
+    // ── Moving: wait until hornTarget is reached ──────────────────────────────
     if(o.signalPhase==='moving'){
-      if(o.hornTarget===undefined){ o.signalPhase='none'; o.signalDir=0; o.laneTarget=null; o.signalsDone=(o.signalsDone||0)+1; o.signalTimer=15000; }
+      if(o.hornTarget===undefined){
+        // Move complete — increment global counter
+        npcLaneChangesThisLevel++;
+        o.signalPhase='none';
+        o.signalDir=0;
+        o.laneTarget=null;
+        // Short cooldown before this NPC can signal again
+        o.signalTimer=1500+Math.random()*2500;
+      }
     }
   });
   [...specialVehicles].forEach(o=>{
@@ -1694,20 +1733,38 @@ function drawTraffic(o){ const x=o.x,y=o.y,col=o.col;
   ctx.beginPath(); ctx.roundRect(x+w-2,y+18,4,12,1); ctx.fill();
   ctx.beginPath(); ctx.roundRect(x-2,y+40,4,12,1); ctx.fill();
   ctx.beginPath(); ctx.roundRect(x+w-2,y+40,4,12,1); ctx.fill();
-  // Tail-light turn signal — blink left or right taillight only (no side indicator, no arrow)
+  // ── TURN SIGNAL: blink matching taillight amber ─────────────────────────────
   if(o.signalPhase==='signalling'&&o.signalDir!==0){
-    const blinkOn=Math.floor((o.signalBlinkT||0)/400)%2===0;
+    // Blink at ~2 Hz (250ms on, 250ms off)
+    const blinkOn=Math.floor((o.signalBlinkT||0)/250)%2===0;
+    // Always draw dark base taillights so signal is visible as change
+    ctx.fillStyle='#550000';
+    ctx.beginPath(); ctx.roundRect(x+2,y+h-5,6,4,1); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x+w-6,y+h-5,6,4,1); ctx.fill();
     if(blinkOn){
-      // Left taillight blinks for left turn, right for right turn
-      ctx.fillStyle='#ff8800'; ctx.shadowBlur=10; ctx.shadowColor='#ff6600';
+      // Amber/orange glow on the signalling side
+      ctx.shadowBlur=14; ctx.shadowColor='#ff7700';
+      ctx.fillStyle='#ffaa00';
       if(o.signalDir<0){
-        // Left taillight — replaces the red with amber
-        ctx.beginPath(); ctx.roundRect(x+2,y+h-4,5,3,1); ctx.fill();
+        // Turning LEFT → left taillight blinks
+        ctx.beginPath(); ctx.roundRect(x+2,y+h-5,6,4,1); ctx.fill();
       } else {
-        // Right taillight — replaces the red with amber
-        ctx.beginPath(); ctx.roundRect(x+w-5,y+h-4,5,3,1); ctx.fill();
+        // Turning RIGHT → right taillight blinks
+        ctx.beginPath(); ctx.roundRect(x+w-6,y+h-5,6,4,1); ctx.fill();
       }
       ctx.shadowBlur=0;
+      // Non-signalling side stays dim red
+      ctx.fillStyle='#991111';
+      if(o.signalDir<0){
+        ctx.beginPath(); ctx.roundRect(x+w-6,y+h-5,6,4,1); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.roundRect(x+2,y+h-5,6,4,1); ctx.fill();
+      }
+    } else {
+      // Off phase: both dark
+      ctx.fillStyle='#660000';
+      ctx.beginPath(); ctx.roundRect(x+2,y+h-5,6,4,1); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x+w-6,y+h-5,6,4,1); ctx.fill();
     }
   }
 }
@@ -2702,7 +2759,7 @@ function update(dt){
             const _pp=$('prog-pct');if(_pp)_pp.textContent='0%';
             bestCombo=0; combo=0; police=[]; policeSpawnedThisLevel=0;
             specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[];
-            planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0; iceVx=0; roadFeature='none'; roadFeatureScroll=0;
+            planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0; iceVx=0; roadFeature='none'; roadFeatureScroll=0; npcLaneChangesThisLevel=0;
             playerHP=Math.min(MAX_HP,playerHP+30); updateDmgBar(); hornPressCount=0;
             initBiome(); showLvlAnn(); lvlUpSnd(); startMusic(); resetLvlStats();
           },
@@ -2963,7 +3020,7 @@ function update(dt){
   }
   if(roadFeature!=='none'){
     roadFeatureScroll+=spd*2*norm;
-    if(roadFeatureScroll>H*3){ roadFeature='none'; roadFeatureScroll=0; }
+    if(roadFeatureScroll>H*5){ roadFeature='none'; roadFeatureScroll=0; }
   }
   updateSpeedTrail();
 
@@ -3022,7 +3079,7 @@ function drawBridge(){
   if(roadFeature!=='bridge') return;
   const rx=RX(),rw=RW(),rr=RR(),midX=rx+rw/2;
   const scroll=roadFeatureScroll;
-  const BRIDGE_LEN=H*2;
+  const BRIDGE_LEN=H*4;
   if(scroll>BRIDGE_LEN) return;
 
   const from=Math.max(0, BRIDGE_LEN-scroll>H ? 0 : H-(BRIDGE_LEN-scroll));
@@ -3402,7 +3459,7 @@ startBtn.onclick=()=>{
   maxSpd=1.2+vd.speedBonus; spd=1.2; nitros=selVeh==='will'?3:1; passCollected=0;
   playerHP=MAX_HP;updateDmgBar();damageCooldown=0;hornPressCount=0;
   obstacles=[]; passengers=[]; pickups=[]; hearts=[]; heartsSpawned=false; police=[]; policeSpawnedThisLevel=0;
-  specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[]; closeCallCooldown=0; planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0; roadFeature='none'; roadFeatureScroll=0;
+  specialVehicles=[]; coins=[]; boostPads=[]; speedTrail=[]; closeCallCooldown=0; planes=[]; planeSpawnTimer=0; oilSlicks=[]; spinTimer=0; spinAngle=0; spinVel=0; roadFeature='none'; roadFeatureScroll=0; npcLaneChangesThisLevel=0;
   // Spawn 3 cats + 2 dogs randomly across all 8 levels (different every game)
   animals=[];
   const _anTypes=['cat','cat','cat','dog','dog'];
