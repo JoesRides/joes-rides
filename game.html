@@ -69,6 +69,10 @@ canvas{display:block;width:100%;height:100%}
 #mountain-seq{position:absolute;inset:0;background:#000;z-index:140;display:none;flex-direction:column;align-items:center;justify-content:center}
 #mountain-canvas{display:block;margin:0 auto}
 #mountain-msg{font-family:'Orbitron',sans-serif;color:#ffd700;font-size:.72rem;font-weight:900;letter-spacing:2px;margin-top:8px;text-align:center}
+/* SLURPEE MINI-GAME */
+#slurpee-game{position:absolute;inset:0;background:#111;z-index:145;display:none;flex-direction:column;align-items:center;justify-content:center}
+#slurpee-canvas{display:block;touch-action:none}
+#slurpee-hud{font-family:'Orbitron',sans-serif;color:#fff;font-size:.7rem;font-weight:900;letter-spacing:2px;margin-top:6px;text-align:center}
 /* CONTROLS GUIDE */
 #ctrl-overlay{position:absolute;inset:0;background:rgba(0,0,0,.97);z-index:160;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:max(10px,env(safe-area-inset-top)) 16px max(10px,env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;text-align:center}
 #ctrl-overlay h2{font-family:'Orbitron',sans-serif;color:var(--gold);font-size:.85rem;font-weight:900;letter-spacing:2px;margin:10px 0 10px}
@@ -263,6 +267,12 @@ canvas{display:block;width:100%;height:100%}
   <canvas id="joe-canvas" width="320" height="280"></canvas>
 </div>
 
+<!-- SLURPEE MINI-GAME -->
+<div id="slurpee-game">
+  <canvas id="slurpee-canvas" width="320" height="420"></canvas>
+  <div id="slurpee-hud">FILL YOUR CUP!</div>
+</div>
+
 <!-- GAS STATION -->
 <div id="gas-station">
   <canvas id="gas-canvas" width="320" height="300"></canvas>
@@ -282,7 +292,7 @@ canvas{display:block;width:100%;height:100%}
 <!-- MOUNTAIN SEQUENCE (after level 7) -->
 <div id="mountain-seq">
   <canvas id="mountain-canvas" width="320" height="280"></canvas>
-  <div id="mountain-msg">BOWSER'S CASTLE AWAITS...</div>
+  <div id="mountain-msg">ERICA'S EVIL TWIN AWAITS...</div>
 </div>
 
 <!-- CONTROLS GUIDE OVERLAY -->
@@ -419,6 +429,59 @@ const TRIVIA_BANK = [
   {q:"Which instrument has black and white keys?", opts:["Guitar","Violin","Drums","Piano"], ans:3},
   {q:"How many planets are in our solar system?", opts:["7","9","8","10"], ans:2},
   {q:"What language is spoken in Brazil?", opts:["Spanish","Portuguese","French","English"], ans:1},
+  // ── 50 NEW QUESTIONS (mixed difficulty) ──────────────────────────────────────
+  {q:"What is the speed of light approximately?", opts:["150,000 km/s","300,000 km/s","500,000 km/s","1,000,000 km/s"], ans:1},
+  {q:"Which element has the symbol 'Au'?", opts:["Silver","Aluminum","Gold","Copper"], ans:2},
+  {q:"How many chambers does a human heart have?", opts:["2","3","4","5"], ans:2},
+  {q:"What year did World War II end?", opts:["1943","1944","1945","1946"], ans:2},
+  {q:"What is the largest organ in the human body?", opts:["Liver","Brain","Skin","Lungs"], ans:2},
+  {q:"Who wrote 'Romeo and Juliet'?", opts:["Charles Dickens","William Shakespeare","Mark Twain","Homer"], ans:1},
+  {q:"What is the capital of Australia?", opts:["Sydney","Melbourne","Brisbane","Canberra"], ans:3},
+  {q:"How many zeros are in one million?", opts:["5","6","7","8"], ans:1},
+  {q:"Which planet is closest to the Sun?", opts:["Venus","Earth","Mars","Mercury"], ans:3},
+  {q:"What gas makes up most of Earth's atmosphere?", opts:["Oxygen","Carbon Dioxide","Nitrogen","Hydrogen"], ans:2},
+  {q:"What year did the Titanic sink?", opts:["1905","1910","1912","1920"], ans:2},
+  {q:"Who painted the Mona Lisa?", opts:["Michelangelo","Raphael","Leonardo da Vinci","Picasso"], ans:2},
+  {q:"How many keys does a standard piano have?", opts:["76","82","88","92"], ans:2},
+  {q:"What is the capital of Canada?", opts:["Toronto","Ottawa","Vancouver","Montreal"], ans:1},
+  {q:"What is the chemical symbol for iron?", opts:["Ir","In","Fe","Fr"], ans:2},
+  {q:"Which ocean lies between Europe and North America?", opts:["Pacific","Indian","Arctic","Atlantic"], ans:3},
+  {q:"What is 15% of 200?", opts:["25","30","35","40"], ans:1},
+  {q:"What is the rarest blood type?", opts:["A+","O-","AB-","B-"], ans:2},
+  {q:"How many bones are in the human spine?", opts:["24","33","40","28"], ans:1},
+  {q:"Which country invented pizza?", opts:["Greece","France","Italy","Spain"], ans:2},
+  {q:"What does DNA stand for?", opts:["Digital Nucleic Acid","Deoxyribonucleic Acid","Dynamic Nuclear Array","Double Natural Atom"], ans:1},
+  {q:"What is the largest desert on Earth?", opts:["Sahara","Gobi","Arabian","Antarctica"], ans:3},
+  {q:"How many hours are in a week?", opts:["148","168","172","160"], ans:1},
+  {q:"What sport uses a shuttlecock?", opts:["Tennis","Ping Pong","Badminton","Squash"], ans:2},
+  {q:"What is the smallest country in the world?", opts:["Monaco","Liechtenstein","Vatican City","San Marino"], ans:2},
+  {q:"Who was the first person to walk on the Moon?", opts:["Buzz Aldrin","Yuri Gagarin","Neil Armstrong","John Glenn"], ans:2},
+  {q:"Which continent is the Sahara Desert on?", opts:["Asia","South America","Australia","Africa"], ans:3},
+  {q:"What is the chemical formula for table salt?", opts:["KCl","NaCl","MgCl2","CaCl2"], ans:1},
+  {q:"How many sides does a pentagon have?", opts:["4","5","6","7"], ans:1},
+  {q:"What is the largest mammal on Earth?", opts:["African Elephant","Blue Whale","Giraffe","Hippopotamus"], ans:1},
+  {q:"Which planet has the most moons?", opts:["Jupiter","Saturn","Uranus","Neptune"], ans:1},
+  {q:"Who invented the telephone?", opts:["Thomas Edison","Nikola Tesla","Alexander Graham Bell","Guglielmo Marconi"], ans:2},
+  {q:"What is the currency of the United Kingdom?", opts:["Euro","Dollar","Pound Sterling","Franc"], ans:2},
+  {q:"What is the closest planet to Earth?", opts:["Mars","Moon","Venus","Jupiter"], ans:2},
+  {q:"How many ounces are in a pound?", opts:["12","14","16","18"], ans:2},
+  {q:"What is the most spoken language in the world?", opts:["English","Hindi","Mandarin Chinese","Spanish"], ans:2},
+  {q:"Who discovered penicillin?", opts:["Louis Pasteur","Alexander Fleming","Jonas Salk","Marie Curie"], ans:1},
+  {q:"What is the tallest building in the world?", opts:["One World Trade","Shanghai Tower","Burj Khalifa","CCTV Tower"], ans:2},
+  {q:"How many time zones does Russia have?", opts:["9","11","13","15"], ans:1},
+  {q:"What is the powerhouse of the cell?", opts:["Nucleus","Ribosome","Mitochondria","Golgi Apparatus"], ans:2},
+  {q:"Which element has atomic number 1?", opts:["Helium","Oxygen","Carbon","Hydrogen"], ans:3},
+  {q:"What is 9 to the power of 2?", opts:["18","72","81","90"], ans:2},
+  {q:"Which country has the most natural lakes?", opts:["USA","Russia","Brazil","Canada"], ans:3},
+  {q:"What is the main ingredient in guacamole?", opts:["Tomato","Lime","Avocado","Cilantro"], ans:2},
+  {q:"How far is the Earth from the Sun (approx)?", opts:["93 million miles","150 million miles","50 million miles","200 million miles"], ans:0},
+  {q:"What gas do humans breathe out?", opts:["Oxygen","Nitrogen","Carbon Dioxide","Argon"], ans:2},
+  {q:"Which instrument does a pianist play?", opts:["Violin","Cello","Piano","Harp"], ans:2},
+  {q:"How many states are in the USA?", opts:["48","49","50","52"], ans:2},
+  {q:"What is the chemical symbol for silver?", opts:["Si","Ag","Sr","Sb"], ans:1},
+  {q:"Who wrote 'The Great Gatsby'?", opts:["Ernest Hemingway","F. Scott Fitzgerald","John Steinbeck","William Faulkner"], ans:1},
+  // ── LEVEL 8 HARD QUESTION (skill 6) ─────────────────────────────────────────
+  {q:"FINAL CHALLENGE: What is the Fibonacci sequence?", opts:["Each number is double the previous","Each number is the sum of the two before it","Each number is a prime","Each number is a perfect square"], ans:1, hard:true},
 ];
 
 let usedTriviaIndices = [];
@@ -578,7 +641,7 @@ const TUNES = [
          196,165,131,110, 123,131,147,165, 196,165,131,110, 98,110,123,131,
          147,165,196,220, 262,220,196,165, 131,147,165,196, 220,220,220,220]},
 
-  // 7 — Fog Coast / Bowser: Mario Castle theme feel — ominous, minor march
+  // 7 — Erica's Evil Twin: Mario Castle theme feel — ominous, minor march
   {name:'Dark Castle March', bpm:128, waveM:'square', waveB:'square',
    mel:[220,0,220,0, 220,0,220,0, 220,0,262,0, 247,0,0,0,
         220,0,294,0, 262,0,247,0, 196,0,0,0, 0,0,0,0,
@@ -626,11 +689,11 @@ const BIOMES=[
    line:'rgba(180,0,255,.55)',shoulder:'rgba(0,255,200,.42)',
    fog:'rgba(90,0,180,.1)', snow:false, sand:false, storm:false, neon:true, dawn:false,
    buildings:true, stars:true, sunGlow:false, mario:false, sideTheme:'fzero', tuneIdx:6},
-  {id:'bowser', name:'BOWSER AIRPORT',   icon:'🔥',  night:true,
+  {id:'ericas_evil_twin', name:"ERICA'S EVIL TWIN",   icon:'🔥',  night:true,
    sky0:'#1a0400',sky1:'#3d0800', road:'#1a0e06', side:'#2a0800',
    line:'rgba(255,120,0,.5)',shoulder:'rgba(255,60,0,.6)',
    fog:'rgba(255,40,0,.04)', snow:false, sand:false, storm:false, neon:false, dawn:false,
-   buildings:false, stars:false, sunGlow:false, mario:false, sideTheme:'bowser', tuneIdx:7},
+   buildings:false, stars:false, sunGlow:false, mario:false, sideTheme:'ericas_evil_twin', tuneIdx:7},
 ];
 
 // ── MARIO SIDEWALK PROPS ──────────────────────────────────────────────────────
@@ -715,8 +778,8 @@ function drawMarioProp(p){
   ctx.restore();
 }
 
-// ── BOWSER props: lava pool, dragon/Bowser silhouette, fireball, spike chain ─
-function _drawBowserProp(x,y,t,ph){
+// ── ERICA'S EVIL TWIN props: lava pool, dragon/Evil Twin silhouette, fireball, spike chain ─
+function _drawEvilTwinProp(x,y,t,ph){
   const r=Math.floor(ph*8)%5;
   if(r===0){// Lava pool — animated bubbling
     const bob=Math.sin(t*2.5+ph)*2;
@@ -782,7 +845,7 @@ function _drawBowserProp(x,y,t,ph){
     for(let s=0;s<8;s++){const ang=s/8*Math.PI*2;ctx.fillStyle='#555';ctx.beginPath();ctx.moveTo(ballX+Math.cos(ang)*8,ballY+Math.sin(ang)*8);ctx.lineTo(ballX+Math.cos(ang)*14,ballY+Math.sin(ang)*14);ctx.lineTo(ballX+Math.cos(ang+0.3)*9,ballY+Math.sin(ang+0.3)*9);ctx.closePath();ctx.fill();}
     // Chain anchor
     ctx.fillStyle='#777';ctx.fillRect(chainX-3,chainTopY,6,6);
-  } else {// Bowser's castle wall segment
+  } else {// Erica's Evil Twin castle wall segment
     ctx.fillStyle='#3a1400';
     ctx.beginPath();ctx.roundRect(x,y+10,26,28,2);ctx.fill();
     // Battlements
@@ -838,8 +901,8 @@ function drawSideProp(p){
     case 'fzero': _drawFZeroProp(x,y,t,p.phase); break;
     // ── CASTLEVANIA (fog) — kept for cycle
     case 'castlevania': _drawCastleProp(x,y,t,p.phase); break;
-    // ── BOWSER (level 8) ─────────────────────────────────────────────────────
-    case 'bowser': _drawBowserProp(x,y,t,p.phase); break;
+    // ── ERICA EVIL TWIN (level 8) ─────────────────────────────────────────────────────
+    case 'ericas_evil_twin': _drawEvilTwinProp(x,y,t,p.phase); break;
   }
   ctx.restore();
 }
@@ -1043,7 +1106,7 @@ const VEH={
 };
 let selVeh='joe',playerColor='#f5c518';
 
-const AIRPORTS=["Islip MacArthur","Republic Airport","LaGuardia","Long Beach High School","JFK International Airport","Deer Park","Bayshore","Bowser Airport"];
+const AIRPORTS=["Islip MacArthur","Republic Airport","LaGuardia","Long Beach High School","JFK International Airport","Deer Park","Bayshore","Erica's Evil Twin"];
 const TFC_COLORS=['#ef4444','#fbbf24','#7c3aed','#e5e7eb','#f97316','#06b6d4','#84cc16'];
 let gameActive=false,inPitStop=false,score=0,totalMiles=0,spd=1.0,nitros=1,level=1,passCollected=0;
 let isNitroActive=false,obstacles=[],passengers=[],pickups=[],hearts=[],keys={},police=[];
@@ -1280,34 +1343,16 @@ function updEnv(dt,norm){
   if(biome.storm){ rainDrops.forEach(r=>{ r.y+=r.vy*norm; r.x-=.6*norm; if(r.y>H){r.y=-10;r.x=Math.random()*W;} }); lightTimer-=dt; if(lightTimer<=0&&Math.random()<.004){ lightTimer=3000+Math.random()*5000; lightAlpha=.38; setTimeout(()=>lightAlpha=0,110); setTimeout(()=>{lightAlpha=.28;setTimeout(()=>lightAlpha=0,80);},170); } }
   stars.forEach(s=>{ s.t=(s.t+.018)%(Math.PI*2); });
   if(comboTimer>0){ comboTimer-=dt; if(comboTimer<=0) breakCombo(); }
-  // Plane spawning in final 3 miles
-  // ── PLANE SPAWNING: final 2 miles of every level ────────────────────────────
+  // ── PARKED CESSNA: appears on sidewalk at 0.5 miles before level end ─────────
   const _milesLeft3=milesPerLvl-(totalMiles-milesAtStart);
-  if(_milesLeft3<=2&&_milesLeft3>0){
-    planeSpawnTimer-=dt;
-    if(planeSpawnTimer<=0){
-      // Spawn from left OR right side, crossing the full screen
-      const side=Math.random()<0.5?-1:1;
-      // Speed: faster so player can see them clearly — 3.5-5.5 px/frame
-      const vx=side*(3.5+Math.random()*2.0);
-      // Start fully offscreen, at sky height (top 25% of screen)
-      const startX=side<0?(-100):W+100;
-      const startY=H*0.04+Math.random()*H*0.22;
-      planes.push({x:startX,y:startY,vy:(Math.random()-0.5)*0.3,vx,type:Math.floor(Math.random()*3),trail:[]});
-      // Spawn 2-3 planes per interval so there's always something visible
-      if(Math.random()<0.4){
-        planes.push({x:startX,y:startY+Math.random()*40-20,vy:(Math.random()-0.5)*0.2,vx:vx*0.85,type:Math.floor(Math.random()*3),trail:[]});
-      }
-      planeSpawnTimer=1800+Math.random()*2200; // spawn every 1.8-4s
-    }
+  if(_milesLeft3<=0.5&&_milesLeft3>0&&planes.length===0){
+    // Spawn one parked Cessna on the right sidewalk, scrolling with scenery
+    planes.push({x:RR()+8,y:-80,parked:true,trail:[]});
   }
   planes.forEach(p=>{
-    p.x+=p.vx*norm; p.y+=p.vy*norm;
-    p.trail.push({x:p.x,y:p.y,life:1});
-    p.trail.forEach(t=>t.life-=0.015);
-    p.trail=p.trail.filter(t=>t.life>0);
+    if(p.parked) p.y+=spd*1.1*norm; // scroll with road
   });
-  planes=planes.filter(p=>p.x>-150&&p.x<W+150);
+  planes=planes.filter(p=>p.y<H+120);
   if(biome.mario) updMarioProps(norm);
   else if(biome.sideTheme) updSideProps(norm);
   if(damageCooldown>0) damageCooldown--;
@@ -1335,6 +1380,7 @@ function updEnv(dt,norm){
           // Reset for next time
           o.signalTimer=2000+Math.random()*4000;
           // Compute current lane (0,1,2)
+          if(o.y>H/2) return; // lane changes only when NPC is in top half
           const curLane=Math.max(0,Math.min(2,Math.floor((o.x+14-_rx)/_laneW)));
           // Pick a random adjacent or any other lane
           const opts=[0,1,2].filter(l=>l!==curLane);
@@ -1347,7 +1393,7 @@ function updEnv(dt,norm){
             o.laneTarget=newX;
             o.signalPhase='signalling';
             o.signalBlinkT=0;
-            o.signalMoveTimer=4000; // 4 second signal before moving
+            o.signalMoveTimer=(level<=3?3800:2200); // 3.8s lvl1-3, 2.2s lvl4+
           }
         }
       }
@@ -1483,7 +1529,7 @@ function drawEnv(){
     wetG.addColorStop(1,'rgba(80,100,140,.0)');
     ctx.fillStyle=wetG; ctx.fillRect(rx,0,rw,H);
   }
-  if(biome.id==='bowser'){
+  if(biome.id==='ericas_evil_twin'){
     // Scorched asphalt — faint orange lava-heat shimmer
     const lavaG=ctx.createLinearGradient(0,H,0,H*0.4);
     lavaG.addColorStop(0,'rgba(180,40,0,.1)');
@@ -2273,6 +2319,223 @@ function showJoeSequence(onDone){
   },1200);
 }
 
+// ── SLURPEE MINI-GAME (after level 4 gas station) ────────────────────────────
+function showSlurpeeGame(onDone){
+  const sg=document.getElementById('slurpee-game');
+  sg.style.display='flex';
+  const sc=document.getElementById('slurpee-canvas');
+  const sx=sc.getContext('2d');
+  sc.width=320; sc.height=420;
+
+  const FLAVORS=[
+    {name:'COCA COLA',  col:'#8b1a1a', dark:'#4a0a0a', stream:'rgba(140,20,20,0.85)'},
+    {name:'CHERRY',     col:'#cc0044', dark:'#880022', stream:'rgba(200,0,60,0.85)'},
+    {name:'BLUE RAZ',   col:'#1a44cc', dark:'#0a2288', stream:'rgba(30,80,220,0.85)'},
+    {name:'ECTOPLASM',  col:'#22cc44', dark:'#116622', stream:'rgba(30,200,60,0.85)'},
+  ];
+  const DISPENSER_X=[40,120,200,280];
+  const DISPENSER_Y=60;
+  const CUP_W=64, CUP_H=36;
+  const TOTAL_TIME=15;
+
+  let cupX=320/2-CUP_W/2;
+  let timeLeft=TOTAL_TIME;
+  let ozCollected=0;
+  let activeFlavor=0;
+  let flavorTimer=0;
+  let flavorDuration=2200+Math.random()*1500;
+  let streamY=DISPENSER_Y+30;
+  let streamActive=false;
+  let streamDelay=600;
+  let collectedFlavors={};
+  FLAVORS.forEach(f=>collectedFlavors[f.name]=0);
+  let gameOver=false;
+  let finalScore=0;
+  let countdownTimer=0;
+  let startDelay=800;
+  let touchX=null;
+
+  // Touch/mouse controls
+  function handleMove(clientX){
+    const rect=sc.getBoundingClientRect();
+    const scaleX=320/rect.width;
+    const rx=(clientX-rect.left)*scaleX;
+    cupX=Math.max(0,Math.min(320-CUP_W,rx-CUP_W/2));
+  }
+  sc.addEventListener('touchmove',e=>{e.preventDefault();handleMove(e.touches[0].clientX);},{passive:false});
+  sc.addEventListener('touchstart',e=>{e.preventDefault();handleMove(e.touches[0].clientX);},{passive:false});
+  sc.addEventListener('mousemove',e=>handleMove(e.clientX));
+
+  // Keyboard fallback
+  const _kDown={};
+  function _skKey(e){ _kDown[e.code]=true; }
+  function _skUp(e){ _kDown[e.code]=false; }
+  document.addEventListener('keydown',_skKey);
+  document.addEventListener('keyup',_skUp);
+
+  let lastT=performance.now();
+  function loop(now){
+    if(gameOver) return;
+    const dt2=Math.min(50,(now-lastT)); lastT=now;
+
+    // Keyboard movement
+    if(_kDown['ArrowLeft']||_kDown['KeyA']) cupX=Math.max(0,cupX-4);
+    if(_kDown['ArrowRight']||_kDown['KeyD']) cupX=Math.min(320-CUP_W,cupX+4);
+
+    if(startDelay>0){ startDelay-=dt2; requestAnimationFrame(loop); _draw(); return; }
+
+    countdownTimer+=dt2;
+    if(countdownTimer>=1000){ countdownTimer-=1000; timeLeft=Math.max(0,timeLeft-1); if(timeLeft===0){ _endGame(); return; } }
+
+    // Rotate flavors
+    flavorTimer+=dt2;
+    if(flavorTimer>=flavorDuration){
+      flavorTimer=0; flavorDuration=1800+Math.random()*2000;
+      activeFlavor=(activeFlavor+1)%4;
+      streamY=DISPENSER_Y+30; streamActive=false; streamDelay=400;
+    }
+    if(streamDelay>0){ streamDelay-=dt2; } else { streamActive=true; }
+
+    // Stream falling
+    if(streamActive){
+      streamY+=3.5;
+      // Collect if stream hits cup
+      const dispX=DISPENSER_X[activeFlavor];
+      if(streamY>=420-CUP_H-10&&dispX>cupX&&dispX<cupX+CUP_W){
+        const oz=2*(dt2/1000); // 2 oz/sec
+        ozCollected+=oz;
+        collectedFlavors[FLAVORS[activeFlavor].name]+=oz;
+      }
+      if(streamY>420) streamY=DISPENSER_Y+30;
+    }
+
+    _draw();
+    requestAnimationFrame(loop);
+  }
+
+  function _draw(){
+    sx.fillStyle='#0a0a12'; sx.fillRect(0,0,320,420);
+    // Title
+    sx.fillStyle='#ffd700'; sx.font='bold 9px Orbitron,sans-serif'; sx.textAlign='center';
+    sx.fillText('SLURPEE RUN!',160,20);
+    // Timer
+    const tColor=timeLeft<=5?'#ff3333':'#00ffcc';
+    sx.fillStyle=tColor; sx.font='bold 11px Orbitron,sans-serif'; sx.textAlign='right';
+    sx.fillText(timeLeft+'s',308,20);
+    // Oz counter
+    sx.fillStyle='#fff'; sx.font='bold 9px Orbitron,sans-serif'; sx.textAlign='left';
+    sx.fillText(ozCollected.toFixed(1)+' oz',12,20);
+
+    // Dispensers
+    FLAVORS.forEach((f,i)=>{
+      const dx=DISPENSER_X[i];
+      const isActive=i===activeFlavor&&streamActive;
+      // Machine body
+      sx.fillStyle=isActive?f.col:f.dark;
+      sx.beginPath(); sx.roundRect(dx-18,DISPENSER_Y-30,36,50,4); sx.fill();
+      sx.fillStyle='rgba(255,255,255,0.15)'; sx.fillRect(dx-16,DISPENSER_Y-28,10,20);
+      // Nozzle
+      sx.fillStyle='#444'; sx.fillRect(dx-4,DISPENSER_Y+18,8,8);
+      // Label
+      sx.fillStyle='#fff'; sx.font='bold 4px monospace'; sx.textAlign='center';
+      sx.fillText(f.name,dx,DISPENSER_Y-10);
+      // Glow when active
+      if(isActive){
+        sx.shadowBlur=12; sx.shadowColor=f.col;
+        sx.strokeStyle=f.col; sx.lineWidth=2;
+        sx.beginPath(); sx.roundRect(dx-18,DISPENSER_Y-30,36,50,4); sx.stroke();
+        sx.shadowBlur=0;
+      }
+    });
+
+    // Stream
+    if(streamActive&&startDelay<=0){
+      const f=FLAVORS[activeFlavor];
+      const dx=DISPENSER_X[activeFlavor];
+      const streamLen=Math.min(streamY-(DISPENSER_Y+26),140);
+      if(streamLen>0){
+        const sg2=sx.createLinearGradient(dx,DISPENSER_Y+26,dx,streamY);
+        sg2.addColorStop(0,f.stream); sg2.addColorStop(1,'rgba(255,255,255,0.1)');
+        sx.fillStyle=sg2; sx.fillRect(dx-4,DISPENSER_Y+26,8,streamLen);
+      }
+      // Splash at bottom of stream
+      if(streamY>380){
+        sx.globalAlpha=0.6; sx.fillStyle=f.col;
+        sx.beginPath(); sx.ellipse(dx,streamY,6,3,0,0,Math.PI*2); sx.fill();
+        sx.globalAlpha=1;
+      }
+    }
+
+    // Cup
+    const cupY=420-CUP_H-8;
+    // Cup body trapezoid
+    sx.fillStyle='#e8e8e8';
+    sx.beginPath();
+    sx.moveTo(cupX+4,cupY); sx.lineTo(cupX+CUP_W-4,cupY);
+    sx.lineTo(cupX+CUP_W,cupY+CUP_H); sx.lineTo(cupX,cupY+CUP_H);
+    sx.closePath(); sx.fill();
+    // Cup fill (layered by flavor)
+    let fillH=0;
+    const totalOz=Math.max(0.01,ozCollected);
+    FLAVORS.forEach(f=>{
+      const frac=collectedFlavors[f.name]/totalOz;
+      const fH=Math.min(CUP_H-4,(ozCollected/30)*CUP_H*frac);
+      if(fH>0){
+        sx.fillStyle=f.col; sx.globalAlpha=0.75;
+        sx.fillRect(cupX+3,cupY+CUP_H-4-fillH-fH,CUP_W-6,fH);
+        fillH+=fH;
+      }
+    });
+    sx.globalAlpha=1;
+    // Cup outline
+    sx.strokeStyle='#888'; sx.lineWidth=1.5;
+    sx.beginPath();
+    sx.moveTo(cupX+4,cupY); sx.lineTo(cupX+CUP_W-4,cupY);
+    sx.lineTo(cupX+CUP_W,cupY+CUP_H); sx.lineTo(cupX,cupY+CUP_H);
+    sx.closePath(); sx.stroke();
+    // Straw
+    sx.fillStyle='#ff3366'; sx.fillRect(cupX+CUP_W*0.7,cupY-30,4,34);
+
+    // Instructions
+    sx.fillStyle='rgba(255,255,255,0.4)'; sx.font='5px Orbitron,sans-serif'; sx.textAlign='center';
+    sx.fillText('MOVE CUP TO CATCH SLURPEE!',160,405);
+  }
+
+  function _endGame(){
+    gameOver=true;
+    document.removeEventListener('keydown',_skKey);
+    document.removeEventListener('keyup',_skUp);
+    finalScore=Math.floor(ozCollected/2)*1000;
+    score+=finalScore;
+    if(scoreEl) scoreEl.innerText=score;
+
+    // Show results
+    sx.fillStyle='rgba(0,0,0,0.88)'; sx.fillRect(0,0,320,420);
+    sx.fillStyle='#ffd700'; sx.font='bold 14px Orbitron,sans-serif'; sx.textAlign='center';
+    sx.fillText('SLURPEE HAUL!',160,80);
+    sx.fillStyle='#00ffcc'; sx.font='bold 11px Orbitron,sans-serif';
+    sx.fillText(ozCollected.toFixed(1)+' oz collected',160,110);
+    sx.fillStyle='#fff'; sx.font='bold 13px Orbitron,sans-serif';
+    sx.fillText('+'+finalScore.toLocaleString()+' POINTS',160,140);
+    let ry=175;
+    FLAVORS.forEach(f=>{
+      if(collectedFlavors[f.name]>0.1){
+        sx.fillStyle=f.col; sx.font='9px Orbitron,sans-serif';
+        sx.fillText(f.name+': '+collectedFlavors[f.name].toFixed(1)+' oz',160,ry); ry+=22;
+      }
+    });
+    sx.fillStyle='#ffd700'; sx.font='bold 9px Orbitron,sans-serif';
+    sx.fillText('TAP OR PRESS SPACE TO CONTINUE',160,380);
+
+    function _adv(){ sg.style.display='none'; document.removeEventListener('keydown',_kh2); sc.removeEventListener('touchstart',_th2); onDone(); }
+    function _kh2(e){ if(e.code==='Space'||e.code==='Enter'){e.preventDefault();_adv();} }
+    function _th2(e){ e.preventDefault(); _adv(); }
+    setTimeout(()=>{ document.addEventListener('keydown',_kh2); sc.addEventListener('touchstart',_th2,{passive:false}); },1000);
+  }
+
+  requestAnimationFrame(loop);
+}
+
 // ── GAS STATION SEQUENCE (after level 4) ─────────────────────────────────────
 function showGasStation(onDone){
   const gs=document.getElementById('gas-station');
@@ -2593,7 +2856,8 @@ function showLvlAnn(){
 
 // ── TRIVIA ────────────────────────────────────────────────────────────────────
 function showTrivia(nextLevel, onPass, onFail){
-  const q = getTrivia();
+  // Level 8 always gets the hard question
+  const q = (nextLevel>8) ? (TRIVIA_BANK.find(q=>q.hard) || getTrivia()) : getTrivia();
   const labels = ['A','B','C','D'];
 
   // Level 8 trivia: override text to "SAVE THE PRINCESS"
@@ -2796,7 +3060,7 @@ function update(dt){
         },700);
       };
 
-      if(level===4){showGasStation(_showPit);}
+      if(level===4){showGasStation(()=>showSlurpeeGame(_showPit));}
       else if(level===7){showMountainSequence(_showPit);}
       else{_showPit();}
     }
@@ -2850,23 +3114,29 @@ function update(dt){
     o.y+=mySpd*norm;
     if(o.y>H+60){obstacles.splice(i,1);i--;continue;}
 
-    // ── NPC vs NPC lateral bounce ─────────────────────────────────────────────
+    // ── NPC vs NPC collision: lateral push + longitudinal gap ─────────────────
     for(let j=i+1;j<obstacles.length;j++){
       const b=obstacles[j];
       if(b.vx===undefined)b.vx=0;
       const dx=(o.x+NPC_W/2)-(b.x+NPC_W/2);
       const dy=(o.y+NPC_H/2)-(b.y+NPC_H/2);
-      const overlapX=NPC_W-Math.abs(dx);
-      const overlapY=NPC_H+14-Math.abs(dy); // small buffer
+      const overlapX=NPC_W+4-Math.abs(dx);  // +4 buffer
+      const overlapY=NPC_H+10-Math.abs(dy);
       if(overlapX>0&&overlapY>0){
-        // Push apart horizontally
-        const push=(overlapX/2+1)*Math.sign(dx);
-        o.x+=push*0.5; b.x-=push*0.5;
-        o.vx+=push*0.4; b.vx-=push*0.4;
-        // Speed match: slower one accelerates, faster one brakes a bit
-        const avgSm=(o.sm+b.sm)/2;
-        o.sm=o.sm+(avgSm-o.sm)*0.15;
-        b.sm=b.sm+(avgSm-b.sm)*0.15;
+        // Lateral push — strong enough to fully separate
+        const pushX=(overlapX/2+2)*Math.sign(dx||1);
+        o.x+=pushX*0.6; b.x-=pushX*0.6;
+        o.vx+=pushX*0.6; b.vx-=pushX*0.6;
+        // Longitudinal push: car behind slows, car ahead speeds up slightly
+        if(Math.abs(dy)<NPC_H+10){
+          if(o.y > b.y){ o.sm=Math.max(0.2,o.sm*0.88); b.sm=Math.min(2.0,b.sm*1.04); }
+          else          { b.sm=Math.max(0.2,b.sm*0.88); o.sm=Math.min(2.0,o.sm*1.04); }
+        }
+        // Hard separation clamp — never overlap
+        if(Math.abs(dx)<NPC_W+2 && Math.abs(dy)<NPC_H+2){
+          const sep=(NPC_W+4-Math.abs(dx))/2+1;
+          o.x+=(Math.sign(dx)||1)*sep; b.x-=(Math.sign(dx)||1)*sep;
+        }
         // Keep inside road
         o.x=Math.max(RX()+2,Math.min(RR()-NPC_W-2,o.x));
         b.x=Math.max(RX()+2,Math.min(RR()-NPC_W-2,b.x));
@@ -2975,6 +3245,8 @@ function update(dt){
         const dx=player.x+player.w/2-o.x, dy=player.y+player.h/2-o.y;
         if(Math.sqrt(dx*dx+dy*dy)<o.r+14){
           o.hit=true; spinTimer=2700; spinAngle=0; spinVel=0.18;
+          // Push player sideways randomly
+          iceVx+=(Math.random()<0.5?1:-1)*(3+Math.random()*2);
           spawnFloat(player.x+player.w/2,player.y-10,'SLICK! 🌀','#44aaff');
           tone(220,0.3,'sawtooth',0.08);
         }
@@ -3027,49 +3299,44 @@ function update(dt){
 }
 
 function drawPlanes(){
+  // Draws a parked Cessna 152 on the right sidewalk
   planes.forEach(p=>{
-    const facing=p.vx>0?1:-1;
-    // Contrail — wide fluffy white trail
-    p.trail.forEach(t=>{
-      ctx.globalAlpha=t.life*0.18;
-      ctx.fillStyle='#fff';
-      ctx.beginPath();ctx.arc(t.x,t.y,4+t.life*3,0,Math.PI*2);ctx.fill();
-    });
-    ctx.globalAlpha=1;
+    const x=p.x, y=p.y;
     ctx.save();
-    ctx.translate(p.x,p.y);
-    if(facing<0) ctx.scale(-1,1);
-    const col=p.type===0?'#e8e8ee':p.type===1?'#b8d8f8':'#f8e8c8';
-    const wingCol=p.type===0?'#c8c8d8':p.type===1?'#90b8e0':'#d8c8a8';
-    // Shadow on ground (faint)
-    // Main fuselage — wide, clearly visible
-    ctx.fillStyle=col;
-    ctx.beginPath();ctx.ellipse(0,0,30,7,0,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=1;ctx.stroke();
-    // Nose
-    ctx.fillStyle='#aaa';
-    ctx.beginPath();ctx.moveTo(30,0);ctx.lineTo(38,-2);ctx.lineTo(38,2);ctx.closePath();ctx.fill();
-    // Wide swept wings
-    ctx.fillStyle=wingCol;
-    ctx.beginPath();ctx.moveTo(-8,-6);ctx.lineTo(10,-6);ctx.lineTo(18,0);ctx.lineTo(10,6);ctx.lineTo(-8,6);ctx.closePath();ctx.fill();
-    ctx.strokeStyle='rgba(0,0,0,0.2)';ctx.lineWidth=0.8;ctx.stroke();
-    // Tail vertical fin
-    ctx.fillStyle=wingCol;
-    ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-18,-14);ctx.lineTo(-14,-14);ctx.lineTo(-14,0);ctx.closePath();ctx.fill();
-    // Horizontal stabiliser
-    ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-18,5);ctx.lineTo(-12,5);ctx.lineTo(-12,0);ctx.closePath();ctx.fill();
-    // Windows row
-    ctx.fillStyle='rgba(140,200,255,0.9)';
-    for(let w=-8;w<=14;w+=5){ctx.beginPath();ctx.roundRect(w,-3,3,4,1);ctx.fill();}
-    // Twin engine pods
-    [6,-6].forEach(ey=>{
-      ctx.fillStyle='#888';
-      ctx.beginPath();ctx.ellipse(4,ey+ey*0.4,10,3.5,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#444';ctx.beginPath();ctx.ellipse(12,ey+ey*0.4,4,2.5,0,0,Math.PI*2);ctx.fill();
-    });
-    // Airline colour stripe
-    const stripeCol=p.type===0?'#003399':p.type===1?'#cc0000':'#009933';
-    ctx.fillStyle=stripeCol;ctx.fillRect(-22,1,50,3);
+    // Ground shadow
+    ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(x+14,y+28,22,5,0,0,Math.PI*2); ctx.fill();
+    // Fuselage — small piston plane body
+    ctx.fillStyle='#e8e0d0';
+    ctx.beginPath(); ctx.ellipse(x+14,y+16,18,5,0,0,Math.PI*2); ctx.fill();
+    // Nose cowl
+    ctx.fillStyle='#888';
+    ctx.beginPath(); ctx.moveTo(x+32,y+16); ctx.lineTo(x+38,y+14); ctx.lineTo(x+38,y+18); ctx.closePath(); ctx.fill();
+    // Propeller disc (spinning)
+    ctx.strokeStyle='rgba(80,80,80,0.5)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(x+38,y+10); ctx.lineTo(x+38,y+22); ctx.stroke();
+    // High wing (Cessna style — above fuselage)
+    ctx.fillStyle='#d8d0c0';
+    ctx.beginPath(); ctx.moveTo(x-2,y+13); ctx.lineTo(x+30,y+13); ctx.lineTo(x+26,y+9); ctx.lineTo(x+2,y+9); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=0.8; ctx.stroke();
+    // Wing struts
+    ctx.strokeStyle='#aaa'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x+8,y+13); ctx.lineTo(x+10,y+20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x+22,y+13); ctx.lineTo(x+20,y+20); ctx.stroke();
+    // Tail fin (vertical)
+    ctx.fillStyle='#d8d0c0';
+    ctx.beginPath(); ctx.moveTo(x-2,y+16); ctx.lineTo(x-10,y+8); ctx.lineTo(x-6,y+8); ctx.lineTo(x,y+16); ctx.closePath(); ctx.fill();
+    // Tail plane (horizontal)
+    ctx.beginPath(); ctx.moveTo(x-8,y+15); ctx.lineTo(x,y+15); ctx.lineTo(x,y+17); ctx.lineTo(x-8,y+17); ctx.closePath(); ctx.fill();
+    // Window
+    ctx.fillStyle='rgba(140,200,255,0.7)'; ctx.beginPath(); ctx.roundRect(x+18,y+12,8,5,1); ctx.fill();
+    // Wheels (tricycle gear — two main + nose)
+    ctx.fillStyle='#333';
+    ctx.beginPath(); ctx.arc(x+10,y+22,4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+22,y+22,4,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+32,y+21,3,0,Math.PI*2); ctx.fill();
+    // N-number text
+    ctx.fillStyle='rgba(50,50,180,0.8)'; ctx.font='bold 4px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('N152WW',x+14,y+17);
     ctx.restore();
   });
 }
@@ -3087,17 +3354,24 @@ function drawBridge(){
   if(from>=to) return;
   const bh=to-from;
 
-  // ── WATER on both sides ────────────────────────────────────────────────────
+  // ── WATER or LAVA on both sides (lava on level 8) ───────────────────────────
+  const _isLavaBridge=biome.id==='ericas_evil_twin';
   const wt=Date.now()/1200;
-  ctx.fillStyle='#0a2840';
+  ctx.fillStyle=_isLavaBridge?'#1a0400':'#0a2840';
   ctx.fillRect(0,from,W,bh);
   for(let wy=from;wy<to;wy+=14){
     const shimmer=0.04+0.03*Math.sin(wt+wy*0.08);
-    ctx.fillStyle=`rgba(20,120,180,${shimmer})`;
+    ctx.fillStyle=_isLavaBridge?`rgba(200,60,0,${shimmer+0.05})`:`rgba(20,120,180,${shimmer})`;
     ctx.fillRect(0,wy,W,7);
   }
+  // Lava glow effect
+  if(_isLavaBridge){
+    const lavaG=ctx.createRadialGradient(W/2,from+bh/2,0,W/2,from+bh/2,W*0.6);
+    lavaG.addColorStop(0,'rgba(255,80,0,0.06)'); lavaG.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=lavaG; ctx.fillRect(0,from,W,bh);
+  }
   const sparkOff=(lineOff*0.5)%60;
-  ctx.fillStyle='rgba(180,230,255,0.5)';
+  ctx.fillStyle=_isLavaBridge?'rgba(255,180,60,0.5)':'rgba(180,230,255,0.5)';
   for(let sy=from-sparkOff;sy<to;sy+=60){
     if(sy<from) continue;
     [14,28,42,60].forEach(sx=>{ctx.beginPath();ctx.arc(sx,sy+6,1.2,0,Math.PI*2);ctx.fill();});
@@ -3291,29 +3565,26 @@ function drawTunnel(){
       if(by>=from) ctx.fillRect(rx,by,rw,7);
     }
 
-    // Fluorescent ceiling lights — two rows scrolling with road
-    ctx.shadowBlur=10; ctx.shadowColor='rgba(160,200,240,0.9)';
-    ctx.fillStyle='rgba(200,230,255,0.85)';
-    const lightSpacing=80;
-    const lightOff=(lineOff*2)%lightSpacing;
+    // Wall-mounted lights — slow scroll so no tunnel sickness
+    // lightOff uses lineOff*0.3 (very slow) instead of lineOff*2
+    const lightSpacing=100;
+    const lightOff=(lineOff*0.3)%lightSpacing;
+    ctx.shadowBlur=8; ctx.shadowColor='rgba(200,220,255,0.7)';
+    ctx.fillStyle='rgba(220,235,255,0.80)';
     for(let ly=from-lightOff;ly<to;ly+=lightSpacing){
-      if(ly>=from){
-        ctx.beginPath(); ctx.ellipse(rx+rw*0.28,ly+10,5,2.5,0,0,Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(rx+rw*0.72,ly+10,5,2.5,0,0,Math.PI*2); ctx.fill();
-      }
+      if(ly<from) continue;
+      // Left wall light — small rectangular fixture on left wall
+      ctx.beginPath(); ctx.roundRect(rx-10,ly+4,10,6,2); ctx.fill();
+      // Right wall light
+      ctx.beginPath(); ctx.roundRect(rr,ly+4,10,6,2); ctx.fill();
     }
     ctx.shadowBlur=0;
-
-    // Light pool glow on road below each lamp
-    for(let ly=from-lightOff;ly<to;ly+=lightSpacing){
-      if(ly>=from&&ly<to-10){
-        const lgPool=ctx.createRadialGradient(midX,ly+26,0,midX,ly+26,rw*0.42);
-        lgPool.addColorStop(0,'rgba(180,210,255,0.08)');
-        lgPool.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.fillStyle=lgPool;
-        ctx.fillRect(rx,ly,rw,52);
-      }
-    }
+    // Soft ambient glow cast by wall lights onto road (very faint, no scrolling)
+    const ambG=ctx.createLinearGradient(rx,from,rr,from);
+    ambG.addColorStop(0,'rgba(160,180,220,0.06)');
+    ambG.addColorStop(0.5,'rgba(160,180,220,0.02)');
+    ambG.addColorStop(1,'rgba(160,180,220,0.06)');
+    ctx.fillStyle=ambG; ctx.fillRect(rx,from,rw,h);
 
     // Tunnel wall edge shadow (depth on road edges inside tunnel)
     const edgeShadow=ctx.createLinearGradient(rx,0,rx+40,0);
