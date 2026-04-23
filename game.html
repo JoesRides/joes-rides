@@ -14,6 +14,9 @@ body {
     overflow: hidden;
     touch-action: none;
     user-select: none;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh; /* dynamic viewport height — fixes mobile browser chrome */
 }
 
 /* Animated starfield background */
@@ -36,6 +39,7 @@ body::before {
     justify-content: center;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
 }
 
 canvas#bg {
@@ -51,7 +55,7 @@ canvas#c {
     position: relative;
     z-index: 1;
     display: block;
-    /* Fill screen while keeping 12:7 ratio — works landscape AND portrait */
+    /* Landscape: fill viewport height, constrain width by aspect ratio */
     width: min(100vw, calc(100vh * 12/7));
     height: min(100vh, calc(100vw * 7/12));
     border: 2px solid rgba(0,247,255,0.5);
@@ -61,13 +65,28 @@ canvas#c {
         0 0 80px rgba(0,100,255,0.1),
         inset 0 0 120px rgba(0,0,20,0.9);
     cursor: none;
+    /* Prevent any layout-based shrinkage on mobile */
+    flex-shrink: 0;
 }
 
-/* Portrait: fill full width, center vertically */
+/* Portrait: fill full width */
 @media (orientation: portrait) {
     canvas#c {
         width: 100vw;
         height: calc(100vw * 7/12);
+        max-height: none;
+    }
+}
+
+/* Landscape mobile: truly edge-to-edge, no gaps */
+@media (orientation: landscape) {
+    #canvas-wrap {
+        align-items: stretch;
+    }
+    canvas#c {
+        width: min(100vw, calc(100vh * 12/7));
+        height: 100vh;
+        max-width: 100vw;
     }
 }
 
@@ -261,112 +280,85 @@ function freq(note, oct) {
 }
 
 // -----------------------------------------------------------------------
-//  MUSIC DATA — original synth arrangement inspired by the sheet music.
-//  The song sits in A minor. The classic progression: Am  F  C  G
-//  We encode the iconic stepwise melody from the intro/verse and pair it
-//  with a pumping bass + pad chords.  All note data is original expression.
+//  MUSIC — original dark synth arrangement in D minor
+//  Chord progression: Dm  Am  Bb  C  (4 bars per cycle, 16-bar loop)
+//  Inspired by the moody minor-key feel of 80s synth pop.
+//
+//  MENU (75 BPM)     — very sparse, long pads, no melody, just atmosphere
+//  GAMEPLAY (90 BPM) — same chords, adds a slow sparse melody line,
+//                      gentle kick/snare pulse so it doesn't distract
 // -----------------------------------------------------------------------
 
-const BPM = 128;
-const BEAT = 60 / BPM;           // seconds per beat
-const BAR  = BEAT * 4;           // 4/4 time
+const BPM_MENU = 75;
+const BPM_GAME = 90;
+let BPM  = BPM_MENU;
+let BEAT = 60 / BPM;
+let BAR  = BEAT * 4;
 
-// Melody: array of [frequency, durationInBeats, delayFromBarStart]
-// Written out as the distinctive synth hook from the intro, transposed to Am
-const MELODY_BARS = [
-    // Bar 1 — Am
-    [
-        [freq('E',5), 0.5, 0],
-        [freq('E',5), 0.5, 0.5],
-        [freq('A',4), 1.0, 1.0],
-        [freq('C',5), 0.5, 2.0],
-        [freq('B',4), 0.5, 2.5],
-        [freq('A',4), 0.5, 3.0],
-        [freq('G',4), 0.5, 3.5],
-    ],
-    // Bar 2 — F
-    [
-        [freq('A',4), 1.0, 0],
-        [freq('F',4), 0.5, 1.0],
-        [freq('G',4), 0.5, 1.5],
-        [freq('A',4), 0.5, 2.0],
-        [freq('C',5), 0.5, 2.5],
-        [freq('A',4), 1.0, 3.0],
-    ],
-    // Bar 3 — C
-    [
-        [freq('G',4), 0.5, 0],
-        [freq('E',4), 0.5, 0.5],
-        [freq('G',4), 0.5, 1.0],
-        [freq('A',4), 0.5, 1.5],
-        [freq('C',5), 1.0, 2.0],
-        [freq('B',4), 0.5, 3.0],
-        [freq('A',4), 0.5, 3.5],
-    ],
-    // Bar 4 — G (resolves)
-    [
-        [freq('G',4), 1.0, 0],
-        [freq('F',4), 0.5, 1.0],
-        [freq('E',4), 0.5, 1.5],
-        [freq('D',4), 0.5, 2.0],
-        [freq('E',4), 0.5, 2.5],
-        [freq('G',4), 1.0, 3.0],
-    ],
-    // Bar 5 — Am (chorus lift)
-    [
-        [freq('A',5), 0.5, 0],
-        [freq('G',5), 0.5, 0.5],
-        [freq('E',5), 1.0, 1.0],
-        [freq('C',5), 0.5, 2.0],
-        [freq('D',5), 0.5, 2.5],
-        [freq('E',5), 1.0, 3.0],
-    ],
-    // Bar 6 — F
-    [
-        [freq('F',5), 0.5, 0],
-        [freq('E',5), 0.5, 0.5],
-        [freq('D',5), 0.5, 1.0],
-        [freq('C',5), 0.5, 1.5],
-        [freq('A',4), 1.0, 2.0],
-        [freq('C',5), 0.5, 3.0],
-        [freq('D',5), 0.5, 3.5],
-    ],
-    // Bar 7 — C
-    [
-        [freq('E',5), 0.5, 0],
-        [freq('D',5), 0.5, 0.5],
-        [freq('C',5), 1.0, 1.0],
-        [freq('G',4), 0.5, 2.0],
-        [freq('A',4), 0.5, 2.5],
-        [freq('C',5), 1.0, 3.0],
-    ],
-    // Bar 8 — G (big resolve)
-    [
-        [freq('B',4), 0.5, 0],
-        [freq('A',4), 0.5, 0.5],
-        [freq('G',4), 1.0, 1.0],
-        [freq('D',4), 0.5, 2.0],
-        [freq('F',4), 0.5, 2.5],
-        [freq('G',4), 1.0, 3.0],
-    ],
+// Chord voicings — Dm Am Bb C in D minor
+// Each entry = one bar of chords.  16 bars = Dm Dm Am Am Bb Bb C C  x2
+const DARK_CHORDS = [
+    [freq('D',3), freq('F',3), freq('A',3)],   // Dm
+    [freq('D',3), freq('F',3), freq('A',3)],   // Dm
+    [freq('A',2), freq('E',3), freq('A',3)],   // Am
+    [freq('A',2), freq('E',3), freq('A',3)],   // Am
+    [freq('As',2),freq('D',3), freq('F',3)],   // Bb
+    [freq('As',2),freq('D',3), freq('F',3)],   // Bb
+    [freq('C',3), freq('E',3), freq('G',3)],   // C
+    [freq('C',3), freq('E',3), freq('G',3)],   // C
+    [freq('D',3), freq('F',3), freq('A',3)],   // Dm
+    [freq('D',3), freq('F',3), freq('A',3)],   // Dm
+    [freq('A',2), freq('E',3), freq('A',3)],   // Am
+    [freq('A',2), freq('E',3), freq('A',3)],   // Am
+    [freq('As',2),freq('D',3), freq('F',3)],   // Bb
+    [freq('As',2),freq('D',3), freq('F',3)],   // Bb
+    [freq('C',3), freq('E',3), freq('G',3)],   // C
+    [freq('C',3), freq('E',3), freq('G',3)],   // C
 ];
 
-// Bass: root notes per bar, plays on beats 1 & 3
-const BASS_ROOTS = [
-    freq('A',2), freq('F',2), freq('C',3), freq('G',2),
-    freq('A',2), freq('F',2), freq('C',3), freq('G',2),
+const DARK_BASS = [
+    freq('D',2), freq('D',2), freq('A',2), freq('A',2),
+    freq('As',2),freq('As',2),freq('C',2), freq('C',2),
+    freq('D',2), freq('D',2), freq('A',2), freq('A',2),
+    freq('As',2),freq('As',2),freq('C',2), freq('C',2),
 ];
 
-// Chord pads per bar [frequencies array]
-const CHORDS = [
-    [freq('A',3), freq('C',4), freq('E',4)],           // Am
-    [freq('F',3), freq('A',3), freq('C',4)],           // F
-    [freq('C',3), freq('E',3), freq('G',3)],           // C
-    [freq('G',2), freq('B',3), freq('D',4)],           // G
-    [freq('A',3), freq('C',4), freq('E',4)],
-    [freq('F',3), freq('A',3), freq('C',4)],
-    [freq('C',3), freq('E',3), freq('G',3)],
-    [freq('G',2), freq('B',3), freq('D',4)],
+// Sparse melody — only plays during gameplay, one or two notes per bar,
+// long durations so it feels like a slow vocal line drifting over the pads.
+// Deliberately leaves many bars empty (rests) for breathing room.
+const DARK_MEL = [
+    // Bar 1 Dm — opening note, held
+    [[freq('A',4), 2.5, 0]],
+    // Bar 2 Dm — step down
+    [[freq('F',4), 2.0, 0.5]],
+    // Bar 3 Am — rest — empty
+    [],
+    // Bar 4 Am — single note
+    [[freq('E',4), 2.0, 1.0]],
+    // Bar 5 Bb — rise
+    [[freq('F',4), 1.5, 0], [freq('As',4), 1.5, 2.0]],
+    // Bar 6 Bb — rest
+    [],
+    // Bar 7 C — descent
+    [[freq('G',4), 2.0, 0.5]],
+    // Bar 8 C — settle
+    [[freq('E',4), 1.5, 0], [freq('D',4), 1.5, 2.5]],
+    // Bar 9 Dm — variation, slightly higher
+    [[freq('D',5), 2.5, 0]],
+    // Bar 10 Dm — rest
+    [],
+    // Bar 11 Am — two notes
+    [[freq('A',4), 1.5, 0], [freq('C',5), 1.5, 2.0]],
+    // Bar 12 Am — hold
+    [[freq('E',4), 3.0, 0.5]],
+    // Bar 13 Bb — rest
+    [],
+    // Bar 14 Bb — colour note
+    [[freq('D',5), 1.5, 1.0]],
+    // Bar 15 C — two notes
+    [[freq('C',5), 1.5, 0], [freq('G',4), 1.5, 2.5]],
+    // Bar 16 C — resolve back to D
+    [[freq('D',4), 3.5, 0.25]],
 ];
 
 // --- Oscillator factory ---
@@ -377,102 +369,154 @@ function makeOsc(type, frequency, gainVal, startT, stopT, detune = 0) {
     o.frequency.setValueAtTime(frequency, startT);
     if (detune) o.detune.setValueAtTime(detune, startT);
     g.gain.setValueAtTime(0.001, startT);
-    g.gain.linearRampToValueAtTime(gainVal, startT + 0.02);
-    g.gain.setValueAtTime(gainVal, stopT - 0.05);
+    g.gain.linearRampToValueAtTime(gainVal, startT + 0.05);
+    g.gain.setValueAtTime(gainVal, stopT - 0.12);
     g.gain.linearRampToValueAtTime(0.001, stopT);
     o.connect(g); g.connect(musicGain);
-    o.start(startT); o.stop(stopT);
+    o.start(startT); o.stop(stopT + 0.05);
 }
 
-function scheduleMusicBar(barIndex, startT) {
-    const bi = barIndex % MELODY_BARS.length;
-    const melNotes = MELODY_BARS[bi];
-    const bassF = BASS_ROOTS[bi];
-    const chordFs = CHORDS[bi];
+// isMenu = true → pads only, no melody, very sparse
+//         false → pads + slow sparse melody + gentle kick pulse
+function scheduleMusicBar(barIndex, startT, isMenu) {
+    const bt  = isMenu ? (60 / BPM_MENU) : (60 / BPM_GAME);
+    const bar = bt * 4;
+    const bi  = barIndex % 16;
 
-    // --- Lead melody (square + slight detune for richness) ---
-    melNotes.forEach(([f, dur, delay]) => {
-        const t0 = startT + delay * BEAT;
-        const t1 = t0 + dur * BEAT * 0.85;
-        makeOsc('square', f, 0.045, t0, t1, 5);
-        makeOsc('triangle', f, 0.025, t0, t1, -5);
-    });
+    const chordFs = DARK_CHORDS[bi];
+    const bassF   = DARK_BASS[bi];
 
-    // --- Bass (triangle, beats 1, 2, 3, 4 with accent on 1 & 3) ---
-    [0, 1, 2, 3].forEach(beat => {
-        const t0 = startT + beat * BEAT;
-        const accent = (beat === 0 || beat === 2) ? 0.18 : 0.10;
-        makeOsc('triangle', bassF, accent, t0, t0 + BEAT * 0.7);
-        // Sub octave for warmth
-        makeOsc('sine', bassF * 0.5, accent * 0.6, t0, t0 + BEAT * 0.6);
-    });
-
-    // --- Chord pad (sawtooth, whole bar, soft) ---
+    // ---- CHORD PAD — two detuned sawtooths + sine for warmth ----
+    // Long slow attack (0.4s) and long release so chords swell and fade
     chordFs.forEach(f => {
-        makeOsc('sawtooth', f, 0.018, startT, startT + BAR * 0.95, 8);
-        makeOsc('sawtooth', f, 0.012, startT, startT + BAR * 0.95, -8);
+        const o1 = audioCtx.createOscillator(), g1 = audioCtx.createGain();
+        o1.type = 'sawtooth'; o1.frequency.setValueAtTime(f, startT);
+        o1.detune.setValueAtTime(8, startT);
+        g1.gain.setValueAtTime(0.001, startT);
+        g1.gain.linearRampToValueAtTime(0.022, startT + 0.4);
+        g1.gain.setValueAtTime(0.022, startT + bar - 0.3);
+        g1.gain.linearRampToValueAtTime(0.001, startT + bar + 0.1);
+        o1.connect(g1); g1.connect(musicGain);
+        o1.start(startT); o1.stop(startT + bar + 0.15);
+
+        const o2 = audioCtx.createOscillator(), g2 = audioCtx.createGain();
+        o2.type = 'sawtooth'; o2.frequency.setValueAtTime(f, startT);
+        o2.detune.setValueAtTime(-8, startT);
+        g2.gain.setValueAtTime(0.001, startT);
+        g2.gain.linearRampToValueAtTime(0.016, startT + 0.5);
+        g2.gain.setValueAtTime(0.016, startT + bar - 0.3);
+        g2.gain.linearRampToValueAtTime(0.001, startT + bar + 0.1);
+        o2.connect(g2); g2.connect(musicGain);
+        o2.start(startT); o2.stop(startT + bar + 0.15);
+
+        // Sub sine for body
+        const o3 = audioCtx.createOscillator(), g3 = audioCtx.createGain();
+        o3.type = 'sine'; o3.frequency.setValueAtTime(f * 0.5, startT);
+        g3.gain.setValueAtTime(0.001, startT);
+        g3.gain.linearRampToValueAtTime(0.012, startT + 0.6);
+        g3.gain.setValueAtTime(0.012, startT + bar - 0.4);
+        g3.gain.linearRampToValueAtTime(0.001, startT + bar + 0.1);
+        o3.connect(g3); g3.connect(musicGain);
+        o3.start(startT); o3.stop(startT + bar + 0.15);
     });
 
-    // --- Hi-hat pulse on 8th notes ---
-    for (let i = 0; i < 8; i++) {
-        const t0 = startT + i * BEAT * 0.5;
-        const gv = i % 2 === 0 ? 0.06 : 0.03;
-        // White-noise approximation via high-freq sine cluster
-        [3200, 4100, 5300].forEach(hf => {
-            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o.type = 'square'; o.frequency.setValueAtTime(hf, t0);
-            g.gain.setValueAtTime(gv, t0);
-            g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.03);
-            o.connect(g); g.connect(musicGain);
-            o.start(t0); o.stop(t0 + 0.035);
+    // ---- BASS — single hit on beat 1 only, long decay ----
+    const ob = audioCtx.createOscillator(), gb = audioCtx.createGain();
+    ob.type = 'triangle'; ob.frequency.setValueAtTime(bassF, startT);
+    gb.gain.setValueAtTime(0.001, startT);
+    gb.gain.linearRampToValueAtTime(0.28, startT + 0.04);
+    gb.gain.exponentialRampToValueAtTime(0.001, startT + bt * 1.8);
+    ob.connect(gb); gb.connect(musicGain);
+    ob.start(startT); ob.stop(startT + bt * 2);
+
+    // Sub bass octave
+    const ob2 = audioCtx.createOscillator(), gb2 = audioCtx.createGain();
+    ob2.type = 'sine'; ob2.frequency.setValueAtTime(bassF * 0.5, startT);
+    gb2.gain.setValueAtTime(0.001, startT);
+    gb2.gain.linearRampToValueAtTime(0.18, startT + 0.06);
+    gb2.gain.exponentialRampToValueAtTime(0.001, startT + bt * 2.2);
+    ob2.connect(gb2); gb2.connect(musicGain);
+    ob2.start(startT); ob2.stop(startT + bt * 2.5);
+
+    // ---- SPARSE MELODY — gameplay only, long notes ----
+    if (!isMenu && DARK_MEL[bi].length > 0) {
+        DARK_MEL[bi].forEach(([f, dur, delay]) => {
+            const t0 = startT + delay * bt;
+            const t1 = t0 + dur * bt;
+            // Sine + triangle blend for a smooth, non-aggressive tone
+            const om = audioCtx.createOscillator(), gm = audioCtx.createGain();
+            om.type = 'sine'; om.frequency.setValueAtTime(f, t0);
+            gm.gain.setValueAtTime(0.001, t0);
+            gm.gain.linearRampToValueAtTime(0.055, t0 + 0.12);
+            gm.gain.setValueAtTime(0.055, t1 - 0.15);
+            gm.gain.linearRampToValueAtTime(0.001, t1);
+            om.connect(gm); gm.connect(musicGain);
+            om.start(t0); om.stop(t1 + 0.05);
+
+            const om2 = audioCtx.createOscillator(), gm2 = audioCtx.createGain();
+            om2.type = 'triangle'; om2.frequency.setValueAtTime(f, t0);
+            gm2.gain.setValueAtTime(0.001, t0);
+            gm2.gain.linearRampToValueAtTime(0.028, t0 + 0.18);
+            gm2.gain.setValueAtTime(0.028, t1 - 0.2);
+            gm2.gain.linearRampToValueAtTime(0.001, t1);
+            om2.connect(gm2); gm2.connect(musicGain);
+            om2.start(t0); om2.stop(t1 + 0.05);
         });
     }
 
-    // --- Kick on beat 1 & 3 ---
-    [0, 2].forEach(beat => {
-        const t0 = startT + beat * BEAT;
-        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(150, t0);
-        o.frequency.exponentialRampToValueAtTime(40, t0 + 0.15);
-        g.gain.setValueAtTime(0.35, t0);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
-        o.connect(g); g.connect(musicGain);
-        o.start(t0); o.stop(t0 + 0.3);
-    });
+    // ---- KICK — soft, only on beat 1, gameplay only ----
+    // Just enough pulse to feel the tempo without being distracting
+    if (!isMenu) {
+        const t0 = startT;
+        const ok = audioCtx.createOscillator(), gk = audioCtx.createGain();
+        ok.type = 'sine';
+        ok.frequency.setValueAtTime(100, t0);
+        ok.frequency.exponentialRampToValueAtTime(35, t0 + 0.2);
+        gk.gain.setValueAtTime(0.22, t0);
+        gk.gain.exponentialRampToValueAtTime(0.001, t0 + 0.35);
+        ok.connect(gk); gk.connect(musicGain);
+        ok.start(t0); ok.stop(t0 + 0.4);
 
-    // --- Snare on beat 2 & 4 ---
-    [1, 3].forEach(beat => {
-        const t0 = startT + beat * BEAT;
-        [180, 260, 340].forEach(sf => {
-            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o.type = 'triangle'; o.frequency.setValueAtTime(sf, t0);
-            g.gain.setValueAtTime(0.07, t0);
-            g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
-            o.connect(g); g.connect(musicGain);
-            o.start(t0); o.stop(t0 + 0.15);
+        // Very soft snare whisper on beat 3 only
+        const t2 = startT + bt * 2;
+        [160, 230].forEach(sf => {
+            const os = audioCtx.createOscillator(), gs = audioCtx.createGain();
+            os.type = 'triangle'; os.frequency.setValueAtTime(sf, t2);
+            gs.gain.setValueAtTime(0.025, t2);
+            gs.gain.exponentialRampToValueAtTime(0.001, t2 + 0.08);
+            os.connect(gs); gs.connect(musicGain);
+            os.start(t2); os.stop(t2 + 0.1);
         });
-    });
+    }
 }
 
-function startMusic() {
-    if (!audioCtx || musicPlaying) return;
+let musicIsMenu = true;
+
+function startMusic(isMenu) {
+    stopMusic();
+    if (!audioCtx) return;
+    musicIsMenu = (isMenu === true);
+    BPM  = musicIsMenu ? BPM_MENU : BPM_GAME;
+    BEAT = 60 / BPM;
+    BAR  = BEAT * 4;
     musicPlaying = true;
     let nextBarTime = audioCtx.currentTime + 0.05;
     let barIndex = 0;
-    const LOOKAHEAD = BAR * 2; // schedule 2 bars ahead
-
     function loop() {
         if (!musicPlaying) return;
-        while (nextBarTime < audioCtx.currentTime + LOOKAHEAD) {
-            scheduleMusicBar(barIndex, nextBarTime);
+        const lookahead = BAR * 2;
+        while (nextBarTime < audioCtx.currentTime + lookahead) {
+            scheduleMusicBar(barIndex, nextBarTime, musicIsMenu);
             nextBarTime += BAR;
             barIndex++;
         }
-        musicScheduler = setTimeout(loop, 500); // check every 500ms
+        musicScheduler = setTimeout(loop, 500);
     }
     loop();
 }
+
+function switchToGameplayMusic() { startMusic(false); }
+function switchToMenuMusic()     { startMusic(true);  }
 
 function stopMusic() {
     musicPlaying = false;
@@ -488,7 +532,7 @@ function initAudio() {
 
     // Music bus — lower volume so SFX sit on top
     musicGain = audioCtx.createGain();
-    musicGain.gain.setValueAtTime(0.38, audioCtx.currentTime);
+    musicGain.gain.setValueAtTime(0.65, audioCtx.currentTime);
     musicGain.connect(masterGain);
 
     // SFX bus
@@ -496,7 +540,7 @@ function initAudio() {
     sfxGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
     sfxGain.connect(masterGain);
 
-    startMusic();
+    startMusic(true); // menu music on boot
 }
 
 function sfxBrick(pitch = 1) {
@@ -667,6 +711,15 @@ const nextLevelRarity = Math.random() * 0.04 + 0.03;
 let particles = [];
 // Ball trail
 let ballTrails = [];
+// Timed speed effect
+let speedEffectTimer = 0;
+let speedEffectType = null;
+// Timed CATCH effect
+let catchTimer = 0;
+// Timed FIRE effect
+let fireTimer = 0;
+// Passive score trickle — +3 every 2 seconds
+let scoreTrickleTimer = 0;
 
 // =====================================================================
 //  BRICK COLORS — richer palette
@@ -1174,23 +1227,25 @@ function drawBalls() {
 //  POWER-UPS
 // =====================================================================
 const PILL_DEFS = {
-    'C': { label: 'CATCH',  col1: '#00ff88', col2: '#007744', txt: '#000' },
-    'P': { label: 'POWER',  col1: '#ff44ff', col2: '#880088', txt: '#fff' },
-    'F': { label: 'FIRE',   col1: '#ff3300', col2: '#881100', txt: '#ffcc00' },
-    '3': { label: 'MULTI',  col1: '#44aaff', col2: '#0055aa', txt: '#fff' },
-    'N': { label: 'SKIP',   col1: '#cc44ff', col2: '#660099', txt: '#fff' },
-    'U': { label: '1UP',    col1: '#ffffff', col2: '#aaaaaa', txt: '#00aa00' },
-    'L': { label: 'WIDE',   col1: '#0044ff', col2: '#002288', txt: '#fff' },
+    'C':  { label: 'CATCH', col1: '#00ff88', col2: '#007744', txt: '#000' },
+    'P':  { label: 'POWER', col1: '#ff44ff', col2: '#880088', txt: '#fff' },
+    'F':  { label: 'FIRE',  col1: '#ff3300', col2: '#881100', txt: '#ffcc00' },
+    '3':  { label: 'MULTI', col1: '#44aaff', col2: '#0055aa', txt: '#fff' },
+    'N':  { label: 'SKIP',  col1: '#cc44ff', col2: '#660099', txt: '#fff' },
+    'U':  { label: '1UP',   col1: '#ffffff', col2: '#aaaaaa', txt: '#00aa00' },
+    'L':  { label: 'WIDE',  col1: '#0044ff', col2: '#002288', txt: '#fff' },
+    'BF': { label: 'FAST',  col1: '#ff9900', col2: '#cc5500', txt: '#fff' },  // orange — unused before
+    'BS': { label: 'SLOW',  col1: '#00ddaa', col2: '#007755', txt: '#000' },  // teal — unused before
 };
 
 function drawPill(p) {
     const def = PILL_DEFS[p.type] || { label: '?', col1: '#888', col2: '#444', txt: '#fff' };
-    const w = 84, h = 28;
+    const w = 104, h = 36;  // bigger for mobile visibility
     const pulse = 0.7 + 0.3 * Math.sin(frameCount * 0.15 + p.x);
 
     ctx.save();
     ctx.translate(p.x - w/2, p.y);
-    ctx.shadowBlur = 15 * pulse;
+    ctx.shadowBlur = 18 * pulse;
     ctx.shadowColor = def.col1;
 
     const grad = ctx.createLinearGradient(0, 0, 0, h);
@@ -1198,22 +1253,34 @@ function drawPill(p) {
     grad.addColorStop(1, def.col2);
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.roundRect(0, 0, w, h, 14);
+    ctx.roundRect(0, 0, w, h, 18);
     ctx.fill();
 
     // Shine
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.beginPath();
-    ctx.roundRect(4, 3, w - 8, h * 0.4, [10, 10, 4, 4]);
+    ctx.roundRect(4, 3, w - 8, h * 0.38, [12, 12, 4, 4]);
     ctx.fill();
 
     ctx.fillStyle = def.txt;
-    ctx.font = '900 13px Orbitron';
+    ctx.font = '900 15px Orbitron';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowBlur = 5;
+    ctx.shadowBlur = 6;
     ctx.shadowColor = def.txt;
     ctx.fillText(def.label, w / 2, h / 2 + 1);
+
+    // Countdown arc for timed pills (BF / BS)
+    if (p.timeLeft !== undefined && p.totalTime !== undefined) {
+        const frac = p.timeLeft / p.totalTime;
+        ctx.strokeStyle = def.txt;
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2, h * 0.38, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+        ctx.stroke();
+    }
+
     ctx.restore();
 }
 
@@ -1272,6 +1339,42 @@ function drawHUD() {
         ctx.shadowColor = '#ff00c8';
         ctx.shadowBlur = 8;
         ctx.fillText('◆ ' + activeModes.join('  ◆ '), 24, 66);
+    }
+
+    // Timed speed effect indicator
+    if (speedEffectType) {
+        const secsLeft = Math.ceil(speedEffectTimer / 60);
+        const col = speedEffectType === 'BF' ? '#ff9900' : '#00ddaa';
+        const lbl = speedEffectType === 'BF' ? `⚡ FAST ${secsLeft}s` : `❄ SLOW ${secsLeft}s`;
+        ctx.textAlign = 'right';
+        ctx.font = '700 14px Orbitron';
+        ctx.fillStyle = col;
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 10;
+        ctx.fillText(lbl, W - 24, 50);
+    }
+
+    // CATCH timer
+    if (catchTimer > 0) {
+        const secsLeft = Math.ceil(catchTimer / 60);
+        ctx.textAlign = 'right';
+        ctx.font = '700 13px Orbitron';
+        ctx.fillStyle = '#00ff88';
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 8;
+        ctx.fillText(`◉ CATCH ${secsLeft}s`, W - 24, 70);
+    }
+
+    // FIRE timer
+    if (fireTimer > 0) {
+        const secsLeft = Math.ceil(fireTimer / 60);
+        const yOff = catchTimer > 0 ? 90 : 70;
+        ctx.textAlign = 'right';
+        ctx.font = '700 13px Orbitron';
+        ctx.fillStyle = '#ff3300';
+        ctx.shadowColor = '#ff3300';
+        ctx.shadowBlur = 8;
+        ctx.fillText(`🔥 FIRE ${secsLeft}s`, W - 24, yOff);
     }
 
     // Bottom separator line
@@ -1359,6 +1462,41 @@ function update() {
 
     updateParticles();
     updateTrails();
+
+    // Timed speed effect countdown
+    if (speedEffectTimer > 0 && gameState === STATES.PLAYING) {
+        speedEffectTimer--;
+        if (speedEffectTimer === 0) {
+            if (speedEffectType === 'BF') baseSpeed /= 1.2;
+            if (speedEffectType === 'BS') baseSpeed /= 0.8;
+            speedEffectType = null;
+        }
+    }
+
+    // Timed CATCH countdown
+    if (catchTimer > 0 && gameState === STATES.PLAYING) {
+        catchTimer--;
+        if (catchTimer === 0) {
+            activeModes = activeModes.filter(m => m !== 'CATCH');
+        }
+    }
+
+    // Timed FIRE countdown
+    if (fireTimer > 0 && gameState === STATES.PLAYING) {
+        fireTimer--;
+        if (fireTimer === 0) {
+            activeModes = activeModes.filter(m => m !== 'FIRE');
+        }
+    }
+
+    // Passive score trickle: +3 every 2 seconds (120 frames)
+    if (gameState === STATES.PLAYING) {
+        scoreTrickleTimer++;
+        if (scoreTrickleTimer >= 120) {
+            score += 3;
+            scoreTrickleTimer = 0;
+        }
+    }
 
     if (gameState !== STATES.PLAYING && gameState !== STATES.INIT_TURN) return;
 
@@ -1462,6 +1600,7 @@ function update() {
         if (lives <= 0) {
             gameState = STATES.GAME_OVER;
             say('SYSTEM SHUTDOWN');
+            if (audioCtx) switchToMenuMusic();
             setTimeout(() => location.reload(), 3500);
         } else {
             startTurn();
@@ -1485,13 +1624,30 @@ function onDestroyBrick(br) {
     if (Math.random() < 0.2) {
         const rand = Math.random();
         let type;
-        if      (rand < 0.05)                           type = 'P';
-        else if (rand < 0.10)                           type = 'F';
-        else if (rand < 0.10 + nextLevelRarity)         type = 'N';
-        else if (rand < 0.10 + nextLevelRarity + 0.05) type = 'U';
-        else if (rand < 0.50)                           type = 'C';
-        else if (rand < 0.75)                           type = '3';
-        else                                             type = 'L';
+        // Adjusted probabilities:
+        // POWER:  0–0.05  (5%)
+        // FIRE:   0.05–0.10 (5%)
+        // SKIP:   0.10–0.10+rarity/2  (rarity halved ~1.5–3.5%)
+        // 1UP:    next 2.5% (halved from 5%)
+        // FAST:   2.5%
+        // SLOW:   2.5%
+        // CATCH:  ~20%
+        // MULTI:  ~20%
+        // WIDE:   remainder
+        const skipEnd  = 0.10 + nextLevelRarity * 0.5;
+        const oneupEnd = skipEnd + 0.025;
+        const fastEnd  = oneupEnd + 0.025;
+        const slowEnd  = fastEnd  + 0.025;
+        const catchEnd = slowEnd  + 0.08;   // CATCH ~8% (reduced — now timed passive)
+        if      (rand < 0.05)      type = 'P';
+        else if (rand < 0.10)      type = 'F';
+        else if (rand < skipEnd)   type = 'N';
+        else if (rand < oneupEnd)  type = 'U';
+        else if (rand < fastEnd)   type = 'BF';
+        else if (rand < slowEnd)   type = 'BS';
+        else if (rand < catchEnd)  type = 'C';
+        else if (rand < 0.75)      type = '3';
+        else                       type = 'L';
         powerups.push({ x: br.x + br.w / 2, y: br.y, type });
     }
 }
@@ -1499,6 +1655,34 @@ function onDestroyBrick(br) {
 function applyPower(type) {
     if (type === 'N') { nextSector(); return; }
     if (type === 'U') { lives = Math.min(lives + 1, 9); return; }
+    if (type === 'BF') {
+        if (speedEffectType === 'BF') return;
+        if (speedEffectType === 'BS') { baseSpeed /= 0.8; }
+        baseSpeed *= 1.2;
+        speedEffectType = 'BF';
+        speedEffectTimer = 60 * 10;
+        return;
+    }
+    if (type === 'BS') {
+        if (speedEffectType === 'BS') return;
+        if (speedEffectType === 'BF') { baseSpeed /= 1.2; }
+        baseSpeed *= 0.8;
+        speedEffectType = 'BS';
+        speedEffectTimer = 60 * 10;
+        return;
+    }
+    if (type === 'C') {
+        // Timed CATCH — 10 seconds passive
+        if (!activeModes.includes('CATCH')) activeModes.push('CATCH');
+        catchTimer = 60 * 10;
+        return;
+    }
+    if (type === 'F') {
+        // Timed FIRE — 10 seconds passive
+        if (!activeModes.includes('FIRE')) activeModes.push('FIRE');
+        fireTimer = 60 * 10;
+        return;
+    }
     if (type === '3') {
         const b = balls[0];
         balls.push(
@@ -1507,12 +1691,12 @@ function applyPower(type) {
         );
         return;
     }
-    const modeMap = { 'C': 'CATCH', 'F': 'FIRE', 'P': 'POWER', 'L': 'LONG' };
+    const modeMap = { 'P': 'POWER', 'L': 'LONG' };
     const modeTag = modeMap[type];
     if (modeTag) {
         activeModes = activeModes.filter(m => m !== modeTag);
         activeModes.push(modeTag);
-        if (activeModes.length > 2) {
+        if (activeModes.length > 3) {
             const removed = activeModes.shift();
             if (removed === 'LONG') paddle.w = defaultPaddleW;
         }
@@ -1551,6 +1735,12 @@ function startTurn() {
     paddle.w = defaultPaddleW;
     bullets = []; powerups = [];
     ballTrails = [];
+    // Clear timed effects
+    if (speedEffectType === 'BF') baseSpeed /= 1.2;
+    if (speedEffectType === 'BS') baseSpeed /= 0.8;
+    speedEffectType = null; speedEffectTimer = 0;
+    catchTimer = 0; fireTimer = 0;
+    scoreTrickleTimer = 0;
     balls = [{ x: 0, y: 0, dx: 0, dy: 0, r: 10, stuck: true, offset: paddle.w / 2 }];
     say(`SECTOR ${level}<br><span style="font-size:0.6em;color:#aaddff">CLICK / TAP TO LAUNCH</span>`);
 }
@@ -1558,9 +1748,12 @@ function startTurn() {
 function nextSector() {
     sfxVictory();
     level++;
-    baseSpeed = Math.min(baseSpeed + 0.4, BASE_SPEED * 2);
+    const levelSpeed = Math.min(BASE_SPEED + (level - 1) * 0.4, BASE_SPEED * 2);
+    baseSpeed = levelSpeed;
     say('LEVEL COMPLETE!<br><span style="font-size:0.6em;color:#aaddff">HYPERSPACE ENGAGED</span>');
     gameState = STATES.INIT_TURN;
+    // Switch gameplay track for new level (odd/even changes)
+    if (audioCtx) switchToGameplayMusic();
     setTimeout(() => { genBricks(); startTurn(); }, 3500);
 }
 
@@ -1570,6 +1763,7 @@ function startFromMenu() {
     document.getElementById('story-screen').style.display = 'none';
     score = 0; level = 1; lives = 3;
     baseSpeed = BASE_SPEED;
+    switchToGameplayMusic();
     genBricks();
     startTurn();
 }
