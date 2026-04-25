@@ -114,7 +114,7 @@
         <h2>✈️ Flight Tracker</h2>
         <p>DIRECT SATELLITE UPLINK<br>LIVE LOGISTICS PORTAL</p>
         
-        <input type="text" id="flightInput" placeholder="ENTER FLIGHT #" autocomplete="off" />
+        <input type="text" id="flightInput" placeholder="E.G. B6514" autocomplete="off" />
         <button class="track-btn" onclick="trackFlight()">Initiate Tracking</button>
 
         <a href="index.html" class="back-link">← Return to Home</a>
@@ -122,25 +122,28 @@
 
     <script>
         function trackFlight() {
-            let input = document.getElementById('flightInput').value.trim();
+            const input = document.getElementById('flightInput').value.trim();
             
             if (input) {
-                // 1. Remove all spaces so "B6 514" becomes "B6514"
-                let cleanNumber = input.replace(/\s+/g, '');
+                // 1. Remove all spaces to handle "B6 514" or "B6514"
+                const cleanNumber = input.replace(/\s+/g, '');
                 
-                // 2. We use the keyword "flight" before the number.
-                // This is the "magic key" that tells Google to show the Tracker Card
-                // instead of a list of random websites.
-                const query = `flight ${cleanNumber}`;
+                // 2. Force Google to show the Flight Card specifically
+                // We use "flight status" + the number + "hl=en" to force the tracker UI
+                const query = `flight status ${cleanNumber}`;
                 
-                const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-                window.open(googleUrl, '_blank');
+                // 3. Navigate to the Google Search URL
+                const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en`;
+                
+                // Use window.location.href to keep it in the same tab for a cleaner flow, 
+                // or window.open for a new tab.
+                window.location.href = googleUrl;
             } else {
                 alert("Please enter a flight number first!");
             }
         }
 
-        // Allow pressing 'Enter' to submit
+        // Allow 'Enter' key submission
         document.getElementById('flightInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') trackFlight();
         });
