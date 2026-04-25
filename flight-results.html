@@ -2,92 +2,95 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Live Flight Status - Joe's Rides</title>
+    <title>Arriving Soon | Joe's Rides</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; padding: 20px; }
-        .status-card { background: #333; padding: 20px; border-radius: 15px; display: inline-block; margin-top: 50px; width: 350px; border: 2px solid #007bff; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        td { padding: 10px; border-bottom: 1px solid #444; text-align: left; }
-        .label { color: #888; font-size: 0.8em; }
-        .value { font-weight: bold; font-size: 1.1em; color: #00ffcc; }
-        #loadingMsg { font-style: italic; color: #ffcc00; }
+        :root { --primary: #007bff; --accent: #00ffcc; --bg: #0a0a0a; --card: #161616; }
+        body { background: var(--bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+        
+        .results-card { background: var(--card); width: 400px; padding: 30px; border-radius: 20px; position: relative; border: 1px solid #333; }
+        
+        /* The Scanning Animation */
+        .scanner { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--primary); box-shadow: 0 0 15px var(--primary); animation: scan 2s infinite; z-index: 10; }
+        @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+
+        .header { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .flight-id { font-size: 2em; font-weight: bold; color: white; letter-spacing: 2px; }
+        .status-badge { background: #222; color: var(--accent); padding: 5px 12px; border-radius: 20px; font-size: 0.7em; float: right; margin-top: 10px; border: 1px solid var(--accent); }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
+        .item label { display: block; color: #666; font-size: 0.75em; text-transform: uppercase; margin-bottom: 5px; }
+        .item span { font-size: 1.2em; color: white; font-weight: 500; }
+        
+        #loadingOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--card); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; border-radius: 20px; }
     </style>
 </head>
 <body>
 
-    <h1>Flight Status</h1>
-    <div id="loadingMsg">Scanning Radar...</div>
-
-    <div class="status-card" id="resultCard" style="display:none;">
-        <h2 id="flightDisplay">----</h2>
-        <table>
-            <tr>
-                <td class="label">STATUS</td>
-                <td class="value" id="status">---</td>
-            </tr>
-            <tr>
-                <td class="label">FROM</td>
-                <td class="value" id="origin">---</td>
-            </tr>
-            <tr>
-                <td class="label">EST. ARRIVAL</td>
-                <td class="value" id="arrivalTime">---</td>
-            </tr>
-            <tr>
-                <td class="label">TERMINAL</td>
-                <td class="value" id="terminal">---</td>
-            </tr>
-            <tr>
-                <td class="label">GATE</td>
-                <td class="value" id="gate">---</td>
-            </tr>
-        </table>
-        <p><button onclick="window.location.href='tracker.html'" style="margin-top:15px; padding:8px;">New Search</button></p>
+<div class="results-card">
+    <div class="scanner"></div>
+    
+    <div id="loadingOverlay">
+        <div style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">PINGING SATELLITE...</div>
+        <div id="loadingSubtext" style="font-size: 0.8em; color: #555; margin-top: 10px;">Locating flight path...</div>
     </div>
 
-    <script>
-        const apiKey = '6d200514eb3859cb447695d6f04d3711';
-        const flightNum = localStorage.getItem('activeFlight');
+    <div class="header">
+        <span class="status-badge" id="status">PENDING</span>
+        <div class="flight-id" id="flightTitle">----</div>
+    </div>
 
-        if (!flightNum) {
-            document.getElementById('loadingMsg').innerText = "No flight number found. Please go back.";
-        } else {
-            fetchData(flightNum);
+    <div class="grid">
+        <div class="item"><label>Origin</label><span id="origin">---</span></div>
+        <div class="item"><label>Est. Arrival</label><span id="arrivalTime">--:--</span></div>
+        <div class="item"><label>Terminal</label><span id="terminal">---</span></div>
+        <div class="item"><label>Gate</label><span id="gate">---</span></div>
+    </div>
+
+    <button onclick="window.location.href='tracker.html'" style="margin-top:30px; background:none; border:1px solid #444; color:#888; padding:10px; width:100%; border-radius:8px; cursor:pointer;">Back to Search</button>
+</div>
+
+<script>
+    const apiKey = '6d200514eb3859cb447695d6f04d3711';
+    const flight = localStorage.getItem('activeFlight');
+
+    async function init() {
+        if(!flight) {
+            document.getElementById('loadingSubtext').innerText = "Error: No flight number.";
+            return;
         }
 
-        async function fetchData(flight) {
-            try {
-                // Aviationstack free tier requires HTTP
-                const url = `http://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${flight}`;
+        try {
+            const res = await fetch(`http://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${flight}`);
+            const json = await res.json();
+
+            if(json.data && json.data.length > 0) {
+                const d = json.data[0];
                 
-                const response = await fetch(url);
-                const result = await response.json();
+                // Set the data
+                document.getElementById('flightTitle').innerText = flight.toUpperCase();
+                document.getElementById('status').innerText = d.flight_status.toUpperCase();
+                document.getElementById('origin').innerText = d.departure.iata;
+                document.getElementById('terminal').innerText = d.arrival.terminal || "N/A";
+                document.getElementById('gate').innerText = d.arrival.gate || "N/A";
+                
+                const eta = new Date(d.arrival.estimated).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                document.getElementById('arrivalTime').innerText = eta;
 
-                if (result.data && result.data.length > 0) {
-                    const data = result.data[0];
-                    
-                    document.getElementById('loadingMsg').style.display = 'none';
-                    document.getElementById('resultCard').style.display = 'inline-block';
+                // Wait 2 seconds for the "cool" scanning effect before showing data
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                }, 2000);
 
-                    // Update UI
-                    document.getElementById('flightDisplay').innerText = "Flight " + flight.toUpperCase();
-                    document.getElementById('status').innerText = data.flight_status.toUpperCase();
-                    document.getElementById('origin').innerText = data.departure.iata;
-                    document.getElementById('terminal').innerText = data.arrival.terminal || "TBD";
-                    document.getElementById('gate').innerText = data.arrival.gate || "TBD";
-                    
-                    // Format Time
-                    const time = new Date(data.arrival.estimated);
-                    document.getElementById('arrivalTime').innerText = time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-                } else {
-                    document.getElementById('loadingMsg').innerText = "No live data found for " + flight + ". Check the number and try again.";
-                }
-            } catch (error) {
-                console.error(error);
-                document.getElementById('loadingMsg').innerText = "Error connecting to flight radar.";
+            } else {
+                document.getElementById('loadingSubtext').innerText = "Flight not found.";
             }
+        } catch(e) {
+            document.getElementById('loadingSubtext').innerText = "Radar connection failed.";
         }
-    </script>
+    }
+
+    init();
+</script>
+
 </body>
 </html>
