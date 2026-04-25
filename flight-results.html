@@ -2,94 +2,123 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Arriving Soon | Joe's Rides</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Arrival Info | Joe's Rides</title>
     <style>
-        :root { --primary: #007bff; --accent: #00ffcc; --bg: #0a0a0a; --card: #161616; }
-        body { background: var(--bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
-        
-        .results-card { background: var(--card); width: 400px; padding: 30px; border-radius: 20px; position: relative; border: 1px solid #333; }
-        
-        /* The Scanning Animation */
-        .scanner { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--primary); box-shadow: 0 0 15px var(--primary); animation: scan 2s infinite; z-index: 10; }
-        @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-purple: #9d00ff;
+            --dark-bg: #05060a;
+        }
 
-        .header { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
-        .flight-id { font-size: 2em; font-weight: bold; color: white; letter-spacing: 2px; }
-        .status-badge { background: #222; color: var(--accent); padding: 5px 12px; border-radius: 20px; font-size: 0.7em; float: right; margin-top: 10px; border: 1px solid var(--accent); }
+        body {
+            margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif;
+            background-color: var(--dark-bg);
+            background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('joesrideswithseltos.jpg');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: #ffffff; display: flex; justify-content: center; align-items: center; height: 100vh;
+        }
 
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
-        .item label { display: block; color: #666; font-size: 0.75em; text-transform: uppercase; margin-bottom: 5px; }
-        .item span { font-size: 1.2em; color: white; font-weight: 500; }
-        
-        #loadingOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--card); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; border-radius: 20px; }
+        .results-container {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 40px; border-radius: 20px;
+            border: 1px solid var(--neon-purple);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
+            width: 90%; max-width: 450px; text-align: center;
+            position: relative; overflow: hidden;
+        }
+
+        /* Scanning Line Effect */
+        .scan-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue);
+            animation: moveScan 3s linear infinite; z-index: 5;
+        }
+        @keyframes moveScan { 0% { top: 0; } 100% { top: 100%; } }
+
+        .header { margin-bottom: 25px; border-bottom: 1px solid rgba(0, 212, 255, 0.3); padding-bottom: 15px; }
+        .flight-number { font-size: 2.2rem; font-weight: bold; color: white; text-shadow: 0 0 10px var(--neon-blue); }
+        .status-badge { display: inline-block; padding: 5px 15px; border-radius: 50px; background: rgba(0,0,0,0.5); border: 1px solid var(--neon-blue); color: var(--neon-blue); font-size: 0.8rem; letter-spacing: 1px; margin-top: 10px; }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
+        .info-item label { display: block; font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .info-item span { font-size: 1.1rem; color: white; font-weight: 600; }
+
+        #loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark-bg); z-index: 10; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 212, 255, 0.1); border-top: 4px solid var(--neon-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="results-card">
-    <div class="scanner"></div>
+<div class="results-container">
+    <div class="scan-line"></div>
     
-    <div id="loadingOverlay">
-        <div style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">PINGING SATELLITE...</div>
-        <div id="loadingSubtext" style="font-size: 0.8em; color: #555; margin-top: 10px;">Locating flight path...</div>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="letter-spacing: 2px; font-size: 0.8rem; color: var(--neon-blue);">SEARCHING AIRSPACE...</p>
     </div>
 
     <div class="header">
-        <span class="status-badge" id="status">PENDING</span>
-        <div class="flight-id" id="flightTitle">----</div>
+        <div class="flight-number" id="disp-flight">----</div>
+        <div class="status-badge" id="disp-status">UPDATING...</div>
     </div>
 
-    <div class="grid">
-        <div class="item"><label>Origin</label><span id="origin">---</span></div>
-        <div class="item"><label>Est. Arrival</label><span id="arrivalTime">--:--</span></div>
-        <div class="item"><label>Terminal</label><span id="terminal">---</span></div>
-        <div class="item"><label>Gate</label><span id="gate">---</span></div>
+    <div class="info-grid">
+        <div class="info-item"><label>Origin</label><span id="disp-origin">---</span></div>
+        <div class="info-item"><label>Est. Arrival</label><span id="disp-arrival">--:--</span></div>
+        <div class="info-item"><label>Terminal</label><span id="disp-terminal">---</span></div>
+        <div class="info-item"><label>Gate</label><span id="disp-gate">---</span></div>
     </div>
 
-    <button onclick="window.location.href='tracker.html'" style="margin-top:30px; background:none; border:1px solid #444; color:#888; padding:10px; width:100%; border-radius:8px; cursor:pointer;">Back to Search</button>
+    <a href="tracker.html" style="display:inline-block; margin-top: 30px; color: #888; text-decoration: none; font-size: 0.8rem;">← New Search</a>
 </div>
 
 <script>
-    const apiKey = '6d200514eb3859cb447695d6f04d3711';
-    const flight = localStorage.getItem('activeFlight');
+    const API_KEY = '6d200514eb3859cb447695d6f04d3711';
+    
+    async function getFlightData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const flightNo = urlParams.get('flight');
 
-    async function init() {
-        if(!flight) {
-            document.getElementById('loadingSubtext').innerText = "Error: No flight number.";
+        if (!flightNo) {
+            document.getElementById('loading-overlay').innerHTML = "<p>No flight number provided.</p>";
             return;
         }
 
         try {
-            const res = await fetch(`http://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${flight}`);
-            const json = await res.json();
+            // Aviationstack free tier requires http, unless you have a paid plan
+            const response = await fetch(`https://api.aviationstack.com/v1/flights?access_key=${API_KEY}&flight_iata=${flightNo}`);
+            const data = await response.json();
 
-            if(json.data && json.data.length > 0) {
-                const d = json.data[0];
+            if (data.data && data.data.length > 0) {
+                const f = data.data[0];
                 
-                // Set the data
-                document.getElementById('flightTitle').innerText = flight.toUpperCase();
-                document.getElementById('status').innerText = d.flight_status.toUpperCase();
-                document.getElementById('origin').innerText = d.departure.iata;
-                document.getElementById('terminal').innerText = d.arrival.terminal || "N/A";
-                document.getElementById('gate').innerText = d.arrival.gate || "N/A";
+                document.getElementById('disp-flight').innerText = flightNo.toUpperCase();
+                document.getElementById('disp-status').innerText = f.flight_status.toUpperCase();
+                document.getElementById('disp-origin').innerText = f.departure.iata || "N/A";
+                document.getElementById('disp-terminal').innerText = f.arrival.terminal || "TBD";
+                document.getElementById('disp-gate').innerText = f.arrival.gate || "TBD";
                 
-                const eta = new Date(d.arrival.estimated).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                document.getElementById('arrivalTime').innerText = eta;
+                const time = new Date(f.arrival.estimated).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                document.getElementById('disp-arrival').innerText = time;
 
-                // Wait 2 seconds for the "cool" scanning effect before showing data
+                // Artificial delay to show off your scanning effect
                 setTimeout(() => {
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                }, 2000);
-
+                    document.getElementById('loading-overlay').style.display = 'none';
+                }, 1500);
             } else {
-                document.getElementById('loadingSubtext').innerText = "Flight not found.";
+                document.getElementById('loading-overlay').innerHTML = `<p>Flight ${flightNo} not found.</p><a href="tracker.html" style="color:var(--neon-blue)">Try Again</a>`;
             }
-        } catch(e) {
-            document.getElementById('loadingSubtext').innerText = "Radar connection failed.";
+        } catch (err) {
+            console.error(err);
+            document.getElementById('loading-overlay').innerHTML = "<p>Radar Connection Error.</p>";
         }
     }
 
-    init();
+    getFlightData();
 </script>
 
 </body>
