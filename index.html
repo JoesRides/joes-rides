@@ -1,15 +1,15 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PHES5VVG0M"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-PHES5VVG0M');
-    </script>
-         
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-PHES5VVG0M"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-PHES5VVG0M');
+</script>
+     	
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Joe's Rides | Premium Transportation</title>
@@ -111,31 +111,26 @@
             text-transform: uppercase;
         }
 
-        /* NEATENED BUTTONS: Fixed size for consistency */
         .cta-group {
             display: flex;
-            gap: 15px;
+            gap: 15px; /* Tighter gap for better symmetry */
             justify-content: center;
             flex-wrap: wrap;
         }
 
         .btn {
-            width: 180px; 
-            height: 55px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            padding: 14px 28px; /* Slightly tighter measurements */
             border-radius: 12px;
             text-decoration: none;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-size: 0.9rem;
             transition: 0.3s;
+            display: inline-block;
             background: var(--gradient);
             color: white;
             border: none;
-            box-sizing: border-box;
+            font-size: 0.9rem;
         }
 
         .btn:hover {
@@ -171,9 +166,17 @@
             color: #64748b;
             font-size: 0.9rem;
         }
+
+        .phone-link {
+            color: var(--neon-blue);
+            text-decoration: none;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
+
+    <iframe src="https://www.youtube.com/embed/ol0dPJdzm1M?autoplay=1&loop=1&playlist=ol0dPJdzm1M" style="display:none;" allow="autoplay"></iframe>
 
     <div class="container">
         <div class="top-nav">
@@ -187,10 +190,11 @@
                 
                 <div class="cta-group">
                     <a href="book.html" class="btn">Book Now</a>
+                    <a href="specials.html" class="btn">Specials</a>
                     <a href="contact.html" class="btn">Contact</a>
                     <a href="tracker.html" class="btn">Track Flight</a>
                     <a href="story.html" class="btn">Our Story</a>
-                    <a href="game.html" class="btn">Play Game</a>
+                    <a href="game.html" class="btn">Play Weinstein’s Revenge</a>
                 </div>
             </div>
         </section>
@@ -208,7 +212,7 @@
 
             <div class="info-card">
                 <h3>Real-Time Support</h3>
-                <p>We monitor every flight to ensure our drivers are waiting exactly when you land. Call us anytime at <a href="tel:5162091518" style="color:var(--neon-blue); text-decoration:none; font-weight:bold;">516.209.1518</a>.</p>
+                <p>We monitor every flight to ensure our drivers are waiting exactly when you land. Call us anytime at <a href="tel:5162091518" class="phone-link">516.209.1518</a>.</p>
             </div>
 
             <div class="info-card">
@@ -224,4 +228,3 @@
 
 </body>
 </html>
-```
