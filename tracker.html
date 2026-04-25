@@ -19,93 +19,37 @@
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif;
             background-color: var(--dark-bg);
             background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('joesrideswithseltos.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: #ffffff; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center;
         }
 
         .tracker-container {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            padding: 50px 40px;
-            border-radius: 24px;
-            border: 1px solid rgba(157, 0, 255, 0.5);
-            box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
-            max-width: 420px;
-            width: 90%;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            padding: 50px 40px; border-radius: 24px; border: 1px solid rgba(157, 0, 255, 0.5);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.2); max-width: 420px; width: 90%;
         }
 
-        h2 {
-            margin-top: 0;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            text-shadow: 0 0 15px var(--neon-blue);
-            font-size: 1.8rem;
-        }
-
-        p {
-            font-size: 0.9rem;
-            color: #bbb;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
+        h2 { margin-top: 0; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 0 15px var(--neon-blue); font-size: 1.8rem; }
+        p { font-size: 0.9rem; color: #bbb; margin-bottom: 30px; line-height: 1.6; }
 
         input[type="text"] {
-            width: 100%;
-            padding: 18px;
-            margin-bottom: 25px;
-            border-radius: 12px;
-            border: 1px solid rgba(0, 212, 255, 0.4);
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            font-size: 1.2rem;
-            box-sizing: border-box;
-            text-transform: uppercase;
-            text-align: center;
+            width: 100%; padding: 18px; margin-bottom: 25px; border-radius: 12px;
+            border: 1px solid rgba(0, 212, 255, 0.4); background: rgba(0, 0, 0, 0.6);
+            color: white; font-size: 1.2rem; box-sizing: border-box; text-transform: uppercase; text-align: center;
         }
 
         .track-btn {
             background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
-            color: white;
-            border: none;
-            padding: 18px 30px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            width: 100%;
-            border-radius: 12px;
-            letter-spacing: 2px;
-            transition: 0.3s;
+            color: white; border: none; padding: 18px 30px; font-size: 1.1rem; font-weight: bold;
+            text-transform: uppercase; cursor: pointer; width: 100%; border-radius: 12px;
+            letter-spacing: 2px; transition: 0.3s;
         }
 
-        .track-btn:hover {
-            filter: brightness(1.2);
-            transform: scale(1.02);
-        }
-
-        .back-link {
-            display: block;
-            margin-top: 30px;
-            color: var(--neon-blue);
-            text-decoration: none;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.7;
-        }
+        .track-btn:hover { filter: brightness(1.2); transform: scale(1.02); }
+        .back-link { display: block; margin-top: 30px; color: var(--neon-blue); text-decoration: none; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -114,7 +58,7 @@
         <h2>✈️ Flight Tracker</h2>
         <p>DIRECT SATELLITE UPLINK<br>LIVE LOGISTICS PORTAL</p>
         
-        <input type="text" id="flightInput" placeholder="E.G. B6514" autocomplete="off" />
+        <input type="text" id="flightInput" placeholder="ENTER FLIGHT #" autocomplete="off" />
         <button class="track-btn" onclick="trackFlight()">Initiate Tracking</button>
 
         <a href="index.html" class="back-link">← Return to Home</a>
@@ -122,28 +66,25 @@
 
     <script>
         function trackFlight() {
-            const input = document.getElementById('flightInput').value.trim();
+            let input = document.getElementById('flightInput').value.trim();
             
             if (input) {
-                // 1. Remove all spaces to handle "B6 514" or "B6514"
-                const cleanNumber = input.replace(/\s+/g, '');
+                // 1. Remove all existing spaces first to get a clean baseline (e.g., "B6 514" -> "B6514")
+                let raw = input.replace(/\s+/g, '');
                 
-                // 2. Force Google to show the Flight Card specifically
-                // We use "flight status" + the number + "hl=en" to force the tracker UI
-                const query = `flight status ${cleanNumber}`;
+                // 2. SURGICAL LOGIC: Insert exactly ONE space between letters and numbers
+                // This turns "B6514" into "B6 514"
+                let formattedSearch = raw.replace(/^([a-zA-Z0-9]{2,3})(\d+)$/, "$1 $2");
                 
-                // 3. Navigate to the Google Search URL
-                const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en`;
+                // 3. Search ONLY that formatted string (no extra words)
+                const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(formattedSearch)}`;
                 
-                // Use window.location.href to keep it in the same tab for a cleaner flow, 
-                // or window.open for a new tab.
                 window.location.href = googleUrl;
             } else {
                 alert("Please enter a flight number first!");
             }
         }
 
-        // Allow 'Enter' key submission
         document.getElementById('flightInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') trackFlight();
         });
