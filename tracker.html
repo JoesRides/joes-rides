@@ -69,14 +69,14 @@
             let input = document.getElementById('flightInput').value.trim();
             
             if (input) {
-                // 1. Remove all existing spaces first to get a clean baseline (e.g., "B6 514" -> "B6514")
+                // 1. Strip all spaces so we have "B6514"
                 let raw = input.replace(/\s+/g, '');
                 
-                // 2. SURGICAL LOGIC: Insert exactly ONE space between letters and numbers
-                // This turns "B6514" into "B6 514"
-                let formattedSearch = raw.replace(/^([a-zA-Z0-9]{2,3})(\d+)$/, "$1 $2");
+                // 2. FIXED LOGIC: Insert a space after the first TWO characters.
+                // This turns "B6514" into "B6 514" exactly.
+                let formattedSearch = raw.slice(0, 2) + " " + raw.slice(2);
                 
-                // 3. Search ONLY that formatted string (no extra words)
+                // 3. Send that specific "B6 514" search to Google
                 const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(formattedSearch)}`;
                 
                 window.location.href = googleUrl;
