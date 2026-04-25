@@ -122,14 +122,18 @@
 
     <script>
         function trackFlight() {
-            let flightNumber = document.getElementById('flightInput').value.trim();
+            let input = document.getElementById('flightInput').value.trim();
             
-            if (flightNumber) {
-                // Remove all spaces so "B6 514" becomes "B6514"
-                flightNumber = flightNumber.replace(/\s+/g, '');
+            if (input) {
+                // 1. Remove all spaces so "B6 514" becomes "B6514"
+                let cleanNumber = input.replace(/\s+/g, '');
                 
-                // SURGICAL SEARCH: Sends ONLY the flight number to Google
-                const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(flightNumber)}`;
+                // 2. We use the keyword "flight" before the number.
+                // This is the "magic key" that tells Google to show the Tracker Card
+                // instead of a list of random websites.
+                const query = `flight ${cleanNumber}`;
+                
+                const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
                 window.open(googleUrl, '_blank');
             } else {
                 alert("Please enter a flight number first!");
