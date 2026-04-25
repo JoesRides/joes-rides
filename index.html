@@ -50,7 +50,7 @@
         .btn-call {
             background: #22c55e;
             color: white;
-            padding: 10px 20px;
+            padding: 10px 25px;
             border-radius: 50px;
             text-decoration: none;
             font-weight: 800;
@@ -62,7 +62,7 @@
         }
 
         .hero-section {
-            min-height: 50vh;
+            min-height: 60vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -83,7 +83,7 @@
 
         h1 {
             font-family: 'Orbitron', sans-serif;
-            font-size: clamp(1.8rem, 6vw, 4rem);
+            font-size: clamp(2rem, 8vw, 4rem);
             margin-bottom: 10px;
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -96,64 +96,55 @@
             font-size: 1.1rem;
             color: var(--neon-blue);
             letter-spacing: 3px;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
             text-transform: uppercase;
         }
 
-        /* 2-COLUMN GRID SYSTEM */
+        /* SINGLE COLUMN SYMMETRY */
         .cta-group {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); /* Forces 2 columns */
-            gap: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
             width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
         }
 
         .btn {
+            width: 100%;
+            max-width: 320px; /* Perfectly sized for mobile and desktop alignment */
+            height: 55px; /* Identically sized height */
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 15px 10px;
-            border-radius: 10px;
+            border-radius: 12px;
             text-decoration: none;
             font-weight: 700;
             text-transform: uppercase;
-            font-size: 0.75rem; /* Tighter font for mobile */
-            letter-spacing: 1px;
+            font-size: 0.9rem;
+            letter-spacing: 1.5px;
             background: var(--gradient);
             color: white;
             transition: 0.3s ease;
-            text-align: center;
-            min-height: 50px;
-        }
-
-        /* DESKTOP VIEW: 3 Columns for symmetry */
-        @media (min-width: 768px) {
-            .cta-group {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 15px;
-            }
-            .btn {
-                font-size: 0.85rem;
-            }
+            border: none;
+            box-sizing: border-box;
         }
 
         .btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.4);
+            filter: brightness(1.1);
         }
 
         .bottom-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
         }
 
         .info-card {
             background: var(--glass);
-            padding: 25px;
+            padding: 30px;
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
@@ -161,20 +152,21 @@
         .info-card h3 {
             color: var(--neon-blue);
             margin-top: 0;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         footer {
             text-align: center;
-            padding: 40px 0 20px;
+            padding: 50px 0 20px;
             color: #64748b;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
-
-    <iframe src="https://www.youtube.com/embed/videoseries?list=PL46U_q_f2Y5mO7B2S8V3-Hpxu0D5558t2&autoplay=1&loop=1" style="display:none;" allow="autoplay"></iframe>
 
     <div class="container">
         <div class="top-nav">
@@ -200,7 +192,7 @@
         <div class="bottom-grid">
             <div class="info-card">
                 <h3>Our Services</h3>
-                <ul style="padding-left: 20px; font-size: 0.9rem;">
+                <ul style="padding-left: 20px;">
                     <li>JFK & LGA Specialist</li>
                     <li>Curbside Excellence</li>
                     <li>Long Island / NYC / Hamptons</li>
@@ -210,7 +202,7 @@
 
             <div class="info-card">
                 <h3>Real-Time Support</h3>
-                <p style="font-size: 0.9rem;">We monitor every flight to ensure your chauffeur is waiting when you land. Always reliable.</p>
+                <p>We monitor every flight to ensure your chauffeur is waiting when you land. Absolute reliability, every ride.</p>
             </div>
         </div>
 
