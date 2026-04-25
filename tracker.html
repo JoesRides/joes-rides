@@ -42,6 +42,7 @@
             font-family: 'Orbitron', sans-serif;
             font-size: 1.5rem;
             margin-bottom: 25px;
+            letter-spacing: 1px;
         }
 
         .search-box {
@@ -53,51 +54,72 @@
 
         input[type="text"] {
             width: 100%;
-            padding: 15px;
+            padding: 18px;
             border-radius: 12px;
             border: 1px solid #334155;
             background: #0f172a;
             color: white;
-            font-size: 1rem;
+            font-size: 1.1rem;
             text-align: center;
             box-sizing: border-box;
             text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        input[type="text"]::placeholder {
+            font-weight: 400;
+            text-transform: none;
+            color: #64748b;
         }
 
         input[type="text"]:focus {
             outline: none;
             border-color: #00d4ff;
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
         }
 
         .btn-track {
             background: linear-gradient(45deg, #2563eb, #7c3aed);
             color: white;
-            padding: 15px;
+            padding: 18px;
             border-radius: 12px;
             border: none;
             font-weight: 800;
             text-transform: uppercase;
             cursor: pointer;
             font-size: 0.9rem;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-track:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
         }
 
         .btn-back {
             display: block;
-            margin-top: 20px;
+            margin-top: 25px;
             color: #94a3b8;
             text-decoration: none;
             font-size: 0.8rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            transition: color 0.2s;
+        }
+
+        .btn-back:hover {
+            color: #00d4ff;
         }
 
         .disclaimer {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: #64748b;
-            margin-top: 20px;
-            line-height: 1.4;
+            margin-top: 25px;
+            line-height: 1.5;
+            border-top: 1px solid #334155;
+            padding-top: 20px;
         }
     </style>
 </head>
@@ -105,18 +127,18 @@
 
     <div class="container">
         <div class="brand">Joe's Rides</div>
-        <h1>Flight Tracker</h1>
+        <h1>Arrival Tracker</h1>
         
-        <form action="https://www.google.com/search" method="get" target="_blank" class="search-box">
-            <input type="text" name="q" placeholder="Enter Flight Number (e.g. DAL123)" required>
-            <button type="submit" class="btn-track">Track Arrival Status</button>
+        <form action="flight-results.html" method="get" class="search-box">
+            <input type="text" name="q" placeholder="Flight # (e.g. DAL123)" required>
+            <button type="submit" class="btn-track">Check Status</button>
         </form>
 
         <p class="disclaimer">
-            We monitor all arrivals in real-time. Your driver will be dispatched based on the latest landing data provided.
+            Enter your flight number to verify arrival times. We coordinate all pickups based on real-time radar data to ensure zero wait times.
         </p>
 
-        <a href="index.html" class="btn-back">← Back to Dashboard</a>
+        <a href="index.html" class="btn-back">← Dashboard</a>
     </div>
 
 </body>
