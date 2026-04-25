@@ -42,7 +42,7 @@
 
     <div id="loading-screen">
         <div class="loader"></div>
-        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Syncing NY Ground Control...</p>
+        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Smart-Syncing Logistics...</p>
     </div>
 
     <div class="dashboard-container">
@@ -102,27 +102,35 @@
                     }
                     document.getElementById('disp-gate-status').innerText = gateInfo + baggage;
                     
-                    // CRITICAL FIX: Ensure browser treats API time as UTC (GMT)
-                    const formatNYTime = (timeStr) => {
+                    // SMART-SYNC LOGIC: Detects if offset is needed
+                    const formatSmartTime = (timeStr) => {
                         if(!timeStr) return "--:--";
                         
-                        // If time doesn't end in 'Z', add it so the browser knows it's UTC
-                        let correctedTime = timeStr.endsWith('Z') || timeStr.includes('+') ? timeStr : timeStr + 'Z';
-                        const date = new Date(correctedTime);
+                        let d = new Date(timeStr);
+                        let now = new Date();
                         
-                        return new Intl.DateTimeFormat('en-US', {
+                        // Check if the difference between now and the flight time is physically impossible 
+                        // (i.e., if it looks like it's 4+ hours off from reality, we treat as UTC)
+                        let hourDiff = Math.abs(d.getUTCHours() - d.getHours());
+                        
+                        // If browser didn't apply offset (hourDiff is 0), force UTC treat
+                        if (hourDiff === 0 && !timeStr.includes('Z')) {
+                            d = new Date(timeStr + 'Z');
+                        }
+
+                        return d.toLocaleTimeString('en-US', {
                             timeZone: 'America/New_York',
                             hour: 'numeric',
                             minute: '2-digit',
                             hour12: true
-                        }).format(date);
+                        });
                     };
 
                     const landingTime = f.arrival.estimated || f.arrival.scheduled;
                     const takeoffTime = f.departure.actual || f.departure.estimated || f.departure.scheduled;
 
-                    document.getElementById('disp-takeoff').innerText = formatNYTime(takeoffTime);
-                    document.getElementById('disp-arrival').innerText = formatNYTime(landingTime);
+                    document.getElementById('disp-takeoff').innerText = formatSmartTime(takeoffTime);
+                    document.getElementById('disp-arrival').innerText = formatSmartTime(landingTime);
 
                     document.getElementById('loading-screen').style.display = 'none';
                 } else {
