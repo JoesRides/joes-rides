@@ -26,11 +26,10 @@
             padding: 40px; border-radius: 20px;
             border: 1px solid var(--neon-purple);
             box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
-            width: 90%; max-width: 450px; text-align: center;
+            width: 90%; max-width: 500px; text-align: center;
             position: relative; overflow: hidden;
         }
 
-        /* Scanning Line Effect */
         .scan-line {
             position: absolute; top: 0; left: 0; width: 100%; height: 2px;
             background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue);
@@ -58,22 +57,24 @@
     
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p style="letter-spacing: 2px; font-size: 0.8rem; color: var(--neon-blue);">SEARCHING AIRSPACE...</p>
+        <p style="letter-spacing: 2px; font-size: 0.8rem; color: var(--neon-blue);">REFINING TRACKING DATA...</p>
     </div>
 
     <div class="header">
         <div class="flight-number" id="disp-flight">----</div>
-        <div class="status-badge" id="disp-status">UPDATING...</div>
+        <div class="status-badge" id="disp-status">SCANNING...</div>
     </div>
 
     <div class="info-grid">
         <div class="info-item"><label>Origin</label><span id="disp-origin">---</span></div>
+        <div class="info-item"><label>Arrival Airport</label><span id="disp-dest">---</span></div>
         <div class="info-item"><label>Est. Arrival</label><span id="disp-arrival">--:--</span></div>
         <div class="info-item"><label>Terminal</label><span id="disp-terminal">---</span></div>
-        <div class="info-item"><label>Gate</label><span id="disp-gate">---</span></div>
+        <div class="info-item"><label>Gate / Status</label><span id="disp-gate">---</span></div>
+        <div class="info-item"><label>Baggage Claim</label><span id="disp-baggage">---</span></div>
     </div>
 
-    <a href="tracker.html" style="display:inline-block; margin-top: 30px; color: #888; text-decoration: none; font-size: 0.8rem;">← New Search</a>
+    <a href="tracker.html" style="display:inline-block; margin-top: 30px; color: #888; text-decoration: none; font-size: 0.8rem; text-transform: uppercase; font-weight: bold;">← Return to Search</a>
 </div>
 
 <script>
@@ -89,7 +90,6 @@
         }
 
         try {
-            // Aviationstack free tier requires http, unless you have a paid plan
             const response = await fetch(`https://api.aviationstack.com/v1/flights?access_key=${API_KEY}&flight_iata=${flightNo}`);
             const data = await response.json();
 
@@ -97,15 +97,24 @@
                 const f = data.data[0];
                 
                 document.getElementById('disp-flight').innerText = flightNo.toUpperCase();
-                document.getElementById('disp-status').innerText = f.flight_status.toUpperCase();
                 document.getElementById('disp-origin').innerText = f.departure.iata || "N/A";
+                document.getElementById('disp-dest').innerText = f.arrival.iata || "N/A";
                 document.getElementById('disp-terminal').innerText = f.arrival.terminal || "TBD";
-                document.getElementById('disp-gate').innerText = f.arrival.gate || "TBD";
+                document.getElementById('disp-baggage').innerText = f.arrival.baggage || "WAITING";
+                
+                // Logic for Taxiing vs Gate
+                let gateStatus = f.arrival.gate || "TBD";
+                if (f.flight_status === 'landed') {
+                    // Check if there is an actual gate time recorded
+                    gateStatus = f.arrival.actual_runway ? "TAXIING" : gateStatus;
+                    if (f.arrival.actual) gateStatus = "GATE " + (f.arrival.gate || "");
+                }
+                document.getElementById('disp-gate').innerText = gateStatus;
+                document.getElementById('disp-status').innerText = f.flight_status.toUpperCase();
                 
                 const time = new Date(f.arrival.estimated).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 document.getElementById('disp-arrival').innerText = time;
 
-                // Artificial delay to show off your scanning effect
                 setTimeout(() => {
                     document.getElementById('loading-overlay').style.display = 'none';
                 }, 1500);
@@ -113,8 +122,7 @@
                 document.getElementById('loading-overlay').innerHTML = `<p>Flight ${flightNo} not found.</p><a href="tracker.html" style="color:var(--neon-blue)">Try Again</a>`;
             }
         } catch (err) {
-            console.error(err);
-            document.getElementById('loading-overlay').innerHTML = "<p>Radar Connection Error.</p>";
+            document.getElementById('loading-overlay').innerHTML = "<p>Connection Error.</p>";
         }
     }
 
