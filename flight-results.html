@@ -5,21 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flight Status Dashboard | Joe's Rides Logistics</title>
     <style>
-        :root {
-            --bg-color: #0d1117;
-            --box-bg: #161b22;
-            --indicator-blue: #00d4ff;
-            --text-label: #8c9cb3;
-            --text-value: #ffffff;
-            --confirm-btn: #00d4ff;
-        }
-
-        body {
-            margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-value); display: flex; justify-content: center; align-items: center; min-height: 100vh;
-        }
-
+        :root { --bg-color: #0d1117; --box-bg: #161b22; --indicator-blue: #00d4ff; --text-label: #8c9cb3; --text-value: #ffffff; --confirm-btn: #00d4ff; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-value); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .dashboard-container { width: 90%; max-width: 480px; text-align: center; padding: 40px 20px; }
         .title-header { font-size: 1rem; color: #00d4ff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; font-weight: 600; }
         .flight-id { font-size: 3.5rem; font-weight: bold; margin-bottom: 30px; letter-spacing: 1px; display: inline-block; }
@@ -30,30 +17,18 @@
         .info-box label { display: block; font-size: 0.75rem; color: var(--text-label); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 600; }
         .info-box span { font-size: 1.6rem; color: var(--text-value); font-weight: 700; }
         .small-value { font-size: 1.2rem !important; color: #ffffff !important; }
-        .confirm-btn { display: block; width: 100%; padding: 22px; background-color: var(--confirm-btn); color: #000; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; text-decoration: none; box-sizing: border-box; transition: 0.3s; }
-        .confirm-btn:hover { background-color: #ffffff; box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
-        
+        .confirm-btn { display: block; width: 100%; padding: 22px; background-color: var(--confirm-btn); color: #000; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; text-decoration: none; box-sizing: border-box; }
         #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .loader { width: 40px; height: 40px; border: 4px solid rgba(0,212,255,0.1); border-top-color: var(--indicator-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
-    <div id="loading-screen">
-        <div class="loader"></div>
-        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Applying Brute-Force Time Sync...</p>
-    </div>
-
+    <div id="loading-screen"><div class="loader"></div><p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Syncing NY Ground Control...</p></div>
     <div class="dashboard-container">
         <div class="title-header">Joe's Rides Logistics</div>
-        <div>
-            <span class="flight-id" id="disp-flight">----</span>
-            <span class="status-badge" id="disp-status">SCANNING</span>
-        </div>
-        
+        <div><span class="flight-id" id="disp-flight">----</span><span class="status-badge" id="disp-status">SCANNING</span></div>
         <div class="separator"></div>
-
         <div class="info-grid">
             <div class="info-box"><label>Departure</label><span id="disp-origin">---</span></div>
             <div class="info-box"><label>Arrival (Dest)</label><span id="disp-dest">---</span></div>
@@ -62,85 +37,52 @@
             <div class="info-box"><label>Terminal</label><span id="disp-terminal" class="small-value">---</span></div>
             <div class="info-box"><label>Gate / Baggage</label><span id="disp-gate-status" class="small-value">---</span></div>
         </div>
-
         <a href="tracker.html" class="confirm-btn">Confirm & Exit</a>
     </div>
-
     <script>
         const API_KEY = '6d200514eb3859cb447695d6f04d3711';
-        
         async function fetchLogisticsData() {
             const urlParams = new URLSearchParams(window.location.search);
             const flightNo = urlParams.get('flight');
-
-            if (!flightNo) {
-                document.getElementById('loading-screen').innerHTML = "<p>Missing Flight Number.</p>";
-                return;
-            }
-
+            if (!flightNo) return;
             try {
                 const response = await fetch(`https://api.aviationstack.com/v1/flights?access_key=${API_KEY}&flight_iata=${flightNo}`);
                 const data = await response.json();
-
                 if (data.data && data.data.length > 0) {
-                    // Sorting to grab the most relevant active flight
                     const f = data.data.sort((a, b) => {
                         if (a.flight_status === 'active') return -1;
                         if (b.flight_status === 'active') return 1;
                         return new Date(b.flight_date) - new Date(a.flight_date);
                     })[0];
-                    
                     document.getElementById('disp-flight').innerText = flightNo.toUpperCase();
                     document.getElementById('disp-status').innerText = f.flight_status.toUpperCase();
                     document.getElementById('disp-origin').innerText = f.departure.iata || "---";
                     document.getElementById('disp-dest').innerText = f.arrival.iata || "---";
                     document.getElementById('disp-terminal').innerText = f.arrival.terminal || "TBD";
-                    
                     let gateInfo = f.arrival.gate || "TBD";
                     let baggage = f.arrival.baggage ? ` / Car. ${f.arrival.baggage}` : " / No Bag Info";
-                    if (f.flight_status === 'landed') {
-                        gateInfo = f.arrival.actual ? `Gate ${gateInfo}` : "TAXIING";
-                    }
                     document.getElementById('disp-gate-status').innerText = gateInfo + baggage;
-                    
-                    // BRUTE FORCE CALCULATION: Manual -4 Hour Shift
-                    const formatManualTime = (timeStr) => {
+
+                    // DIRECT READ: This takes the numbers exactly as they are in the feed.
+                    const formatDirectTime = (timeStr) => {
                         if(!timeStr) return "--:--";
-                        
-                        // Parse the raw hours/minutes
                         const timePart = timeStr.split('T')[1]; 
                         let [hours, minutes] = timePart.split(':');
-                        
                         let h = parseInt(hours);
-                        // BRUTE FORCE: Subtract 4 hours to convert UTC to NY Time
-                        h = h - 4;
-                        
-                        // Handle midnight wrap-around
-                        if (h < 0) h = h + 24;
-                        if (h >= 24) h = h - 24;
-
                         const ampm = h >= 12 ? 'PM' : 'AM';
                         h = h % 12;
-                        h = h ? h : 12; // convert 0 to 12
-
+                        h = h ? h : 12; 
                         return `${h}:${minutes} ${ampm}`;
                     };
 
                     const landingTime = f.arrival.estimated || f.arrival.scheduled;
                     const takeoffTime = f.departure.actual || f.departure.estimated || f.departure.scheduled;
-
-                    document.getElementById('disp-takeoff').innerText = formatManualTime(takeoffTime);
-                    document.getElementById('disp-arrival').innerText = formatManualTime(landingTime);
-
+                    document.getElementById('disp-takeoff').innerText = formatDirectTime(takeoffTime);
+                    document.getElementById('disp-arrival').innerText = formatDirectTime(landingTime);
                     document.getElementById('loading-screen').style.display = 'none';
-                } else {
-                    document.getElementById('loading-screen').innerHTML = `<p>Flight ${flightNo} not found.</p><a href='tracker.html' style='color:var(--indicator-blue)'>Try Again</a>`;
                 }
-            } catch (err) {
-                document.getElementById('loading-screen').innerHTML = "<p>Connection Error.</p>";
-            }
+            } catch (err) { console.error(err); }
         }
-
         fetchLogisticsData();
     </script>
 </body>
