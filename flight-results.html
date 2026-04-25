@@ -6,8 +6,8 @@
     <title>Flight Status Dashboard | Joe's Rides Logistics</title>
     <style>
         :root {
-            --bg-color: #1a2233;
-            --box-bg: #1e263a;
+            --bg-color: #0d1117; /* Darker navy/black for that premium look */
+            --box-bg: #161b22;
             --indicator-blue: #00d4ff;
             --text-label: #8c9cb3;
             --text-value: #ffffff;
@@ -22,18 +22,19 @@
 
         .dashboard-container { width: 90%; max-width: 480px; text-align: center; padding: 40px 20px; }
         .title-header { font-size: 1rem; color: #00d4ff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; font-weight: 600; }
-        .flight-id { font-size: 3rem; font-weight: bold; margin-bottom: 30px; letter-spacing: 1px; display: inline-block; }
-        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid var(--indicator-blue); color: var(--indicator-blue); font-size: 0.75rem; letter-spacing: 1px; margin-left: 15px; vertical-align: middle; position: relative; top: -10px; }
+        .flight-id { font-size: 3.5rem; font-weight: bold; margin-bottom: 30px; letter-spacing: 1px; display: inline-block; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; background: rgba(0,212,255,0.1); border: 1px solid var(--indicator-blue); color: var(--indicator-blue); font-size: 0.75rem; letter-spacing: 1px; margin-left: 15px; vertical-align: middle; position: relative; top: -15px; }
         .separator { width: 100%; height: 1px; background: rgba(140, 156, 179, 0.2); margin-bottom: 30px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; margin-bottom: 40px; }
-        .info-box { background-color: var(--box-bg); padding: 25px 20px; border-radius: 12px; position: relative; box-sizing: border-box; border-left: 3px solid var(--indicator-blue); }
-        .info-box label { display: block; font-size: 0.8rem; color: var(--text-label); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; font-weight: 500; }
-        .info-box span { font-size: 1.8rem; color: var(--text-value); font-weight: 600; }
-        .small-value { font-size: 1.1rem !important; color: #ccc !important; }
-        .confirm-btn { display: block; width: 100%; padding: 20px; background-color: var(--confirm-btn); color: #000; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; text-decoration: none; box-sizing: border-box; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; margin-bottom: 40px; }
+        .info-box { background-color: var(--box-bg); padding: 20px; border-radius: 12px; position: relative; box-sizing: border-box; border-left: 4px solid var(--indicator-blue); }
+        .info-box label { display: block; font-size: 0.75rem; color: var(--text-label); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-weight: 600; }
+        .info-box span { font-size: 1.6rem; color: var(--text-value); font-weight: 700; }
+        .small-value { font-size: 1.2rem !important; color: #ffffff !important; }
+        .confirm-btn { display: block; width: 100%; padding: 22px; background-color: var(--confirm-btn); color: #000; border: none; border-radius: 12px; font-size: 1.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; text-decoration: none; box-sizing: border-box; transition: 0.3s; }
+        .confirm-btn:hover { background-color: #ffffff; box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
         
         #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .loader { width: 30px; height: 30px; border: 3px solid rgba(0,212,255,0.1); border-top-color: var(--indicator-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        .loader { width: 40px; height: 40px; border: 4px solid rgba(0,212,255,0.1); border-top-color: var(--indicator-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
@@ -41,14 +42,14 @@
 
     <div id="loading-screen">
         <div class="loader"></div>
-        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--text-label);">Accessing Live Logistics...</p>
+        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Syncing with Ground Control...</p>
     </div>
 
     <div class="dashboard-container">
         <div class="title-header">Joe's Rides Logistics</div>
         <div>
             <span class="flight-id" id="disp-flight">----</span>
-            <span class="status-badge" id="disp-status">UPDATING</span>
+            <span class="status-badge" id="disp-status">SCANNING</span>
         </div>
         
         <div class="separator"></div>
@@ -57,8 +58,8 @@
             <div class="info-box"><label>Departure</label><span id="disp-origin">---</span></div>
             <div class="info-box"><label>Arrival (Dest)</label><span id="disp-dest">---</span></div>
             <div class="info-box"><label>Takeoff Time</label><span id="disp-takeoff" class="small-value">--:--</span></div>
-            <div class="info-box"><label>Est. Landing</label><span id="disp-arrival">--:--</span></div>
-            <div class="info-box"><label>Terminal</label><span id="disp-terminal">---</span></div>
+            <div class="info-box"><label>Est. Landing</label><span id="disp-arrival" class="small-value">--:--</span></div>
+            <div class="info-box"><label>Terminal</label><span id="disp-terminal" class="small-value">---</span></div>
             <div class="info-box"><label>Gate / Baggage</label><span id="disp-gate-status" class="small-value">---</span></div>
         </div>
 
@@ -78,23 +79,25 @@
             }
 
             try {
-                // ADDED: "&flight_status=active" to target flights currently in progress
                 const response = await fetch(`https://api.aviationstack.com/v1/flights?access_key=${API_KEY}&flight_iata=${flightNo}`);
                 const data = await response.json();
 
                 if (data.data && data.data.length > 0) {
-                    // FIX: Find today's flight specifically by checking the status
-                    // We prioritize 'active' or 'scheduled' over 'landed' to avoid showing yesterday's flight.
-                    let f = data.data.find(flight => flight.flight_status === 'active') || 
-                            data.data.find(flight => flight.flight_status === 'scheduled') || 
-                            data.data[0];
+                    // SURGICAL FIX: 
+                    // We sort the results to find the one that is currently ACTIVE or has the most recent departure.
+                    const f = data.data.sort((a, b) => {
+                        if (a.flight_status === 'active') return -1;
+                        if (b.flight_status === 'active') return 1;
+                        return new Date(b.flight_date) - new Date(a.flight_date);
+                    })[0];
                     
                     document.getElementById('disp-flight').innerText = flightNo.toUpperCase();
                     document.getElementById('disp-status').innerText = f.flight_status.toUpperCase();
-                    document.getElementById('disp-origin').innerText = f.departure.iata || "N/A";
-                    document.getElementById('disp-dest').innerText = f.arrival.iata || "N/A";
+                    document.getElementById('disp-origin').innerText = f.departure.iata || "---";
+                    document.getElementById('disp-dest').innerText = f.arrival.iata || "---";
                     document.getElementById('disp-terminal').innerText = f.arrival.terminal || "TBD";
                     
+                    // Taxiing / Gate / Baggage Logic
                     let gateInfo = f.arrival.gate || "TBD";
                     let baggage = f.arrival.baggage ? ` / Car. ${f.arrival.baggage}` : " / No Bag Info";
                     
@@ -108,8 +111,12 @@
                         return new Date(timeStr).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
                     };
 
-                    document.getElementById('disp-takeoff').innerText = formatLocalTime(f.departure.estimated);
-                    document.getElementById('disp-arrival').innerText = formatLocalTime(f.arrival.estimated);
+                    // Use estimated landing time if actual isn't available yet
+                    const landingTime = f.arrival.estimated || f.arrival.scheduled;
+                    const takeoffTime = f.departure.actual || f.departure.estimated;
+
+                    document.getElementById('disp-takeoff').innerText = formatLocalTime(takeoffTime);
+                    document.getElementById('disp-arrival').innerText = formatLocalTime(landingTime);
 
                     document.getElementById('loading-screen').style.display = 'none';
                 } else {
