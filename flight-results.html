@@ -6,7 +6,7 @@
     <title>Flight Status Dashboard | Joe's Rides Logistics</title>
     <style>
         :root {
-            --bg-color: #0d1117; /* Darker navy/black for that premium look */
+            --bg-color: #0d1117;
             --box-bg: #161b22;
             --indicator-blue: #00d4ff;
             --text-label: #8c9cb3;
@@ -42,7 +42,7 @@
 
     <div id="loading-screen">
         <div class="loader"></div>
-        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Syncing with Ground Control...</p>
+        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Syncing Local Time (EST)...</p>
     </div>
 
     <div class="dashboard-container">
@@ -83,8 +83,7 @@
                 const data = await response.json();
 
                 if (data.data && data.data.length > 0) {
-                    // SURGICAL FIX: 
-                    // We sort the results to find the one that is currently ACTIVE or has the most recent departure.
+                    // Filter for active or scheduled flight
                     const f = data.data.sort((a, b) => {
                         if (a.flight_status === 'active') return -1;
                         if (b.flight_status === 'active') return 1;
@@ -97,26 +96,29 @@
                     document.getElementById('disp-dest').innerText = f.arrival.iata || "---";
                     document.getElementById('disp-terminal').innerText = f.arrival.terminal || "TBD";
                     
-                    // Taxiing / Gate / Baggage Logic
                     let gateInfo = f.arrival.gate || "TBD";
                     let baggage = f.arrival.baggage ? ` / Car. ${f.arrival.baggage}` : " / No Bag Info";
-                    
                     if (f.flight_status === 'landed') {
                         gateInfo = f.arrival.actual ? `Gate ${gateInfo}` : "TAXIING";
                     }
                     document.getElementById('disp-gate-status').innerText = gateInfo + baggage;
                     
-                    const formatLocalTime = (timeStr) => {
+                    // FIXED: This now forces the conversion to New York Local Time (EST/EDT)
+                    const formatNYTime = (timeStr) => {
                         if(!timeStr) return "--:--";
-                        return new Date(timeStr).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'});
+                        const date = new Date(timeStr);
+                        return date.toLocaleTimeString('en-US', {
+                            timeZone: 'America/New_York',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                        });
                     };
 
-                    // Use estimated landing time if actual isn't available yet
                     const landingTime = f.arrival.estimated || f.arrival.scheduled;
                     const takeoffTime = f.departure.actual || f.departure.estimated;
 
-                    document.getElementById('disp-takeoff').innerText = formatLocalTime(takeoffTime);
-                    document.getElementById('disp-arrival').innerText = formatLocalTime(landingTime);
+                    document.getElementById('disp-takeoff').innerText = formatNYTime(takeoffTime);
+                    document.getElementById('disp-arrival').innerText = formatNYTime(landingTime);
 
                     document.getElementById('loading-screen').style.display = 'none';
                 } else {
