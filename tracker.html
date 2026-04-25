@@ -9,7 +9,7 @@
         :root {
             --neon-blue: #00d4ff;
             --dark-bg: #0f172a;
-            --glass: rgba(15, 23, 42, 0.9);
+            --glass: rgba(15, 23, 42, 0.95);
             --gradient: linear-gradient(45deg, #2563eb, #7c3aed);
         }
 
@@ -17,75 +17,70 @@
             margin: 0;
             padding: 0;
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            background: #0f172a;
             color: white;
-            min-height: 100vh;
+            overflow-x: hidden;
         }
 
         .container {
+            width: 100%;
             max-width: 1000px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 20px 10px;
+            box-sizing: border-box;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .logo-text {
             font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
+            font-size: 1.5rem;
             background: var(--gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: 2px;
         }
 
         .tracker-card {
             background: var(--glass);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.15);
-            backdrop-filter: blur(10px);
-            min-height: 600px;
+            border-radius: 15px;
+            padding: 10px;
+            min-height: 500px; /* Reduced for mobile */
+            position: relative;
         }
 
-        .instruction-text {
-            text-align: center;
-            color: var(--neon-blue);
-            margin-bottom: 20px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* The Widget Container */
+        /* Mobile-Friendly Embed Container */
         .widget-wrapper {
+            position: relative;
             width: 100%;
-            height: 600px;
-            border-radius: 12px;
+            height: 500px;
+            border-radius: 10px;
             overflow: hidden;
             background: #000;
         }
 
+        /* Overlay fix for scrolling on mobile */
+        .widget-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
         .btn-back {
-            display: inline-block;
-            margin-top: 30px;
-            padding: 12px 30px;
+            display: block;
+            margin: 20px auto;
+            width: fit-content;
+            padding: 12px 25px;
             border: 1px solid var(--neon-blue);
             color: var(--neon-blue);
             text-decoration: none;
-            border-radius: 5px;
-            transition: 0.3s;
+            border-radius: 8px;
             font-weight: 600;
-        }
-
-        .btn-back:hover {
-            background: var(--neon-blue);
-            color: var(--dark-bg);
-            box-shadow: 0 0 20px var(--neon-blue);
+            text-transform: uppercase;
+            font-size: 0.8rem;
         }
     </style>
 </head>
@@ -94,23 +89,17 @@
     <div class="container">
         <div class="header">
             <div class="logo-text">JOE'S RIDES</div>
-            <p>Real-Time Logistics & Flight Monitoring</p>
+            <p style="font-size: 0.8rem; letter-spacing: 1px;">NY AIRPORT MONITORING</p>
         </div>
 
         <div class="tracker-card">
-            <p class="instruction-text">Enter Flight Number Below to Track Your Arrival</p>
-            
             <div class="widget-wrapper">
-                <iframe src="https://www.flightradar24.com/simple_index.php?lat=40.6&lon=-73.7&z=8&airports=JFK,LGA,EWR" 
-                        width="100%" 
-                        height="100%" 
-                        frameborder="0"></iframe>
+                <iframe src="https://www.flightradar24.com/simple_index.php?lat=40.64&lon=-73.78&z=10&airports=JFK,LGA" 
+                        allowfullscreen></iframe>
             </div>
         </div>
 
-        <div style="text-align: center;">
-            <a href="index.html" class="btn-back">← Return to Dashboard</a>
-        </div>
+        <a href="index.html" class="btn-back">← Back to Dashboard</a>
     </div>
 
 </body>
