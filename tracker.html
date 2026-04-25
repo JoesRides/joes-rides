@@ -3,35 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Joe's Rides - Flight Tracker</title>
+    <title>Flight Tracker | Joe's Rides</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f4; }
-        .search-container { background: white; padding: 30px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input { padding: 10px; width: 250px; border: 1px solid #ccc; border-radius: 5px; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        button:hover { background: #0056b3; }
+        :root { --primary: #007bff; --bg: #0a0a0a; --card: #161616; --text: #e0e0e0; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .tracker-box { background: var(--card); padding: 40px; border-radius: 20px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; max-width: 400px; width: 90%; }
+        h1 { color: white; margin-bottom: 10px; font-weight: 300; }
+        p { color: #888; margin-bottom: 30px; font-size: 0.9em; }
+        input { background: #222; border: 1px solid #444; color: white; padding: 15px; width: 80%; border-radius: 8px; font-size: 1.1em; margin-bottom: 20px; outline: none; }
+        input:focus { border-color: var(--primary); }
+        .btn { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; }
+        .btn:hover { background: #0056b3; transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
-    <h2>Track Your Arrival</h2>
-    <div class="search-container">
-        <p>Enter your flight number to see live gate and terminal info.</p>
-        <input type="text" id="flightInput" placeholder="e.g. AA123 or DL456">
-        <button onclick="saveAndRedirect()">Track Flight</button>
-    </div>
+<div class="tracker-box">
+    <h1>Flight Tracker</h1>
+    <p>Enter your flight number for live arrival updates.</p>
+    <input type="text" id="flightInput" placeholder="Ex: AA123" autocomplete="off">
+    <button class="btn" onclick="goTrack()">TRACK ARRIVAL</button>
+</div>
 
-    <script>
-        function saveAndRedirect() {
-            const flight = document.getElementById('flightInput').value.trim();
-            if (flight) {
-                // Store the flight number so the next page can grab it
-                localStorage.setItem('activeFlight', flight);
-                window.location.href = 'flight-results.html';
-            } else {
-                alert("Please enter a flight number.");
-            }
+<script>
+    function goTrack() {
+        const val = document.getElementById('flightInput').value.trim();
+        if(val) {
+            localStorage.setItem('activeFlight', val);
+            window.location.href = 'flight-results.html';
         }
-    </script>
+    }
+</script>
+
 </body>
 </html>
