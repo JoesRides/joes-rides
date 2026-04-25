@@ -112,7 +112,7 @@
 
     <div class="tracker-container">
         <h2>✈️ Flight Tracker</h2>
-        <p>REAL-TIME LOGISTICS TERMINAL<br>DIRECT SATELLITE UPLINK</p>
+        <p>DIRECT SATELLITE UPLINK<br>LIVE LOGISTICS PORTAL</p>
         
         <input type="text" id="flightInput" placeholder="ENTER FLIGHT #" autocomplete="off" />
         <button class="track-btn" onclick="trackFlight()">Initiate Tracking</button>
@@ -125,11 +125,11 @@
             let flightNumber = document.getElementById('flightInput').value.trim();
             
             if (flightNumber) {
-                // CLEANUP: Remove any spaces (converts "B6 514" to "B6514")
+                // Remove all spaces so "B6 514" becomes "B6514"
                 flightNumber = flightNumber.replace(/\s+/g, '');
                 
-                // Open Google's live tracker in a new tab
-                const googleUrl = `https://www.google.com/search?q=flight+tracker+${encodeURIComponent(flightNumber)}`;
+                // SURGICAL SEARCH: Sends ONLY the flight number to Google
+                const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(flightNumber)}`;
                 window.open(googleUrl, '_blank');
             } else {
                 alert("Please enter a flight number first!");
