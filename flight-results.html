@@ -2,204 +2,92 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Logistics | Joe's Rides</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=Orbitron:wght@800&display=swap" rel="stylesheet">
+    <title>Live Flight Status - Joe's Rides</title>
     <style>
-        :root {
-            --neon-blue: #00d4ff;
-            --slate: #1e293b;
-            --dark: #0f172a;
-            --accent: #2563eb;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif;
-            background-color: var(--dark);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .results-card {
-            width: 90%;
-            max-width: 500px;
-            background: var(--slate);
-            border: 1px solid var(--neon-blue);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
-            padding-bottom: 15px;
-        }
-
-        .brand {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--neon-blue);
-            font-size: 0.9rem;
-            letter-spacing: 3px;
-            margin-bottom: 5px;
-        }
-
-        .flight-id {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            margin: 5px 0;
-        }
-
-        /* The Statistics Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .stat-item {
-            background: rgba(15, 23, 42, 0.5);
-            padding: 15px;
-            border-radius: 12px;
-            border-left: 3px solid var(--neon-blue);
-        }
-
-        .label {
-            font-size: 0.7rem;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-            display: block;
-        }
-
-        .value {
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .full-width {
-            grid-column: span 2;
-        }
-
-        /* Animation Overlay */
-        #scanner {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--dark);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-
-        .scan-line {
-            width: 80%;
-            height: 2px;
-            background: var(--neon-blue);
-            box-shadow: 0 0 15px var(--neon-blue);
-            animation: move 2s infinite ease-in-out;
-        }
-
-        @keyframes move {
-            0% { transform: translateY(-100px); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translateY(100px); opacity: 0; }
-        }
-
-        .btn-done {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            background: var(--neon-blue);
-            color: var(--dark);
-            text-decoration: none;
-            text-align: center;
-            border-radius: 10px;
-            font-weight: 800;
-            text-transform: uppercase;
-            margin-top: 10px;
-        }
+        body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; padding: 20px; }
+        .status-card { background: #333; padding: 20px; border-radius: 15px; display: inline-block; margin-top: 50px; width: 350px; border: 2px solid #007bff; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        td { padding: 10px; border-bottom: 1px solid #444; text-align: left; }
+        .label { color: #888; font-size: 0.8em; }
+        .value { font-weight: bold; font-size: 1.1em; color: #00ffcc; }
+        #loadingMsg { font-style: italic; color: #ffcc00; }
     </style>
 </head>
 <body>
 
-    <div id="scanner">
-        <div class="scan-line"></div>
-        <p style="font-family: 'Orbitron'; color: var(--neon-blue); margin-top: 20px; font-size: 0.8rem;">SCANNING AIRSPACE...</p>
-    </div>
+    <h1>Flight Status</h1>
+    <div id="loadingMsg">Scanning Radar...</div>
 
-    <div class="results-card">
-        <div class="header">
-            <div class="brand">JOE'S RIDES LOGISTICS</div>
-            <div class="flight-id" id="display-flight">---</div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-item">
-                <span class="label">Departure</span>
-                <span class="value" id="dep-airport">---</span>
-            </div>
-            <div class="stat-item">
-                <span class="label">Arrival</span>
-                <span class="value" id="arr-airport">---</span>
-            </div>
-            <div class="stat-item">
-                <span class="label">Takeoff Time</span>
-                <span class="value" id="takeoff">---</span>
-            </div>
-            <div class="stat-item">
-                <span class="label">Landing Time</span>
-                <span class="value" id="landing">---</span>
-            </div>
-            <div class="stat-item">
-                <span class="label">Terminal</span>
-                <span class="value" id="terminal">---</span>
-            </div>
-            <div class="stat-item">
-                <span class="label">Gate / Baggage</span>
-                <span class="value" id="gate">---</span>
-            </div>
-        </div>
-
-        <a href="index.html" class="btn-done">Confirm & Exit</a>
+    <div class="status-card" id="resultCard" style="display:none;">
+        <h2 id="flightDisplay">----</h2>
+        <table>
+            <tr>
+                <td class="label">STATUS</td>
+                <td class="value" id="status">---</td>
+            </tr>
+            <tr>
+                <td class="label">FROM</td>
+                <td class="value" id="origin">---</td>
+            </tr>
+            <tr>
+                <td class="label">EST. ARRIVAL</td>
+                <td class="value" id="arrivalTime">---</td>
+            </tr>
+            <tr>
+                <td class="label">TERMINAL</td>
+                <td class="value" id="terminal">---</td>
+            </tr>
+            <tr>
+                <td class="label">GATE</td>
+                <td class="value" id="gate">---</td>
+            </tr>
+        </table>
+        <p><button onclick="window.location.href='tracker.html'" style="margin-top:15px; padding:8px;">New Search</button></p>
     </div>
 
     <script>
-        // Extract Flight Number from URL
-        const params = new URLSearchParams(window.location.search);
-        const flightNum = params.get('q') || "UNKNOWN";
-        document.getElementById('display-flight').innerText = flightNum.toUpperCase();
+        const apiKey = '6d200514eb3859cb447695d6f04d3711';
+        const flightNum = localStorage.getItem('activeFlight');
 
-        // SIMULATION LOGIC: Since we are not using a paid API, 
-        // we display a professional data-loading sequence.
-        // In a live production environment, this would fetch from FlightStats.
-        
-        setTimeout(() => {
-            // Populate with data (This would be your API fetch result)
-            document.getElementById('dep-airport').innerText = "LAX";
-            document.getElementById('arr-airport').innerText = "JFK";
-            document.getElementById('takeoff').innerText = "10:15 AM";
-            document.getElementById('landing').innerText = "6:45 PM";
-            document.getElementById('terminal').innerText = "Terminal 4";
-            document.getElementById('gate').innerText = "B23 / Carousel 5";
+        if (!flightNum) {
+            document.getElementById('loadingMsg').innerText = "No flight number found. Please go back.";
+        } else {
+            fetchData(flightNum);
+        }
 
-            // Hide scanner
-            document.getElementById('scanner').style.display = 'none';
-        }, 2500);
+        async function fetchData(flight) {
+            try {
+                // Aviationstack free tier requires HTTP
+                const url = `http://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${flight}`;
+                
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.data && result.data.length > 0) {
+                    const data = result.data[0];
+                    
+                    document.getElementById('loadingMsg').style.display = 'none';
+                    document.getElementById('resultCard').style.display = 'inline-block';
+
+                    // Update UI
+                    document.getElementById('flightDisplay').innerText = "Flight " + flight.toUpperCase();
+                    document.getElementById('status').innerText = data.flight_status.toUpperCase();
+                    document.getElementById('origin').innerText = data.departure.iata;
+                    document.getElementById('terminal').innerText = data.arrival.terminal || "TBD";
+                    document.getElementById('gate').innerText = data.arrival.gate || "TBD";
+                    
+                    // Format Time
+                    const time = new Date(data.arrival.estimated);
+                    document.getElementById('arrivalTime').innerText = time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                } else {
+                    document.getElementById('loadingMsg').innerText = "No live data found for " + flight + ". Check the number and try again.";
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loadingMsg').innerText = "Error connecting to flight radar.";
+            }
+        }
     </script>
 </body>
 </html>
