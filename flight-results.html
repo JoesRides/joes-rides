@@ -42,7 +42,7 @@
 
     <div id="loading-screen">
         <div class="loader"></div>
-        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Syncing Local Time (EST)...</p>
+        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Syncing with NY Ground Control...</p>
     </div>
 
     <div class="dashboard-container">
@@ -83,7 +83,7 @@
                 const data = await response.json();
 
                 if (data.data && data.data.length > 0) {
-                    // Filter for active or scheduled flight
+                    // Sorting to get the active flight for today
                     const f = data.data.sort((a, b) => {
                         if (a.flight_status === 'active') return -1;
                         if (b.flight_status === 'active') return 1;
@@ -103,19 +103,25 @@
                     }
                     document.getElementById('disp-gate-status').innerText = gateInfo + baggage;
                     
-                    // FIXED: This now forces the conversion to New York Local Time (EST/EDT)
+                    // IMPROVED TIMEZONE LOGIC
                     const formatNYTime = (timeStr) => {
                         if(!timeStr) return "--:--";
+                        
+                        // Parse the string into a Date object
                         const date = new Date(timeStr);
-                        return date.toLocaleTimeString('en-US', {
+                        
+                        // Use Intl.DateTimeFormat for the most accurate NY conversion
+                        return new Intl.DateTimeFormat('en-US', {
                             timeZone: 'America/New_York',
                             hour: 'numeric',
-                            minute: '2-digit'
-                        });
+                            minute: '2-digit',
+                            hour12: true
+                        }).format(date);
                     };
 
+                    // Choose the best available time field for landing/takeoff
                     const landingTime = f.arrival.estimated || f.arrival.scheduled;
-                    const takeoffTime = f.departure.actual || f.departure.estimated;
+                    const takeoffTime = f.departure.actual || f.departure.estimated || f.departure.scheduled;
 
                     document.getElementById('disp-takeoff').innerText = formatNYTime(takeoffTime);
                     document.getElementById('disp-arrival').innerText = formatNYTime(landingTime);
