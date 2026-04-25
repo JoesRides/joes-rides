@@ -42,7 +42,7 @@
 
     <div id="loading-screen">
         <div class="loader"></div>
-        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Smart-Syncing Logistics...</p>
+        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Applying Brute-Force Time Sync...</p>
     </div>
 
     <div class="dashboard-container">
@@ -83,6 +83,7 @@
                 const data = await response.json();
 
                 if (data.data && data.data.length > 0) {
+                    // Sorting to grab the most relevant active flight
                     const f = data.data.sort((a, b) => {
                         if (a.flight_status === 'active') return -1;
                         if (b.flight_status === 'active') return 1;
@@ -102,35 +103,34 @@
                     }
                     document.getElementById('disp-gate-status').innerText = gateInfo + baggage;
                     
-                    // SMART-SYNC LOGIC: Detects if offset is needed
-                    const formatSmartTime = (timeStr) => {
+                    // BRUTE FORCE CALCULATION: Manual -4 Hour Shift
+                    const formatManualTime = (timeStr) => {
                         if(!timeStr) return "--:--";
                         
-                        let d = new Date(timeStr);
-                        let now = new Date();
+                        // Parse the raw hours/minutes
+                        const timePart = timeStr.split('T')[1]; 
+                        let [hours, minutes] = timePart.split(':');
                         
-                        // Check if the difference between now and the flight time is physically impossible 
-                        // (i.e., if it looks like it's 4+ hours off from reality, we treat as UTC)
-                        let hourDiff = Math.abs(d.getUTCHours() - d.getHours());
+                        let h = parseInt(hours);
+                        // BRUTE FORCE: Subtract 4 hours to convert UTC to NY Time
+                        h = h - 4;
                         
-                        // If browser didn't apply offset (hourDiff is 0), force UTC treat
-                        if (hourDiff === 0 && !timeStr.includes('Z')) {
-                            d = new Date(timeStr + 'Z');
-                        }
+                        // Handle midnight wrap-around
+                        if (h < 0) h = h + 24;
+                        if (h >= 24) h = h - 24;
 
-                        return d.toLocaleTimeString('en-US', {
-                            timeZone: 'America/New_York',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                        });
+                        const ampm = h >= 12 ? 'PM' : 'AM';
+                        h = h % 12;
+                        h = h ? h : 12; // convert 0 to 12
+
+                        return `${h}:${minutes} ${ampm}`;
                     };
 
                     const landingTime = f.arrival.estimated || f.arrival.scheduled;
                     const takeoffTime = f.departure.actual || f.departure.estimated || f.departure.scheduled;
 
-                    document.getElementById('disp-takeoff').innerText = formatSmartTime(takeoffTime);
-                    document.getElementById('disp-arrival').innerText = formatSmartTime(landingTime);
+                    document.getElementById('disp-takeoff').innerText = formatManualTime(takeoffTime);
+                    document.getElementById('disp-arrival').innerText = formatManualTime(landingTime);
 
                     document.getElementById('loading-screen').style.display = 'none';
                 } else {
