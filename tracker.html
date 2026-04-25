@@ -12,127 +12,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flight Tracker | Joe's Rides</title>
     <style>
-        :root {
-            --neon-blue: #00d4ff;
-            --neon-purple: #9d00ff;
-            --dark-bg: #05060a;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--dark-bg);
-            background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('joesrideswithseltos.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-        }
-
-        .tracker-container {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            padding: 50px 40px;
-            border-radius: 24px;
-            border: 1px solid rgba(157, 0, 255, 0.5);
-            box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
-            max-width: 420px;
-            width: 90%;
-        }
-
-        h2 {
-            margin-top: 0;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            text-shadow: 0 0 15px var(--neon-blue);
-            font-size: 1.8rem;
-        }
-
-        p {
-            font-size: 0.9rem;
-            color: #bbb;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 18px;
-            margin-bottom: 25px;
-            border-radius: 12px;
-            border: 1px solid rgba(0, 212, 255, 0.4);
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            font-size: 1.2rem;
-            box-sizing: border-box;
-            text-transform: uppercase;
-            text-align: center;
-        }
-
-        .track-btn {
-            background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
-            color: white;
-            border: none;
-            padding: 18px 30px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            width: 100%;
-            border-radius: 12px;
-            letter-spacing: 2px;
-            transition: 0.3s;
-        }
-
-        .track-btn:hover {
-            filter: brightness(1.2);
-            transform: scale(1.02);
-        }
-
-        .back-link {
-            display: block;
-            margin-top: 30px;
-            color: var(--neon-blue);
-            text-decoration: none;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.7;
-        }
+        :root { --neon-blue: #00d4ff; --neon-purple: #9d00ff; --dark-bg: #05060a; }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--dark-bg); background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('joesrideswithseltos.jpg'); background-size: cover; background-position: center; background-attachment: fixed; color: #ffffff; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }
+        .tracker-container { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 50px 40px; border-radius: 24px; border: 1px solid rgba(157, 0, 255, 0.5); box-shadow: 0 0 40px rgba(0, 212, 255, 0.2); max-width: 420px; width: 90%; }
+        h2 { margin-top: 0; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 0 15px var(--neon-blue); font-size: 1.8rem; }
+        p { font-size: 0.9rem; color: #bbb; margin-bottom: 30px; line-height: 1.6; }
+        input[type="text"] { width: 100%; padding: 18px; margin-bottom: 25px; border-radius: 12px; border: 1px solid rgba(0, 212, 255, 0.4); background: rgba(0, 0, 0, 0.6); color: white; font-size: 1.2rem; box-sizing: border-box; text-transform: uppercase; text-align: center; }
+        .track-btn { background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple)); color: white; border: none; padding: 18px 30px; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; cursor: pointer; width: 100%; border-radius: 12px; letter-spacing: 2px; transition: 0.3s; }
+        .track-btn:hover { filter: brightness(1.2); transform: scale(1.02); }
+        .back-link { display: block; margin-top: 30px; color: var(--neon-blue); text-decoration: none; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
     </style>
 </head>
 <body>
-
     <div class="tracker-container">
         <h2>✈️ Flight Tracker</h2>
         <p>RIDING THE WAVES OF THE FUTURE<br>LIVE LOGISTICS PORTAL</p>
-        
         <input type="text" id="flightInput" placeholder="ENTER FLIGHT #" autocomplete="off" />
         <button class="track-btn" onclick="trackFlight()">Initiate Tracking</button>
-
         <a href="index.html" class="back-link">← Return to Home</a>
     </div>
-
     <script>
         function trackFlight() {
             let flightNumber = document.getElementById('flightInput').value.trim();
             if (flightNumber) {
-                // CLEANUP: Strip spaces so "B6 514" works
                 flightNumber = flightNumber.replace(/\s+/g, '');
-                // SEND TO INTERNAL PAGE
                 window.location.href = `flight-results.html?flight=${encodeURIComponent(flightNumber)}`;
             } else {
                 alert("Please enter a flight number first!");
             }
         }
-
         document.getElementById('flightInput').addEventListener('keypress', function (e) {
             if (e.key === 'Enter') trackFlight();
         });
