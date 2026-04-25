@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Status | Joe's Rides</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Top Branded Bar */
+        .top-bar {
+            background: rgba(30, 41, 59, 0.9);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #00d4ff;
+            backdrop-filter: blur(10px);
+        }
+
+        .brand {
+            font-family: 'Orbitron', sans-serif;
+            color: #00d4ff;
+            text-transform: uppercase;
+            font-size: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .btn-back {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            border: 1px solid #334155;
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+
+        /* The Internal Results Window */
+        .results-frame {
+            flex-grow: 1;
+            width: 100%;
+            border: none;
+            background: #ffffff; /* Flight data usually needs a light bg to be readable */
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 60px);
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            transition: opacity 1s ease;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 212, 255, 0.1);
+            border-left-color: #00d4ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="brand">Joe's Rides Status</div>
+        <a href="index.html" class="btn-back">Close Tracker</a>
+    </div>
+
+    <div id="loader" class="loading-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; font-family: 'Orbitron'; font-size: 0.7rem; color: #00d4ff;">FETCHING LIVE DATA...</p>
+    </div>
+
+    <iframe id="resultsIframe" class="results-frame" src=""></iframe>
+
+    <script>
+        // Get the flight number from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const flightNum = urlParams.get('q');
+
+        if (flightNum) {
+            // Point the iframe to Google's specialized flight result page
+            const iframe = document.getElementById('resultsIframe');
+            iframe.src = "https://www.google.com/search?q=" + encodeURIComponent(flightNum) + "&igu=1";
+            
+            // Hide the loader after a few seconds
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loader').style.display = 'none';
+                }, 1000);
+            }, 2000);
+        }
+    </script>
+
+</body>
+</html>
