@@ -42,7 +42,7 @@
 
     <div id="loading-screen">
         <div class="loader"></div>
-        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Syncing with NY Ground Control...</p>
+        <p style="text-transform:uppercase; font-size:0.8rem; color:var(--indicator-blue); letter-spacing: 2px;">Syncing NY Ground Control...</p>
     </div>
 
     <div class="dashboard-container">
@@ -83,7 +83,6 @@
                 const data = await response.json();
 
                 if (data.data && data.data.length > 0) {
-                    // Sorting to get the active flight for today
                     const f = data.data.sort((a, b) => {
                         if (a.flight_status === 'active') return -1;
                         if (b.flight_status === 'active') return 1;
@@ -103,14 +102,14 @@
                     }
                     document.getElementById('disp-gate-status').innerText = gateInfo + baggage;
                     
-                    // IMPROVED TIMEZONE LOGIC
+                    // CRITICAL FIX: Ensure browser treats API time as UTC (GMT)
                     const formatNYTime = (timeStr) => {
                         if(!timeStr) return "--:--";
                         
-                        // Parse the string into a Date object
-                        const date = new Date(timeStr);
+                        // If time doesn't end in 'Z', add it so the browser knows it's UTC
+                        let correctedTime = timeStr.endsWith('Z') || timeStr.includes('+') ? timeStr : timeStr + 'Z';
+                        const date = new Date(correctedTime);
                         
-                        // Use Intl.DateTimeFormat for the most accurate NY conversion
                         return new Intl.DateTimeFormat('en-US', {
                             timeZone: 'America/New_York',
                             hour: 'numeric',
@@ -119,7 +118,6 @@
                         }).format(date);
                     };
 
-                    // Choose the best available time field for landing/takeoff
                     const landingTime = f.arrival.estimated || f.arrival.scheduled;
                     const takeoffTime = f.departure.actual || f.departure.estimated || f.departure.scheduled;
 
