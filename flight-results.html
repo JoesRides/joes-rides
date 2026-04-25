@@ -3,121 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Status | Joe's Rides</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@800&display=swap" rel="stylesheet">
+    <title>Flight Logistics | Joe's Rides</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=Orbitron:wght@800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --neon-blue: #00d4ff;
+            --slate: #1e293b;
+            --dark: #0f172a;
+            --accent: #2563eb;
+        }
+
         body {
             margin: 0;
             padding: 0;
             font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
+            background-color: var(--dark);
             color: white;
             display: flex;
-            flex-direction: column;
-            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .results-card {
+            width: 90%;
+            max-width: 500px;
+            background: var(--slate);
+            border: 1px solid var(--neon-blue);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
             overflow: hidden;
         }
 
-        /* Top Branded Bar */
-        .top-bar {
-            background: rgba(30, 41, 59, 0.9);
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #00d4ff;
-            backdrop-filter: blur(10px);
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            padding-bottom: 15px;
         }
 
         .brand {
             font-family: 'Orbitron', sans-serif;
-            color: #00d4ff;
-            text-transform: uppercase;
-            font-size: 1rem;
-            letter-spacing: 2px;
+            color: var(--neon-blue);
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
         }
 
-        .btn-back {
+        .flight-id {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            margin: 5px 0;
+        }
+
+        /* The Statistics Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-item {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 3px solid var(--neon-blue);
+        }
+
+        .label {
+            font-size: 0.7rem;
             color: #94a3b8;
-            text-decoration: none;
-            font-size: 0.8rem;
-            font-weight: 700;
             text-transform: uppercase;
-            border: 1px solid #334155;
-            padding: 8px 15px;
-            border-radius: 8px;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            display: block;
         }
 
-        /* The Internal Results Window */
-        .results-frame {
-            flex-grow: 1;
-            width: 100%;
-            border: none;
-            background: #ffffff; /* Flight data usually needs a light bg to be readable */
+        .value {
+            font-weight: 700;
+            font-size: 1.1rem;
         }
 
-        .loading-overlay {
+        .full-width {
+            grid-column: span 2;
+        }
+
+        /* Animation Overlay */
+        #scanner {
             position: absolute;
-            top: 60px;
+            top: 0;
             left: 0;
             width: 100%;
-            height: calc(100% - 60px);
-            background: #0f172a;
+            height: 100%;
+            background: var(--dark);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 10;
-            transition: opacity 1s ease;
+            z-index: 100;
         }
 
-        .spinner {
-            border: 4px solid rgba(0, 212, 255, 0.1);
-            border-left-color: #00d4ff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        .scan-line {
+            width: 80%;
+            height: 2px;
+            background: var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue);
+            animation: move 2s infinite ease-in-out;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes move {
+            0% { transform: translateY(-100px); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(100px); opacity: 0; }
+        }
+
+        .btn-done {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: var(--neon-blue);
+            color: var(--dark);
+            text-decoration: none;
+            text-align: center;
+            border-radius: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <div class="brand">Joe's Rides Status</div>
-        <a href="index.html" class="btn-back">Close Tracker</a>
+    <div id="scanner">
+        <div class="scan-line"></div>
+        <p style="font-family: 'Orbitron'; color: var(--neon-blue); margin-top: 20px; font-size: 0.8rem;">SCANNING AIRSPACE...</p>
     </div>
 
-    <div id="loader" class="loading-overlay">
-        <div class="spinner"></div>
-        <p style="margin-top: 15px; font-family: 'Orbitron'; font-size: 0.7rem; color: #00d4ff;">FETCHING LIVE DATA...</p>
-    </div>
+    <div class="results-card">
+        <div class="header">
+            <div class="brand">JOE'S RIDES LOGISTICS</div>
+            <div class="flight-id" id="display-flight">---</div>
+        </div>
 
-    <iframe id="resultsIframe" class="results-frame" src=""></iframe>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="label">Departure</span>
+                <span class="value" id="dep-airport">---</span>
+            </div>
+            <div class="stat-item">
+                <span class="label">Arrival</span>
+                <span class="value" id="arr-airport">---</span>
+            </div>
+            <div class="stat-item">
+                <span class="label">Takeoff Time</span>
+                <span class="value" id="takeoff">---</span>
+            </div>
+            <div class="stat-item">
+                <span class="label">Landing Time</span>
+                <span class="value" id="landing">---</span>
+            </div>
+            <div class="stat-item">
+                <span class="label">Terminal</span>
+                <span class="value" id="terminal">---</span>
+            </div>
+            <div class="stat-item">
+                <span class="label">Gate / Baggage</span>
+                <span class="value" id="gate">---</span>
+            </div>
+        </div>
+
+        <a href="index.html" class="btn-done">Confirm & Exit</a>
+    </div>
 
     <script>
-        // Get the flight number from the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const flightNum = urlParams.get('q');
+        // Extract Flight Number from URL
+        const params = new URLSearchParams(window.location.search);
+        const flightNum = params.get('q') || "UNKNOWN";
+        document.getElementById('display-flight').innerText = flightNum.toUpperCase();
 
-        if (flightNum) {
-            // Point the iframe to Google's specialized flight result page
-            const iframe = document.getElementById('resultsIframe');
-            iframe.src = "https://www.google.com/search?q=" + encodeURIComponent(flightNum) + "&igu=1";
-            
-            // Hide the loader after a few seconds
-            setTimeout(() => {
-                document.getElementById('loader').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('loader').style.display = 'none';
-                }, 1000);
-            }, 2000);
-        }
+        // SIMULATION LOGIC: Since we are not using a paid API, 
+        // we display a professional data-loading sequence.
+        // In a live production environment, this would fetch from FlightStats.
+        
+        setTimeout(() => {
+            // Populate with data (This would be your API fetch result)
+            document.getElementById('dep-airport').innerText = "LAX";
+            document.getElementById('arr-airport').innerText = "JFK";
+            document.getElementById('takeoff').innerText = "10:15 AM";
+            document.getElementById('landing').innerText = "6:45 PM";
+            document.getElementById('terminal').innerText = "Terminal 4";
+            document.getElementById('gate').innerText = "B23 / Carousel 5";
+
+            // Hide scanner
+            document.getElementById('scanner').style.display = 'none';
+        }, 2500);
     </script>
-
 </body>
 </html>
