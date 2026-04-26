@@ -449,20 +449,23 @@ function update(){
   if(shieldTimer>0){
     balls.forEach(b=>{if(!b.stuck&&b.dy>0&&b.y+b.r>H-22){b.y=H-22-b.r;b.dy=-Math.abs(b.dy);}});
   }
-  if(balls.every(b=>b.y>H+20)&&gs===ST.PLAY){lives--;spawnDP();sfxDeath();if(lives<=0){
-  gs=ST.OVER;say('');
-  const hi=getHi();if(score>hi)setHi(score);
-  refreshHiDisplay();
-  setTimeout(()=>{
-    showOverlay(
-      'SYSTEM SHUTDOWN','#ff0044',
-      `SCORE: ${String(score).padStart(6,'0')}   SECTOR: ${level}   BEST: ${String(Math.max(score,hi)).padStart(6,'0')}`,
-      'TRY AGAIN',
-      ()=>{hideOverlay();location.reload()}
-    );
-  },600);
-}else startTurn()}
-  if(bricks.length>0&&bricks.every(b=>!b.s)&&gs===ST.PLAY){
+  if(balls.every(b=>b.y>H+20)&&gs===ST.PLAY){
+    lives--;spawnDP();sfxDeath();
+    if(lives<=0){
+      gs=ST.OVER;say('');
+      const hi=getHi();if(score>hi)setHi(score);
+      refreshHiDisplay();
+      setTimeout(()=>{
+        showOverlay('SYSTEM SHUTDOWN','#ff0044',
+          `SCORE: ${String(score).padStart(6,'0')}   SECTOR: ${level}   BEST: ${String(Math.max(score,hi)).padStart(6,'0')}`,
+          'TRY AGAIN',()=>{hideOverlay();location.reload()});
+      },600);
+    }else{
+      startTurn();
+    }
+  }
+  // Level clear — only when playing and bricks actually exist
+  if(gs===ST.PLAY&&bricks.length>0&&bricks.every(b=>!b.s)){
     if(level>=10){
       gs=ST.OVER;sfxVictory();say('');
       if(score>getHi())setHi(score);refreshHiDisplay();
@@ -471,7 +474,7 @@ function update(){
           `YOU BROKE THROUGH  |  SCORE: ${String(score).padStart(6,'0')}  |  BEST: ${String(getHi()).padStart(6,'0')}`,
           'PLAY AGAIN',()=>{hideOverlay();location.reload()});
       },800);
-    } else {
+    }else{
       nextSector();
     }
   }
@@ -543,7 +546,10 @@ function nextSector(){
   const done=level;
   level++;
   baseSpeed=Math.min(BASE_SPD+(level-1)*.35,BASE_SPD*1.9);
-  gs=ST.OVER; // block all input while cutscene plays
+  gs=ST.OVER;       // block all input
+  bricks=[];        // clear immediately so level-clear check can't re-fire
+  balls=[];         // clear balls too
+  powerups=[];bullets=[];
   if(AC)startMusic(false);
   if(score>getHi())setHi(score);
   refreshHiDisplay();
