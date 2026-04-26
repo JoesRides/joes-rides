@@ -18,7 +18,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Or
 #cutscene{position:fixed;inset:0;z-index:45;display:none;flex-direction:column;align-items:center;justify-content:center;background:#000;padding:16px;}
 #cs-canvas{width:min(96vw,calc(70vh*16/9));height:min(70vh,calc(96vw*9/16));border:1px solid rgba(0,247,255,.35);border-radius:3px;display:block;background:#000;flex-shrink:0;}
 #cs-caption{margin-top:14px;width:min(96vw,calc(70vh*16/9));color:#cce4ff;font-size:clamp(11px,1.7vw,16px);line-height:1.7;text-align:center;text-shadow:0 0 8px rgba(100,180,255,.5);min-height:52px;white-space:pre-line;}
-#cs-btn{display:none;margin-top:14px;padding:12px 42px;font-size:clamp(11px,1.5vw,15px);font-weight:900;font-family:inherit;color:#fff;border:2px solid #00f7ff;border-radius:2px;background:rgba(0,247,255,.07);cursor:pointer;letter-spacing:.14em;}
+#cs-btn{display:none;margin-top:16px;padding:20px 56px;font-size:clamp(14px,2.2vw,20px);font-weight:900;font-family:inherit;color:#fff;border:2px solid #00f7ff;border-radius:4px;background:rgba(0,247,255,.1);cursor:pointer;letter-spacing:.14em;min-width:220px;min-height:56px;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,247,255,.25);}
 #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
 canvas#bg{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 canvas#gc{position:relative;z-index:1;display:block;width:min(100vw,calc(100vh * 12 / 7));height:min(100vh,calc(100vw * 7 / 12));border:1.5px solid rgba(0,247,255,.45);box-shadow:0 0 32px rgba(0,247,255,.12),0 0 80px rgba(0,80,200,.1);cursor:none;flex-shrink:0;}
@@ -40,7 +40,7 @@ canvas#gc{position:relative;z-index:1;display:block;width:min(100vw,calc(100vh *
 <div id="cutscene">
   <canvas id="cs-canvas"></canvas>
   <div id="cs-caption"></div>
-  <button id="cs-btn"></button>
+  <button id="cs-btn" style="touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0);"></button>
 </div>
 <div id="wrap"><canvas id="gc" width="1200" height="700"></canvas></div>
 <div id="ann"></div>
@@ -379,17 +379,133 @@ function drawShip(){
 function drawPills(){powerups.forEach(p=>{const d=PILLS[p.type]||{l:'?',c1:'#888',c2:'#444',tx:'#fff'},pw=104,ph=36,pulse=.7+.3*Math.sin(frameN*.15+p.x);ctx.save();ctx.translate(p.x-pw/2,p.y);ctx.shadowBlur=16*pulse;ctx.shadowColor=d.c1;const g=ctx.createLinearGradient(0,0,0,ph);g.addColorStop(0,d.c1);g.addColorStop(1,d.c2);ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(0,0,pw,ph,18);ctx.fill();ctx.fillStyle='rgba(255,255,255,.28)';ctx.beginPath();ctx.roundRect(4,3,pw-8,ph*.38,[12,12,4,4]);ctx.fill();ctx.fillStyle=d.tx;ctx.font='900 14px Orbitron';ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowBlur=5;ctx.shadowColor=d.tx;ctx.fillText(d.l,pw/2,ph/2+1);ctx.restore()})}
 function drawBullets(){bullets.forEach(b=>{ctx.save();ctx.shadowBlur=14;ctx.shadowColor='#f0c';const g=ctx.createLinearGradient(b.x-3,b.y,b.x-3,b.y+16);g.addColorStop(0,'#fff');g.addColorStop(1,'#f0c');ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(b.x-3,b.y,6,16,3);ctx.fill();ctx.restore()})}
 function drawParticles(){particles.forEach(p=>{ctx.save();ctx.globalAlpha=Math.max(0,p.life);ctx.shadowBlur=10;ctx.shadowColor=p.col;ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2);ctx.fill();ctx.restore()})}
+// Pill effect definitions for HUD display
+const HUD_FX={
+  CATCH: {col:'#00ff88', icon:'◉'},
+  FIRE:  {col:'#ff3300', icon:'🔥'},
+  POWER: {col:'#ff44ff', icon:'⚡'},
+  LONG:  {col:'#0088ff', icon:'◀▶'},
+  FAST:  {col:'#ff9900', icon:'▶▶'},
+  SLOW:  {col:'#00ddaa', icon:'▶◉'},
+  GHOST: {col:'#aaaaff', icon:'◈'},
+  MAGNET:{col:'#ff66aa', icon:'◎'},
+  SHRINK:{col:'#ff2222', icon:'◁▷'},
+  SHIELD:{col:'#00ffcc', icon:'◆'},
+  X2:    {col:'#ffee00', icon:'★'},
+  FREEZE:{col:'#88ddff', icon:'❄'},
+};
+
 function drawHUD(){
-  ctx.save();ctx.globalAlpha=.05;ctx.fillStyle='#00f7ff';ctx.font='900 200px Orbitron';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(score).padStart(6,'0'),W/2,H/2+30);ctx.globalAlpha=1;
-  ctx.textAlign='left';ctx.textBaseline='top';ctx.font='700 15px Orbitron';ctx.shadowBlur=8;ctx.shadowColor='#00f7ff';ctx.fillStyle='#00f7ff';ctx.fillText('LIVES',24,16);
-  for(let i=0;i<lives;i++){ctx.shadowColor='#f0c';ctx.fillStyle='#f0c';ctx.beginPath();ctx.arc(28+i*24,50,7,0,Math.PI*2);ctx.fill()}
-  ctx.textAlign='center';ctx.font='700 20px Orbitron';ctx.fillStyle='#fff';ctx.shadowColor='#00f7ff';ctx.shadowBlur=10;ctx.fillText(String(score).padStart(6,'0'),W/2,20);
-  const hi=getHi();if(hi>0){ctx.font='600 11px Orbitron';ctx.fillStyle='rgba(255,238,0,.6)';ctx.shadowColor='#ffee00';ctx.shadowBlur=5;ctx.fillText('BEST '+String(hi).padStart(6,'0'),W/2,38);}
-  ctx.textAlign='right';ctx.font='700 15px Orbitron';ctx.fillStyle='#00f7ff';ctx.shadowColor='#00f7ff';ctx.fillText(`SECTOR ${level}`,W-24,16);
-  const ml=[];activeModes.forEach(m=>ml.push(m));if(catchTimer>0)ml.push(`CATCH ${Math.ceil(catchTimer/60)}s`);if(fireTimer>0)ml.push(`FIRE ${Math.ceil(fireTimer/60)}s`);if(ghostTimer>0)ml.push(`GHOST ${Math.ceil(ghostTimer/60)}s`);if(magnetTimer>0)ml.push(`MAGNET ${Math.ceil(magnetTimer/60)}s`);if(shieldTimer>0)ml.push(`SHIELD ${Math.ceil(shieldTimer/60)}s`);if(x2Timer>0)ml.push(`x2 PTS ${Math.ceil(x2Timer/60)}s`);if(freezeTimer>0)ml.push(`FREEZE ${freezeTimer}f`);if(shrinkTimer>0)ml.push(`SHRINK ${Math.ceil(shrinkTimer/60)}s`);
-  if(ml.length){ctx.textAlign='left';ctx.font='700 12px Orbitron';ctx.fillStyle='#f0c';ctx.shadowColor='#f0c';ctx.shadowBlur=7;ctx.fillText('\u25c6 '+ml.join('  \u25c6 '),24,66)}
-  if(speedEffType){const sl=Math.ceil(speedEffTimer/60),col=speedEffType==='BF'?'#f90':'#0da',lb=speedEffType==='BF'?`FAST ${sl}s`:`SLOW ${sl}s`;ctx.textAlign='right';ctx.font='700 13px Orbitron';ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=9;ctx.fillText(lb,W-24,50)}
-  ctx.globalAlpha=.18;ctx.strokeStyle='#00f7ff';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,80);ctx.lineTo(W,80);ctx.stroke();ctx.restore();
+  ctx.save();
+
+  // Ghost score watermark
+  ctx.globalAlpha=.05;ctx.fillStyle='#00f7ff';ctx.font='900 200px Orbitron';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(String(score).padStart(6,'0'),W/2,H/2+30);
+  ctx.globalAlpha=1;
+
+  // LIVES label + dots
+  ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.font='600 12px Orbitron';ctx.shadowBlur=8;ctx.shadowColor='#00f7ff';
+  ctx.fillStyle='rgba(0,200,255,.7)';ctx.fillText('LIVES',20,14);
+  for(let i=0;i<lives;i++){
+    ctx.shadowColor='#ff00cc';ctx.shadowBlur=12;
+    ctx.fillStyle='#ff00cc';
+    ctx.beginPath();ctx.arc(20+i*22,40,8,0,Math.PI*2);ctx.fill();
+  }
+
+  // Score centre
+  ctx.textAlign='center';ctx.font='700 22px Orbitron';
+  ctx.fillStyle='#fff';ctx.shadowColor='#00f7ff';ctx.shadowBlur=12;
+  ctx.fillText(String(score).padStart(6,'0'),W/2,16);
+  // Best score
+  const hi=getHi();
+  if(hi>0){
+    ctx.font='600 11px Orbitron';ctx.fillStyle='rgba(255,238,0,.65)';
+    ctx.shadowColor='#ffee00';ctx.shadowBlur=6;
+    ctx.fillText('BEST '+String(hi).padStart(6,'0'),W/2,38);
+  }
+
+  // Sector top-right
+  ctx.textAlign='right';ctx.font='700 15px Orbitron';
+  ctx.fillStyle='#00f7ff';ctx.shadowColor='#00f7ff';ctx.shadowBlur=10;
+  ctx.fillText('SECTOR '+level,W-20,16);
+
+  // Separator line
+  ctx.globalAlpha=.2;ctx.strokeStyle='#00f7ff';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,58);ctx.lineTo(W,58);ctx.stroke();
+  ctx.globalAlpha=1;
+
+  // ── ACTIVE EFFECTS PANEL — neon badges, top-left below lives ──
+  // Build list of active effects with timer info
+  const effects=[];
+
+  // Permanent (no timer) modes
+  if(activeModes.includes('POWER')) effects.push({k:'POWER', label:'POWER', t:null});
+  if(activeModes.includes('LONG'))  effects.push({k:'LONG',  label:'WIDE',  t:null});
+
+  // Timed modes
+  if(catchTimer>0)  effects.push({k:'CATCH',  label:'CATCH',  t:catchTimer,  max:600});
+  if(fireTimer>0)   effects.push({k:'FIRE',   label:'FIRE',   t:fireTimer,   max:600});
+  if(ghostTimer>0)  effects.push({k:'GHOST',  label:'GHOST',  t:ghostTimer,  max:480});
+  if(magnetTimer>0) effects.push({k:'MAGNET', label:'MAGNET', t:magnetTimer, max:600});
+  if(shrinkTimer>0) effects.push({k:'SHRINK', label:'SHRINK', t:shrinkTimer, max:480});
+  if(shieldTimer>0) effects.push({k:'SHIELD', label:'SHIELD', t:shieldTimer, max:480});
+  if(x2Timer>0)     effects.push({k:'X2',     label:'x2 PTS', t:x2Timer,     max:720});
+  if(freezeTimer>0) effects.push({k:'FREEZE', label:'FREEZE', t:freezeTimer, max:120});
+  if(speedEffType==='BF') effects.push({k:'FAST', label:'FAST', t:speedEffTimer, max:600});
+  if(speedEffType==='BS') effects.push({k:'SLOW', label:'SLOW', t:speedEffTimer, max:600});
+
+  if(effects.length===0){ctx.restore();return;}
+
+  const bx=12, startY=66;
+  const bw=110, bh=28, gap=6;
+  const pulse=.75+.25*Math.sin(frameN*.12);
+
+  effects.forEach((ef,i)=>{
+    const fx=HUD_FX[ef.k]||{col:'#ffffff',icon:'◆'};
+    const col=fx.col;
+    const y=startY+i*(bh+gap);
+
+    // Badge background
+    ctx.save();
+    ctx.shadowBlur=14*pulse;ctx.shadowColor=col;
+    // Pill-shaped badge
+    ctx.fillStyle=col+'33';
+    ctx.beginPath();ctx.roundRect(bx,y,bw,bh,14);ctx.fill();
+    // Neon border
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.globalAlpha=.9;
+    ctx.beginPath();ctx.roundRect(bx,y,bw,bh,14);ctx.stroke();
+    ctx.globalAlpha=1;
+
+    // Timer progress bar (inner bottom)
+    if(ef.t!==null){
+      const pct=ef.t/ef.max;
+      const barW=(bw-10)*pct;
+      ctx.fillStyle=col+'55';
+      ctx.beginPath();ctx.roundRect(bx+5,y+bh-6,bw-10,4,2);ctx.fill();
+      ctx.fillStyle=col;ctx.shadowBlur=6;ctx.shadowColor=col;
+      ctx.beginPath();ctx.roundRect(bx+5,y+bh-6,Math.max(4,barW),4,2);ctx.fill();
+    }
+
+    // Label text
+    ctx.shadowBlur=8;ctx.shadowColor=col;
+    ctx.fillStyle='#fff';
+    ctx.font='700 12px Orbitron';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(ef.label,bx+12,y+bh/2-2);
+
+    // Countdown seconds (right side)
+    if(ef.t!==null){
+      const secs=Math.ceil(ef.t/60);
+      ctx.fillStyle=col;ctx.font='700 11px Orbitron';
+      ctx.textAlign='right';
+      ctx.fillText(secs+'s',bx+bw-8,y+bh/2-2);
+    }
+
+    ctx.restore();
+  });
+
+  ctx.restore();
 }
 
 // ── UPDATE ──
@@ -588,6 +704,14 @@ draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');const dawn=c.createL
 ];
 const LCAPS=["The first wall falls. Marcus grips the controls.\nThe city howls behind him. He doesn't look back.","Deeper in — the blocks are thicker, older, angrier.\nBut his ship holds. He holds.","A memory: grass under his feet, as a child.\nHe keeps that memory alive and flies toward it.","The machine city sends everything it has.\nHe breaks it. Block by block.","He can feel warmth bleeding through the hull.\nThe other side is not a myth.","Every block he shatters is another chain broken.\nHe is lighter with every level left behind.","The Wall thins. Light bleeds through the cracks.\nHe is nearly through.","One last wall. One last push.\nBeyond this — silence. Green. Freedom."];
 
+// Bind button for instant response on both mobile (touchend) and desktop (click)
+function bindBtn(btn,fn){
+  btn.onclick=null;
+  btn.ontouchend=null;
+  const go=e=>{e.preventDefault();e.stopPropagation();btn.onclick=null;btn.ontouchend=null;fn();};
+  btn.ontouchend=go;
+  btn.onclick=go;
+}
 function showCutscene(done,onDone){
   say('');
   const el=document.getElementById('cutscene'),cv=document.getElementById('cs-canvas'),cap=document.getElementById('cs-caption'),btn=document.getElementById('cs-btn');
@@ -614,11 +738,7 @@ function showCutscene(done,onDone){
 
     // CONTINUE is the only way out — delayed 400ms to prevent tap bleedthrough
     setTimeout(()=>{
-      btn.onclick=()=>{
-        btn.onclick=null; // prevent double-fire
-        el.style.display='none';
-        onDone();
-      };
+      bindBtn(btn,()=>{el.style.display='none';onDone();});
     },400);
   },60);
 }
@@ -634,7 +754,7 @@ function showIntro(){
     function type(){if(ci<txt.length){cap.textContent=txt.slice(0,ci+1);ci++;setTimeout(type,24);}else btn.style.display='block';}
     setTimeout(type,400);
     setTimeout(()=>{
-      btn.onclick=()=>{btn.onclick=null;el.style.display='none';beginGame();};
+      bindBtn(btn,()=>{el.style.display='none';beginGame();});
     },400);
   },60);
 }
@@ -645,8 +765,17 @@ document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e
 document.addEventListener('keyup',e=>keys[e.code]=false);
 document.addEventListener('mousemove',e=>movePaddle(e.clientX));
 document.addEventListener('mousedown',e=>{if(gs!==ST.MENU)handleAction()});
-document.addEventListener('touchmove',e=>{e.preventDefault();movePaddle(e.touches[0].clientX)},{passive:false});
-document.addEventListener('touchstart',e=>{if(gs===ST.MENU)return;e.preventDefault();movePaddle(e.touches[0].clientX);handleAction()},{passive:false});
+document.addEventListener('touchmove',e=>{
+  if(e.target===gc||e.target===document.body){e.preventDefault();movePaddle(e.touches[0].clientX);}
+},{passive:false});
+document.addEventListener('touchstart',e=>{
+  // Only intercept touches that land on the game canvas — let buttons work normally
+  if(e.target===gc){
+    e.preventDefault();
+    movePaddle(e.touches[0].clientX);
+    handleAction();
+  }
+},{passive:false});
 
 // ── BOOT ──
 refreshHiDisplay();
