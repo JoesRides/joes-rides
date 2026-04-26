@@ -543,22 +543,22 @@ function nextSector(){
   const done=level;
   level++;
   baseSpeed=Math.min(BASE_SPD+(level-1)*.35,BASE_SPD*1.9);
-  gs=ST.INIT;
+  gs=ST.OVER; // block all input while cutscene plays
   if(AC)startMusic(false);
-  // Save hi score as we go
   if(score>getHi())setHi(score);
   refreshHiDisplay();
-  say(`SECTOR ${done} CLEARED<br><span style="font-size:.55em;color:#ffee00;letter-spacing:.15em">+${done*500} SECTOR BONUS</span>`);
   score+=done*500;
-  setTimeout(()=>{say('');showCutscene(done,()=>{genBricks();startTurn()})},2200);
+  say('');
+  showCutscene(done,()=>{genBricks();startTurn()});
 }
 function beginGame(){
   initAudio();document.getElementById('menu').style.display='none';document.getElementById('cutscene').style.display='none';hideOverlay();
   score=0;level=1;lives=3;baseSpeed=BASE_SPD;startMusic(false);genBricks();startTurn();
 }
 function handleAction(){
-  if(gs===ST.INIT){gs=ST.PLAY;balls[0].stuck=false;balls[0].dx=baseSpeed*.55;balls[0].dy=-baseSpeed;say('')}
-  else if(gs===ST.PLAY){const sb=balls.find(b=>b.stuck);if(sb){sb.stuck=false;sb.dy=-baseSpeed;sb.dx=(sb.x-(paddle.x+paddle.w/2))*.1;sfxPaddle()}if(activeModes.includes('FIRE')){bullets.push({x:paddle.x+14,y:H-50},{x:paddle.x+paddle.w-14,y:H-50});sfxFire()}}
+  if(gs===ST.OVER)return; // block during cutscene and game-over
+  if(gs===ST.INIT){gs=ST.PLAY;balls[0].stuck=false;balls[0].dx=baseSpeed*.55;balls[0].dy=-baseSpeed;say('');}
+  else if(gs===ST.PLAY){const sb=balls.find(b=>b.stuck);if(sb){sb.stuck=false;sb.dy=-baseSpeed;sb.dx=(sb.x-(paddle.x+paddle.w/2))*.1;sfxPaddle();}if(activeModes.includes('FIRE')){bullets.push({x:paddle.x+14,y:H-50},{x:paddle.x+paddle.w-14,y:H-50});sfxFire();}}
 }
 
 // ── CUTSCENE / STORY ──
@@ -583,14 +583,37 @@ draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');const dawn=c.createL
 const LCAPS=["The first wall falls. Marcus grips the controls.\nThe city howls behind him. He doesn't look back.","Deeper in — the blocks are thicker, older, angrier.\nBut his ship holds. He holds.","A memory: grass under his feet, as a child.\nHe keeps that memory alive and flies toward it.","The machine city sends everything it has.\nHe breaks it. Block by block.","He can feel warmth bleeding through the hull.\nThe other side is not a myth.","Every block he shatters is another chain broken.\nHe is lighter with every level left behind.","The Wall thins. Light bleeds through the cracks.\nHe is nearly through.","One last wall. One last push.\nBeyond this — silence. Green. Freedom."];
 
 function showCutscene(done,onDone){
-  say('');const el=document.getElementById('cutscene'),cv=document.getElementById('cs-canvas'),cap=document.getElementById('cs-caption'),btn=document.getElementById('cs-btn');
-  el.style.display='flex';cap.textContent='';btn.style.display='none';btn.textContent='CONTINUE \u25ba';
+  say('');
+  const el=document.getElementById('cutscene'),cv=document.getElementById('cs-canvas'),cap=document.getElementById('cs-caption'),btn=document.getElementById('cs-btn');
+  el.style.display='flex';
+  cap.textContent='';btn.style.display='none';btn.textContent='CONTINUE \u25ba';
+
+  // Small delay so the display:flex has taken effect before measuring
   setTimeout(()=>{
-    cv.width=cv.offsetWidth||900;cv.height=cv.offsetHeight||480;
-    const idx=Math.min(done-1,CHAPTERS.length-1);CHAPTERS[Math.max(0,idx)].draw(cv);
-    const txt=LCAPS[(done-1)%LCAPS.length];let ci=0;
-    function type(){if(ci<txt.length){cap.textContent=txt.slice(0,ci+1);ci++;setTimeout(type,30)}else btn.style.display='block'}
-    setTimeout(type,400);btn.onclick=()=>{el.style.display='none';onDone()};
+    cv.width=cv.offsetWidth||900;
+    cv.height=cv.offsetHeight||480;
+
+    // One chapter per completed level, capped at available chapters
+    const idx=Math.min(done-1,CHAPTERS.length-1);
+    CHAPTERS[Math.max(0,idx)].draw(cv);
+
+    // One caption from LCAPS, cycling after the list ends
+    const txt=LCAPS[(done-1)%LCAPS.length];
+    let ci=0;
+    function type(){
+      if(ci<txt.length){cap.textContent=txt.slice(0,ci+1);ci++;setTimeout(type,28);}
+      else btn.style.display='block';
+    }
+    setTimeout(type,300);
+
+    // CONTINUE is the only way out — delayed 400ms to prevent tap bleedthrough
+    setTimeout(()=>{
+      btn.onclick=()=>{
+        btn.onclick=null; // prevent double-fire
+        el.style.display='none';
+        onDone();
+      };
+    },400);
   },60);
 }
 function showIntro(){
@@ -598,10 +621,15 @@ function showIntro(){
   const el=document.getElementById('cutscene'),cv=document.getElementById('cs-canvas'),cap=document.getElementById('cs-caption'),btn=document.getElementById('cs-btn');
   el.style.display='flex';cap.textContent='';btn.style.display='none';btn.textContent='BEGIN';
   setTimeout(()=>{
-    cv.width=cv.offsetWidth||900;cv.height=cv.offsetHeight||480;CHAPTERS[0].draw(cv);
+    cv.width=cv.offsetWidth||900;cv.height=cv.offsetHeight||480;
+    CHAPTERS[0].draw(cv);
     const txt="YEAR 2099. Marcus has lived his whole life inside the city's walls — traffic, smog, neon, and no way out.\n\nThey say beyond the Great Wall of Blocks lies the Green Sector. Clean air. Open sky. He's going to find out.";
-    let ci=0;function type(){if(ci<txt.length){cap.textContent=txt.slice(0,ci+1);ci++;setTimeout(type,24)}else btn.style.display='block'}
-    setTimeout(type,400);btn.onclick=()=>{el.style.display='none';beginGame()};
+    let ci=0;
+    function type(){if(ci<txt.length){cap.textContent=txt.slice(0,ci+1);ci++;setTimeout(type,24);}else btn.style.display='block';}
+    setTimeout(type,400);
+    setTimeout(()=>{
+      btn.onclick=()=>{btn.onclick=null;el.style.display='none';beginGame();};
+    },400);
   },60);
 }
 
