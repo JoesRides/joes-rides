@@ -803,331 +803,737 @@ function handleAction(){
 
 // ── CUTSCENE / STORY ──
 const CHAPTERS=[
-// Each scene uses a grid of Unicode block chars rendered in a monospace font.
-// Palette per scene defined inline. Grid drawn row by row.
-// Helper: draw a full block-art scene from a rows array of [char,color] strings
-
-{cap:"Little Marcus grew up on a tiny island, always staring across the water.\nOn the other side sat Banhattan — dark, smelly, and full of zombies.",
+{cap:"Marcus grew up on a tiny island in the shadow of Banhattan.\nEvery night he stared across the dark water at the towers beyond.",
 draw(cv){
-  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
-  cx.fillStyle='#0a0a1a';cx.fillRect(0,0,w,h);
-  const cw=Math.floor(w/26),ch=Math.floor(h/20);
-  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
-  // Sky gradient blocks
-  for(let x=0;x<26;x++){B('█',x,0,'#0a0a2a');B('█',x,1,'#0d0d33');}
+  const w=cv.width,h=cv.height,g=cv.getContext('2d');
+  // Night sky
+  const sky=g.createLinearGradient(0,0,0,h*.6);
+  sky.addColorStop(0,'#04030f');sky.addColorStop(1,'#0d0820');
+  g.fillStyle=sky;g.fillRect(0,0,w,h);
   // Stars
-  [[2,0,'#ffffff'],[7,1,'#ddddff'],[12,0,'#ffffff'],[17,1,'#aaaaff'],[22,0,'#ffffff'],[25,1,'#ddddff']].forEach(([x,y,col])=>B('·',x,y,col));
+  for(let i=0;i<180;i++){
+    const sx=(Math.sin(i*137.5)*0.5+0.5)*w, sy=(Math.cos(i*97.3)*0.5+0.5)*h*.55;
+    const sr=Math.random()*.8+.2,sa=.4+Math.random()*.6;
+    g.beginPath();g.arc(sx,sy,sr,0,Math.PI*2);
+    g.fillStyle=`rgba(${200+Math.floor(sr*20)},${210+Math.floor(sr*10)},255,${sa})`;g.fill();
+  }
   // Moon
-  B('◐',23,0,'#ffffcc');
-  // Banhattan skyline - left half, dark purple/grey towers
-  const sky=[[0,14],[1,11],[2,15],[3,9],[4,13],[5,10],[6,14],[7,8],[8,12],[9,11],[10,14],[11,7],[12,13]];
-  sky.forEach(([x,top])=>{for(let y=top;y<16;y++)B('█',x,y,y===top?'#2a0033':'#1a0022');});
-  // Skull windows in towers
-  [[1,12,'#440044'],[3,11,'#440044'],[5,12,'#440044'],[7,10,'#440044'],[11,9,'#440044']].forEach(([x,y,c2])=>B('▓',x,y,c2));
-  // Water - dark blue
-  for(let x=0;x<26;x++){B('▓',x,16,'#001a4d');B('█',x,17,'#001133');}
-  // Waves
-  for(let x=0;x<26;x++)B(x%2===0?'▀':'▄',x,16,'#003366');
-  // Island - green strip right half
-  for(let x=13;x<26;x++){B('█',x,15,'#1a4400');B('█',x,16,'#1a3300');}
-  // Palm trees on island
-  B('▄',17,12,'#00aa00');B('▀',18,12,'#00aa00');B('█',18,13,'#553300');B('█',18,14,'#443300');
-  B('▄',22,11,'#00cc00');B('▀',23,11,'#00cc00');B('▀',21,12,'#008800');B('█',22,12,'#553300');B('█',22,13,'#443300');
-  // Marcus - tiny silhouette on island
-  B('▀',20,13,'#ffcc88');B('█',20,14,'#2244aa');
-  // Thought bubble
-  B('·',21,12,'#88aaff');B('·',22,11,'#88aaff');B('?',23,10,'#aaccff');
-  // Ground
-  for(let x=13;x<26;x++)B('▄',x,18,'#112200');
-  // "BANHATTAN" label on skyline
-  cx.fillStyle='#330022';cx.font=`bold ${Math.floor(cw*.8)}px monospace`;cx.fillText('BANHATTAN',0,8*ch);
-}},
-
-{cap:"Banhattan was full of zombies in business casual.\nThe rents were $9,000 a month for a closet with a hot plate.",
-draw(cv){
-  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
-  cx.fillStyle='#0a0005';cx.fillRect(0,0,w,h);
-  const cw=Math.floor(w/26),ch=Math.floor(h/20);
-  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
-  // Dark red sky
-  for(let x=0;x<26;x++){B('█',x,0,'#150005');B('█',x,1,'#1a0008');}
-  // Buildings - tall dark blocks
-  [[0,7],[1,5],[2,8],[3,4],[4,6],[5,5],[6,7],[7,3],[8,5],[9,7],[10,4],[11,6],[12,8],[13,5],[14,6],[15,4],[16,7],[17,5],[18,6],[19,8],[20,4],[21,6],[22,5],[23,7],[24,4],[25,6]].forEach(([x,top])=>{
-    for(let y=top;y<13;y++)B('█',x,y,y===top?'#330011':'#220008');
+  const mg=g.createRadialGradient(w*.82,h*.08,0,w*.82,h*.08,w*.055);
+  mg.addColorStop(0,'#fffde0');mg.addColorStop(.7,'#f5e8a0');mg.addColorStop(1,'transparent');
+  g.fillStyle=mg;g.fillRect(0,0,w,h);
+  g.beginPath();g.arc(w*.82,h*.08,w*.038,0,Math.PI*2);
+  g.fillStyle='#fffce8';g.fill();
+  // Moon glow
+  const moonGlow=g.createRadialGradient(w*.82,h*.08,0,w*.82,h*.08,w*.12);
+  moonGlow.addColorStop(0,'rgba(255,252,200,.12)');moonGlow.addColorStop(1,'transparent');
+  g.fillStyle=moonGlow;g.fillRect(0,0,w,h);
+  // Banhattan skyline — left 55%, dark purplish-grey towers
+  const bldgs=[
+    [0,  .52,.08],[.08,.38,.06],[.14,.48,.09],[.22,.30,.07],
+    [.29,.42,.08],[.37,.24,.06],[.43,.35,.10],[.52,.28,.07]
+  ];
+  bldgs.forEach(([bx,by,bw])=>{
+    const bg=g.createLinearGradient(bx*w,(by-.02)*h,bx*w+bw*w*.5,h*.6);
+    bg.addColorStop(0,'#1a0828');bg.addColorStop(1,'#0d0418');
+    g.fillStyle=bg;
+    g.fillRect(bx*w,by*h,bw*w,(1-by)*h*.62);
+    // Windows - orange/yellow flickers
+    for(let wy=0;wy<12;wy++)for(let wx=0;wx<3;wx++){
+      if((bx*100+wy*11+wx*7)%4!==0){
+        const alpha=.1+((bx*31+wy*13+wx*7)%10)*.05;
+        g.fillStyle=`rgba(255,${160+Math.floor(wy*5)},40,${alpha})`;
+        g.fillRect((bx+.01+wx*bw*.28)*w,(by+.05+wy*.065)*h,bw*w*.16,h*.032);
+      }
+    }
+    // Roof antenna
+    g.strokeStyle='#2a1035';g.lineWidth=1.5;
+    g.beginPath();g.moveTo((bx+bw*.5)*w,by*h);g.lineTo((bx+bw*.5)*w,(by-.05)*h);g.stroke();
   });
-  // Yellow windows (some lit)
-  for(let x=0;x<26;x++)for(let y=4;y<12;y++)if((x*3+y*7)%5===0)B('▪',x,y,'#443300');
-  // Rent sign on big building
-  cx.fillStyle='#ff2200';cx.font=`bold ${Math.floor(cw*.75)}px monospace`;cx.fillText('$9,000/mo',3*cw,4*ch);
-  cx.fillStyle='#ff6600';cx.font=`${Math.floor(cw*.65)}px monospace`;cx.fillText('for a CLOSET',3*cw,5*ch);
-  // Zombie horde - street level
-  for(let x=0;x<26;x++)B('█',x,13,'#111111');
-  // Zombie characters
-  [[1,12],[4,12],[7,12],[10,12],[14,12],[18,12],[22,12],[25,12]].forEach(([x,y])=>{
-    B('▀',x,y,'#44ff00');B('▄',x,y+1,'#226600');
-  });
-  // Rats on sidewalk
-  [[2,13],[8,13],[15,13],[21,13]].forEach(([x,y])=>B('▬',x,y,'#888800'));
-  // Ground/street
-  for(let x=0;x<26;x++){B('█',x,14,'#111111');B('▀',x,14,'#1a1a1a');}
-  // Water and island glimpse
-  for(let x=0;x<26;x++)B('█',x,15,'#001133');
-  for(let x=18;x<26;x++)B('▀',x,15,'#1a4400');
-}},
-
-{cap:"Marcus lay in his hammock dreaming.\nSomewhere far away: green, quiet, no zombie neighbors.",
-draw(cv){
-  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
-  cx.fillStyle='#000811';cx.fillRect(0,0,w,h);
-  const cw=Math.floor(w/26),ch=Math.floor(h/20);
-  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
-  // Night sky
-  for(let x=0;x<26;x++){B('█',x,0,'#000811');B('█',x,1,'#00091a');}
-  [[1,0,'#fff'],[5,1,'#ddf'],[9,0,'#fff'],[14,1,'#aaf'],[19,0,'#fff'],[24,1,'#ddf'],[3,1,'#fff'],[11,0,'#aaf'],[22,0,'#fff']].forEach(([x,y,c2])=>B('•',x,y,c2));
-  B('◑',24,0,'#ffffaa');
-  // Dream cloud - top center (white/grey blocks)
-  [[9,3],[10,3],[11,3],[12,3],[13,3],[14,3],[15,3],[16,3],
-   [8,4],[9,4],[10,4],[11,4],[12,4],[13,4],[14,4],[15,4],[16,4],[17,4],
-   [8,5],[9,5],[10,5],[11,5],[12,5],[13,5],[14,5],[15,5],[16,5],[17,5],
-   [9,6],[10,6],[11,6],[12,6],[13,6],[14,6],[15,6],[16,6]].forEach(([x,y])=>B('█',x,y,'#ddeedd'));
-  // Dream scene inside cloud: green paradise
-  [9,10,11,12,13,14,15,16].forEach(x=>B('▀',x,6,'#00aa44'));
-  [9,10,11,12,13,14,15,16].forEach(x=>B('█',x,5,'#ddffdd'));
-  B('☀',12,3,'#ffee00');B('☀',13,3,'#ffee00');
-  // Trees in dream
-  B('▲',10,5,'#00aa00');B('▲',14,5,'#008800');
-  // Dream caption
-  cx.fillStyle='#006633';cx.font=`bold ${Math.floor(cw*.7)}px monospace`;cx.fillText('NO ZOMBIES',9*cw,4*ch);
-  cx.fillStyle='#004422';cx.fillText('FREE RENT!',9*cw,5*ch);
-  // Bubble trail from Marcus to dream
-  B('·',13,8,'#aaccaa');B('·',12,9,'#88aa88');B('·',12,10,'#668866');
-  // Island hut - bottom
-  for(let x=5;x<21;x++)B('█',x,16,'#1a3300');
-  B('▲',11,13,'#885500');B('▲',12,13,'#885500');B('▲',13,13,'#885500');
-  for(let x=10;x<16;x++)B('█',x,14,'#663300');for(let x=10;x<16;x++)B('█',x,15,'#553300');
-  // Hammock
-  B('▔',9,15,'#885500');B('▔',10,15,'#885500');B(')',11,14,'#885500');B('(',14,14,'#885500');B('▔',15,15,'#885500');B('▔',16,15,'#885500');
-  // Marcus in hammock
-  B('▀',12,14,'#ffcc88');B('▀',13,14,'#2244aa');
-  // ZZZ
-  B('z',14,13,'#aaffaa');B('z',15,12,'#88ee88');B('Z',16,11,'#66cc66');
-  // Water
-  for(let x=0;x<26;x++)B('█',x,18,'#001133');
-}},
-
-{cap:"The Banhattan rats crossed the water in tiny business suits.\nThey brought eviction notices, noise complaints, and a Starbucks.",
-draw(cv){
-  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
-  cx.fillStyle='#050505';cx.fillRect(0,0,w,h);
-  const cw=Math.floor(w/26),ch=Math.floor(h/20);
-  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
-  // Night sky
-  for(let x=0;x<26;x++)B('█',x,0,'#050505');
-  [[2,0],[8,0],[15,0],[20,0],[25,0]].forEach(([x,y])=>B('·',x,y,'#ffffff'));
-  // Banhattan silhouette left
-  [[0,9],[1,7],[2,10],[3,6],[4,8],[5,7],[6,9],[7,5]].forEach(([x,top])=>{
-    for(let y=top;y<13;y++)B('█',x,y,'#1a0011');
-  });
-  // Water - full middle band
-  for(let x=0;x<26;x++){B('█',x,13,'#001a44');B('▓',x,14,'#001133');B('█',x,15,'#000d22');}
-  // Wave tops
-  for(let x=0;x<26;x++)B(x%3===0?'▀':x%3===1?'▄':'▬',x,13,'#003366');
-  // RATS SWIMMING - in business suits crossing the water
-  // Rat 1
-  B('▀',4,13,'#888800');B('▄',4,14,'#555500');B('>',5,13,'#888800');
-  // Rat 2 with briefcase
-  B('▀',10,13,'#777700');B('▄',10,14,'#444400');B('>',11,13,'#777700');B('▪',12,13,'#444400');
-  // Rat 3 with eviction notice
-  B('▀',17,13,'#888800');B('>',18,13,'#888800');B('!',19,13,'#ff4400');
-  // Rat 4 in full suit
-  B('▀',22,13,'#666600');B('>',23,13,'#336633');
-  // Island shore - right
-  for(let x=14;x<26;x++)B('█',x,16,'#1a3300');
-  for(let x=14;x<26;x++)B('▀',x,16,'#224400');
-  // Rat horde arriving on island
-  B('▀',15,15,'#888800');B('▪',16,15,'#444400');
-  B('▀',18,15,'#777700');B('>',19,15,'#777700');
-  B('▀',21,15,'#888800');B('!',22,15,'#ff4400');
-  // EVICTION NOTICE sign
-  cx.fillStyle='#ff3300';cx.font=`bold ${Math.floor(cw*.65)}px monospace`;cx.fillText('EVICTION',15*cw,12*ch);
-  cx.fillStyle='#ff6600';cx.fillText('NOTICE',16*cw,13*ch);
-  // Marcus watching in horror
-  B('▀',25,14,'#ffcc88');B('█',25,15,'#2244aa');
-  cx.fillStyle='#ff0000';cx.font=`bold ${Math.floor(cw)}px monospace`;cx.fillText('!!',24*cw,13*ch);
-}},
-
-{cap:"Marcus sprinted to his ship behind the palm trees.\nDented. Rusty. Covered in rat graffiti. But the engine still fired.",
-draw(cv){
-  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
-  cx.fillStyle='#000a00';cx.fillRect(0,0,w,h);
-  const cw=Math.floor(w/26),ch=Math.floor(h/20);
-  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
-  // Night sky
-  for(let x=0;x<26;x++)B('█',x,0,'#000a00');
-  [[1,0],[6,0],[12,1],[18,0],[23,1]].forEach(([x,y])=>B('·',x,y,'#aaffaa'));
-  B('◑',24,0,'#ccffcc');
+  // Water — deep navy with reflections
+  const water=g.createLinearGradient(0,h*.58,0,h);
+  water.addColorStop(0,'#06091f');water.addColorStop(1,'#030612');
+  g.fillStyle=water;g.fillRect(0,h*.58,w,h*.42);
+  // Water reflections from Banhattan
+  g.globalAlpha=.15;
+  const ref=g.createLinearGradient(0,h*.58,0,h*.75);
+  ref.addColorStop(0,'#2a0828');ref.addColorStop(1,'transparent');
+  g.fillStyle=ref;g.fillRect(0,h*.58,w*.6,h*.17);
+  g.globalAlpha=1;
+  // Wave lines
+  for(let wi=0;wi<8;wi++){
+    const wy=h*(.60+wi*.03);
+    g.strokeStyle=`rgba(20,40,80,${.3+wi*.04})`;g.lineWidth=1;
+    g.beginPath();g.moveTo(0,wy);
+    for(let wx=0;wx<w;wx+=30)g.quadraticCurveTo(wx+15,wy+2*(wi%2?1:-1),wx+30,wy);
+    g.stroke();
+  }
+  // Moon reflection in water
+  const mref=g.createRadialGradient(w*.82,h*.72,0,w*.82,h*.72,w*.08);
+  mref.addColorStop(0,'rgba(255,252,200,.18)');mref.addColorStop(1,'transparent');
+  g.fillStyle=mref;g.fillRect(0,0,w,h);
+  // Island — right portion, lush dark green
+  g.beginPath();
+  g.moveTo(w*.48,h*.92);g.quadraticCurveTo(w*.6,h*.78,w*.7,h*.80);
+  g.quadraticCurveTo(w*.82,h*.76,w*.92,h*.79);
+  g.quadraticCurveTo(w*.98,h*.81,w,h*.84);
+  g.lineTo(w,h);g.lineTo(w*.48,h);g.closePath();
+  const isle=g.createLinearGradient(0,h*.76,0,h);
+  isle.addColorStop(0,'#1a3d08');isle.addColorStop(1,'#0d2004');
+  g.fillStyle=isle;g.fill();
   // Palm trees
-  B('▄',2,5,'#006600');B('▀',3,5,'#008800');B('▄',1,6,'#004400');
-  B('█',2,6,'#553300');B('█',2,7,'#442800');B('█',2,8,'#442800');
-  B('▄',22,4,'#007700');B('▀',23,4,'#009900');B('▄',23,5,'#005500');B('▀',21,5,'#004400');
-  B('█',22,5,'#553300');B('█',22,6,'#442800');B('█',22,7,'#442800');
-  // THE SHIP - center, big block art
-  // Nose cone
-  B('▄',12,5,'#445566');B('▀',13,5,'#556677');
-  // Main hull top
-  for(let x=8;x<18;x++)B('█',x,6,'#334455');
-  B('▀',7,6,'#223344');B('▀',18,6,'#223344');
-  // Cockpit window
-  B('█',11,6,'#004488');B('█',12,6,'#0066cc');B('█',13,6,'#0066cc');B('█',14,6,'#004488');
-  // Main hull body
-  for(let x=6;x<20;x++)B('█',x,7,'#2a3a4a');
-  B('▌',5,7,'#1a2a3a');B('▐',20,7,'#1a2a3a');
-  // Engine pods
-  for(let x=7;x<11;x++)B('█',x,8,'#1a2535');
-  for(let x=15;x<19;x++)B('█',x,8,'#1a2535');
-  B('▄',6,8,'#112030');B('▄',19,8,'#112030');
-  // Engine glow
-  B('▀',8,9,'#0088ff');B('▀',9,9,'#00aaff');B('▀',16,9,'#0088ff');B('▀',17,9,'#00aaff');
-  // RAT GRAFFITI on hull
-  cx.fillStyle='#ff2200';cx.font=`bold ${Math.floor(cw*.6)}px monospace`;cx.fillText('RATS WUZ HERE',7*cw,7*ch+2);
-  // Marcus running to ship
-  B('▀',23,7,'#ffcc88');B('█',23,8,'#2244aa');B('▄',22,8,'#2244aa');
-  // YES! thought bubble
-  cx.fillStyle='#ffff00';cx.font=`bold ${Math.floor(cw*.9)}px monospace`;cx.fillText('YES!!',20*cw,5*ch);
-  // Ground
-  for(let x=0;x<26;x++){B('█',x,10,'#1a3300');B('▄',x,11,'#0f2200');}
+  function palm(px,py,lean,sz){
+    g.strokeStyle='#3d2008';g.lineWidth=sz*.018*w;g.lineCap='round';
+    g.beginPath();g.moveTo(px,py);g.quadraticCurveTo(px+lean*w*.04,py-sz*.2*h,px+lean*w*.08,py-sz*.35*h);g.stroke();
+    const tx=px+lean*w*.08,ty=py-sz*.35*h;
+    [0,40,80,120,160,200,240,300].forEach(angle=>{
+      const rad=angle*Math.PI/180;
+      g.strokeStyle=`rgba(30,${100+Math.floor(Math.sin(rad)*20)},10,.9)`;
+      g.lineWidth=sz*.006*w;
+      g.beginPath();g.moveTo(tx,ty);
+      g.quadraticCurveTo(tx+Math.cos(rad)*w*.07*sz,ty+Math.sin(rad)*h*.04*sz,
+                         tx+Math.cos(rad)*w*.1*sz,ty+Math.sin(rad)*h*.06*sz+h*.02*sz);g.stroke();
+    });
+  }
+  palm(w*.64,h*.88,-.5,1.0);palm(w*.78,h*.86,.4,0.85);palm(w*.9,h*.9,-.3,.75);
+  // Marcus silhouette on shore
+  const mx=w*.72,my=h*.84;
+  g.fillStyle='#1a1008';
+  g.beginPath();g.arc(mx,my-h*.045,w*.008,0,Math.PI*2);g.fill();// head
+  g.fillRect(mx-w*.005,my-h*.038,w*.01,h*.042);// body
+  // Thought bubble
+  g.strokeStyle='rgba(150,180,255,.5)';g.lineWidth=1;
+  [1,2,3].forEach(i=>{g.beginPath();g.arc(mx+i*w*.018,my-h*.06-i*h*.015,w*.003+i*w*.002,0,Math.PI*2);g.stroke();});
+  g.strokeStyle='rgba(150,180,255,.35)';g.lineWidth=1.5;
+  g.beginPath();g.roundRect(mx+w*.05,my-h*.13,w*.12,h*.05,w*.01);g.stroke();
+  g.fillStyle='rgba(10,15,40,.6)';g.fill();
+  g.fillStyle='rgba(150,180,255,.7)';g.font=`bold ${w*.018}px sans-serif`;g.textAlign='center';
+  g.fillText('?',mx+w*.11,my-h*.105);g.textAlign='left';
+  // Label
+  g.fillStyle='rgba(120,60,140,.6)';g.font=`${w*.015}px sans-serif`;
+  g.fillText('BANHATTAN',w*.03,h*.48);
 }},
 
-{cap:"Launch day. Banhattan's zombie towers glowed red behind him.\nFor the first time in his life, Marcus pointed the ship AWAY.",
+{cap:"Banhattan — $9,000 a month for a studio with a hot plate.\nZombies in business casual shuffle past the overpriced coffee shops.",
 draw(cv){
-  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
-  cx.fillStyle='#050008';cx.fillRect(0,0,w,h);
-  const cw=Math.floor(w/26),ch=Math.floor(h/20);
-  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
-  // Sky - left dark red, right dark blue
-  for(let x=0;x<26;x++)B('█',x,0,x<13?'#1a0000':'#000011');
-  for(let x=0;x<26;x++)B('█',x,1,x<13?'#140000':'#00000e');
-  // Stars right side
-  [[14,0],[18,1],[22,0],[25,1]].forEach(([x,y])=>B('·',x,y,'#aaaaff'));
-  // Banhattan left - ominous red glow
-  [[0,8],[1,6],[2,9],[3,5],[4,7],[5,6],[6,8],[7,4],[8,7],[9,6],[10,8],[11,5]].forEach(([x,top])=>{
-    for(let y=top;y<15;y++)B('█',x,y,'#1f0011');
-    B('▀',x,top,'#330022');
+  const w=cv.width,h=cv.height,g=cv.getContext('2d');
+  // Sick brownish-red night sky
+  const sky=g.createLinearGradient(0,0,0,h*.5);
+  sky.addColorStop(0,'#0e0005');sky.addColorStop(1,'#1f0810');
+  g.fillStyle=sky;g.fillRect(0,0,w,h);
+  // Smoggy red haze
+  const haze=g.createRadialGradient(w*.4,h*.3,0,w*.4,h*.3,w*.6);
+  haze.addColorStop(0,'rgba(80,10,20,.25)');haze.addColorStop(1,'transparent');
+  g.fillStyle=haze;g.fillRect(0,0,w,h);
+  // Dense city grid — many towers
+  const towers=[
+    [0,.42,.065],[.065,.32,.055],[.12,.48,.07],[.19,.28,.06],[.25,.38,.075],
+    [.325,.22,.06],[.385,.36,.065],[.45,.26,.07],[.52,.40,.055],[.575,.30,.065],
+    [.64,.44,.07],[.71,.25,.06],[.77,.38,.07],[.835,.20,.065],[.895,.35,.07],[.965,.28,.035]
+  ];
+  towers.forEach(([bx,by,bw])=>{
+    // Building body
+    const bg=g.createLinearGradient(bx*w,by*h,(bx+bw)*w,h*.55);
+    bg.addColorStop(0,'#1e0812');bg.addColorStop(1,'#0e0408');
+    g.fillStyle=bg;g.fillRect(bx*w,by*h,bw*w,(1-by)*h*.55);
+    // Windows
+    for(let wy=0;wy<14;wy++)for(let wx=0;wx<4;wx++){
+      const lit=(bx*71+wy*13+wx*17)%5;
+      if(lit<3){
+        const r=180+lit*20,gr=80+lit*15;
+        g.fillStyle=`rgba(${r},${gr},20,${.12+lit*.08})`;
+        g.fillRect((bx+.01+wx*(bw*.22))*w,(by+.04+wy*.055)*h,bw*w*.15,h*.028);
+      }
+    }
   });
-  // Red skull windows
-  [[1,7],[3,7],[5,8],[7,6],[9,8],[11,7]].forEach(([x,y])=>B('▓',x,y,'#440022'));
-  // Red glow from Banhattan
-  for(let y=2;y<6;y++)for(let x=0;x<6;x++)B('░',x,y,'#1a0000');
-  // THE SHIP launching UP center
-  B('▄',12,3,'#445566');B('▀',13,3,'#556677');// nose
-  for(let x=10;x<16;x++)B('█',x,4,'#334455');
-  B('▀',9,4,'#223344');B('▀',16,4,'#223344');
-  B('█',11,4,'#005599');B('█',12,4,'#0077cc');B('█',13,4,'#0077cc');B('█',14,4,'#005599');
-  for(let x=8;x<18;x++)B('█',x,5,'#2a3a4a');
-  B('▌',7,5,'#1a2a3a');B('▐',18,5,'#1a2a3a');
-  for(let x=9;x<13;x++)B('█',x,6,'#1a2535');
-  for(let x=13;x<17;x++)B('█',x,6,'#1a2535');
-  // Engine fire  
-  B('█',10,7,'#ff8800');B('█',11,7,'#ffcc00');B('█',12,7,'#ffffff');B('█',13,7,'#ffcc00');B('█',14,7,'#ff8800');
-  B('▄',10,8,'#ff4400');B('▄',11,8,'#ff8800');B('▄',12,8,'#ffaa00');B('▄',13,8,'#ff8800');B('▄',14,8,'#ff4400');
-  B('▄',11,9,'#ff2200');B('▄',12,9,'#ff6600');B('▄',13,9,'#ff2200');
-  // Arrow pointing right (freedom direction)
-  cx.fillStyle='#00ff88';cx.font=`bold ${Math.floor(cw*1.1)}px monospace`;cx.fillText('→ FREEDOM',15*cw,3*ch);
+  // Street level
+  g.fillStyle='#0a0508';g.fillRect(0,h*.55,w,h*.45);
+  // Street lights — orange pools
+  [.1,.3,.5,.7,.9].forEach(sx=>{
+    const sl=g.createRadialGradient(sx*w,h*.58,0,sx*w,h*.58,w*.08);
+    sl.addColorStop(0,'rgba(255,140,30,.22)');sl.addColorStop(1,'transparent');
+    g.fillStyle=sl;g.fillRect(0,0,w,h);
+    g.fillStyle='#cc8818';g.fillRect(sx*w-1,h*.54,2,h*.04);
+    g.beginPath();g.arc(sx*w,h*.54,4,0,Math.PI*2);g.fill();
+  });
+  // Sidewalk reflection
+  g.fillStyle='#120a0e';g.fillRect(0,h*.58,w,h*.08);
+  // ZOMBIES shuffling
+  function zombie(zx,zy,sz){
+    g.fillStyle='#3d4a22';
+    g.beginPath();g.arc(zx,zy-sz*28,sz*9,0,Math.PI*2);g.fill();// head
+    g.fillStyle='#2a3318';g.fillRect(zx-sz*7,zy-sz*18,sz*14,sz*22);// body/suit
+    // Tie
+    g.fillStyle='#8a1010';g.beginPath();g.moveTo(zx,zy-sz*18);g.lineTo(zx-sz*3,zy-sz*5);g.lineTo(zx,zy-sz*3);g.lineTo(zx+sz*3,zy-sz*5);g.closePath();g.fill();
+    // Arms outstretched
+    g.strokeStyle='#2a3318';g.lineWidth=sz*5;g.lineCap='round';
+    g.beginPath();g.moveTo(zx-sz*7,zy-sz*14);g.lineTo(zx-sz*22,zy-sz*10);g.stroke();
+    g.beginPath();g.moveTo(zx+sz*7,zy-sz*14);g.lineTo(zx+sz*22,zy-sz*10);g.stroke();
+    // Glowing eyes
+    g.fillStyle='#88ff22';g.beginPath();g.arc(zx-sz*3,zy-sz*30,sz*2,0,Math.PI*2);g.fill();
+    g.beginPath();g.arc(zx+sz*3,zy-sz*30,sz*2,0,Math.PI*2);g.fill();
+    // Legs
+    g.strokeStyle='#1a2010';g.lineWidth=sz*5;
+    g.beginPath();g.moveTo(zx-sz*4,zy-sz*0);g.lineTo(zx-sz*6,zy+sz*12);g.stroke();
+    g.beginPath();g.moveTo(zx+sz*4,zy-sz*0);g.lineTo(zx+sz*8,zy+sz*10);g.stroke();
+  }
+  zombie(w*.08,h*.72,.55);zombie(w*.22,h*.74,.5);zombie(w*.38,h*.73,.58);
+  zombie(w*.55,h*.71,.52);zombie(w*.72,h*.74,.48);zombie(w*.88,h*.72,.54);
+  // Giant rat
+  function rat(rx,ry,sz){
+    g.fillStyle='#554422';g.beginPath();g.ellipse(rx,ry,sz*18,sz*10,-.3,0,Math.PI*2);g.fill();
+    g.beginPath();g.arc(rx+sz*16,ry-sz*4,sz*7,0,Math.PI*2);g.fill();
+    g.strokeStyle='#554422';g.lineWidth=sz*3;
+    g.beginPath();g.moveTo(rx-sz*18,ry);g.quadraticCurveTo(rx-sz*24,ry+sz*8,rx-sz*28,ry);g.stroke();
+    g.fillStyle='#ff3333';g.beginPath();g.arc(rx+sz*20,ry-sz*5,sz*2,0,Math.PI*2);g.fill();
+  }
+  rat(w*.15,h*.82,.55);rat(w*.48,h*.80,.5);rat(w*.78,h*.83,.52);
+  // RENT sign on building
+  g.fillStyle='rgba(255,30,0,.85)';g.fillRect(w*.34,h*.33,w*.18,h*.07);
+  g.fillStyle='#fff';g.font=`bold ${w*.018}px sans-serif`;g.textAlign='center';
+  g.fillText('$9,000/mo',w*.43,h*.365);g.fillStyle='#ffd';g.font=`${w*.012}px sans-serif`;
+  g.fillText('one room · no windows',w*.43,h*.385);g.textAlign='left';
+  // Coffee shop neon
+  g.shadowBlur=12;g.shadowColor='#00ffcc';g.fillStyle='rgba(0,200,150,.7)';
+  g.font=`${w*.014}px sans-serif`;g.fillText('STARBANKS',w*.6,h*.57);g.shadowBlur=0;
+}},
+
+{cap:"Marcus lay in his hammock and dreamed.\nSomewhere far away: green hills, clean air, no zombie neighbors.",
+draw(cv){
+  const w=cv.width,h=cv.height,g=cv.getContext('2d');
+  // Night exterior of island hut
+  const sky=g.createLinearGradient(0,0,0,h*.6);
+  sky.addColorStop(0,'#020510');sky.addColorStop(1,'#050d1a');
+  g.fillStyle=sky;g.fillRect(0,0,w,h);
+  // Stars — lots
+  for(let i=0;i<220;i++){
+    const sx=(Math.sin(i*113.5)*0.5+0.5)*w,sy=(Math.cos(i*87.3)*0.5+0.5)*h*.55;
+    g.beginPath();g.arc(sx,sy,Math.random()*.9+.1,0,Math.PI*2);
+    g.fillStyle=`rgba(220,230,255,${.3+Math.random()*.5})`;g.fill();
+  }
+  // Milky way band
+  g.save();g.globalAlpha=.06;
+  const mw=g.createLinearGradient(0,h*.05,w,h*.35);
+  mw.addColorStop(0,'transparent');mw.addColorStop(.5,'#aabbff');mw.addColorStop(1,'transparent');
+  g.fillStyle=mw;g.fillRect(0,0,w,h*.5);g.restore();
+  // Moon
+  g.beginPath();g.arc(w*.15,h*.1,w*.04,0,Math.PI*2);g.fillStyle='#fff8e0';g.fill();
+  const mg2=g.createRadialGradient(w*.15,h*.1,0,w*.15,h*.1,w*.1);
+  mg2.addColorStop(0,'rgba(255,248,200,.15)');mg2.addColorStop(1,'transparent');
+  g.fillStyle=mg2;g.fillRect(0,0,w,h);
+  // Island ground
+  g.beginPath();g.moveTo(0,h*.62);g.quadraticCurveTo(w*.3,h*.58,w*.6,h*.6);
+  g.quadraticCurveTo(w*.8,h*.62,w,h*.6);g.lineTo(w,h);g.lineTo(0,h);g.closePath();
+  const gnd=g.createLinearGradient(0,h*.58,0,h);
+  gnd.addColorStop(0,'#1a3d08');gnd.addColorStop(1,'#0d2004');
+  g.fillStyle=gnd;g.fill();
+  // Hut
+  g.fillStyle='#3d2a10';g.fillRect(w*.35,h*.56,w*.3,h*.2);
+  g.fillStyle='#2a1c08';g.beginPath();
+  g.moveTo(w*.3,h*.56);g.lineTo(w*.5,h*.44);g.lineTo(w*.7,h*.56);g.closePath();g.fill();
+  g.strokeStyle='#1a1008';g.lineWidth=2;g.stroke();
+  // Hut door
+  g.fillStyle='#1a0e04';g.fillRect(w*.47,h*.62,w*.06,h*.1);
+  // Hammock between palms
+  g.strokeStyle='#8b6914';g.lineWidth=3;
+  g.beginPath();g.moveTo(w*.28,h*.6);g.quadraticCurveTo(w*.5,h*.72,w*.72,h*.6);g.stroke();
+  g.beginPath();g.moveTo(w*.28,h*.62);g.quadraticCurveTo(w*.5,h*.74,w*.72,h*.62);g.stroke();
+  g.lineWidth=1.5;g.strokeStyle='#6b4f10';
+  for(let hx=0;hx<=8;hx++){
+    const t=hx/8,sx=w*(.28+t*.44),ey=h*(.6+.12*Math.sin(Math.PI*t));
+    if(hx>0){const px=w*(.28+(hx-1)/8*.44),py=h*(.6+.12*Math.sin(Math.PI*(hx-1)/8));
+    g.beginPath();g.moveTo(px,py);g.lineTo(sx,ey);g.stroke();}
+  }
+  // Marcus sleeping in hammock
+  g.fillStyle='#c87840';g.beginPath();g.ellipse(w*.5,h*.65,w*.05,h*.03,0,0,Math.PI*2);g.fill();
+  g.fillStyle='#1e4488';g.beginPath();g.ellipse(w*.5,h*.67,w*.07,h*.025,-.1,0,Math.PI*2);g.fill();
+  // ZZZs
+  g.fillStyle='rgba(180,220,255,.6)';g.font=`${w*.022}px serif`;
+  g.fillText('z',w*.56,h*.62);g.font=`${w*.028}px serif`;g.fillText('z',w*.59,h*.58);
+  g.font=`${w*.036}px serif`;g.fillText('Z',w*.63,h*.53);
+  // Dream bubble
+  g.strokeStyle='rgba(180,220,255,.4)';g.lineWidth=1.5;
+  [1,2,3].forEach(i=>{g.beginPath();g.arc(w*.63+i*w*.025,h*.48-i*h*.02,w*.008+i*w*.004,0,Math.PI*2);g.stroke();});
+  // Dream scene: paradise inside bubble
+  g.save();g.beginPath();g.arc(w*.77,h*.3,w*.16,0,Math.PI*2);
+  g.strokeStyle='rgba(180,220,255,.35)';g.lineWidth=2;g.stroke();
+  g.clip();
+  const dsky=g.createLinearGradient(0,h*.14,0,h*.46);
+  dsky.addColorStop(0,'#4488cc');dsky.addColorStop(1,'#88ccee');
+  g.fillStyle=dsky;g.fillRect(w*.61,h*.14,w*.32,h*.32);
+  // Dream hills
+  g.fillStyle='#22aa44';g.beginPath();g.ellipse(w*.7,h*.44,w*.1,h*.06,0,0,Math.PI*2);g.fill();
+  g.fillStyle='#33cc55';g.beginPath();g.ellipse(w*.82,h*.43,w*.1,h*.05,0,0,Math.PI*2);g.fill();
+  // Dream sun
+  g.fillStyle='#ffee22';g.beginPath();g.arc(w*.77,h*.2,w*.025,0,Math.PI*2);g.fill();
+  g.restore();
+  // Palm trees left/right of hut
+  function palm2(px,py,lean,sz){
+    g.strokeStyle='#5d3510';g.lineWidth=sz*w*.018;g.lineCap='round';
+    g.beginPath();g.moveTo(px,py);g.quadraticCurveTo(px+lean*w*.05,py-h*.22*sz,px+lean*w*.09,py-h*.38*sz);g.stroke();
+    const tx=px+lean*w*.09,ty=py-h*.38*sz;
+    for(let a=0;a<360;a+=45){
+      const rad=a*Math.PI/180;g.strokeStyle='rgba(30,110,15,.88)';g.lineWidth=sz*w*.007;
+      g.beginPath();g.moveTo(tx,ty);
+      g.quadraticCurveTo(tx+Math.cos(rad)*w*.075*sz,ty+Math.sin(rad)*h*.04*sz,
+                         tx+Math.cos(rad)*w*.11*sz,ty+Math.sin(rad)*h*.065*sz+h*.015);g.stroke();
+    }
+  }
+  palm2(w*.22,h*.7,-.4,1);palm2(w*.78,h*.68,.35,.9);
   // Water
-  for(let x=0;x<26;x++)B('█',x,15,'#001133');
-  // Island tiny below
-  for(let x=9;x<18;x++)B('▀',x,16,'#1a3300');
+  const wat=g.createLinearGradient(0,h*.88,0,h);
+  wat.addColorStop(0,'#040818');wat.addColorStop(1,'#020510');
+  g.fillStyle=wat;g.fillRect(0,h*.88,w,h*.12);
 }},
 
-{cap:"Block by block the horrible city crumbled before him.\nEvery broken wall: one less zombie landlord, one less rat in a suit.",
+{cap:"Then one night the Banhattan rats crossed the water.\nThey came in tiny suits carrying eviction notices and briefcases.",
 draw(cv){
-  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
-  cx.fillStyle='#000';cx.fillRect(0,0,w,h);
-  const cw=Math.floor(w/26),ch=Math.floor(h/20);
-  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
-  // Space
-  for(let x=0;x<26;x++)B('█',x,0,'#000000');
-  [[1,0],[5,0],[11,0],[16,1],[21,0],[25,1]].forEach(([x,y])=>B('·',x,y,'#224422'));
-  // EXPLODING BLOCKS left - Banhattan crumbling
-  [[0,5,'#330011'],[0,6,'#220008'],[1,4,'#440022'],[1,7,'#220008'],[2,5,'#330011'],[3,4,'#440022']].forEach(([x,y,col])=>B('█',x,y,col));
-  // Explosion sparks
-  [[2,3,'#ff4400'],[4,4,'#ff8800'],[1,3,'#ffaa00'],[3,3,'#ff2200'],[5,5,'#ffcc00'],[4,3,'#ff6600']].forEach(([x,y,col])=>B('▪',x,y,col));
-  [[2,4,'#ff6600'],[3,5,'#ff4400'],[4,6,'#ffaa00']].forEach(([x,y,col])=>B('░',x,y,col));
-  // Debris flying
-  B('▄',5,3,'#2a0011');B('▀',6,4,'#1a0008');B('▌',5,5,'#330011');
-  // Ship in center flying through
-  for(let x=10;x<16;x++)B('█',x,7,'#334455');
-  B('▀',9,7,'#223344');B('▀',16,7,'#223344');
-  B('█',11,7,'#005599');B('█',12,7,'#0077cc');B('█',13,7,'#0077cc');B('█',14,7,'#005599');
-  for(let x=8;x<18;x++)B('█',x,8,'#2a3a4a');
-  // Engine trail
-  for(let x=5;x<9;x++)B('░',x,8,'#003366');
-  B('▪',4,8,'#002244');B('▪',3,8,'#001122');
+  const w=cv.width,h=cv.height,g=cv.getContext('2d');
+  // Stormy night sky
+  const sky=g.createLinearGradient(0,0,0,h*.55);
+  sky.addColorStop(0,'#050305');sky.addColorStop(.5,'#0d0510');sky.addColorStop(1,'#100a14');
+  g.fillStyle=sky;g.fillRect(0,0,w,h);
+  // Dark clouds
+  function cloud(cx2,cy2,cr,col){
+    g.fillStyle=col;
+    [-cr*.8,0,cr*.8,-cr*.4,cr*.4].forEach((dx,i)=>{
+      g.beginPath();g.arc(cx2+dx,cy2+[0,0,0,-cr*.35,-cr*.3][i],cr*[.7,.85,.7,.6,.6][i],0,Math.PI*2);g.fill();
+    });
+  }
+  cloud(w*.2,h*.12,w*.09,'#1a1020');cloud(w*.55,h*.08,w*.11,'#150c1a');cloud(w*.82,h*.15,w*.08,'#1a1020');
+  // Banhattan skyline behind — ominous
+  [[0,.5,.07],[.07,.35,.06],[.13,.48,.07],[.2,.30,.065],[.27,.42,.07],
+   [.34,.25,.06],[.4,.38,.065],[.47,.28,.06]].forEach(([bx,by,bw2])=>{
+    g.fillStyle='#0e0612';g.fillRect(bx*w,by*h,bw2*w,(1-by)*h*.52);
+    for(let wy=0;wy<10;wy++)for(let wx=0;wx<3;wx++)
+      if((bx*83+wy*17+wx*11)%7<3){g.fillStyle='rgba(180,80,20,.08)';g.fillRect((bx+.01+wx*bw2*.28)*w,(by+.05+wy*.06)*h,bw2*w*.18,h*.025);}
+  });
+  // Water — choppy dark
+  const wat2=g.createLinearGradient(0,h*.52,0,h*.88);
+  wat2.addColorStop(0,'#06091c');wat2.addColorStop(1,'#030610');
+  g.fillStyle=wat2;g.fillRect(0,h*.52,w,h*.36);
+  for(let wi=0;wi<14;wi++){
+    const wy=h*(.53+wi*.022);
+    g.strokeStyle=`rgba(15,25,60,${.25+wi*.03})`;g.lineWidth=1.5;
+    g.beginPath();g.moveTo(0,wy);
+    for(let wx2=0;wx2<w;wx2+=20)g.quadraticCurveTo(wx2+10,wy+((wx2/20+wi)%2?2:-2),wx2+20,wy);
+    g.stroke();
+  }
+  // RATS swimming across — 5 of them in business suits
+  function swimRat(rx,ry,sz){
+    // Body in water — just head and suit jacket visible
+    g.fillStyle='#4a3a18';g.beginPath();g.ellipse(rx,ry,sz*14,sz*8,0,0,Math.PI*2);g.fill();// body
+    g.fillStyle='#6a5520';g.beginPath();g.arc(rx+sz*10,ry-sz*5,sz*8,0,Math.PI*2);g.fill();// head
+    g.fillStyle='#ff3300';g.beginPath();g.arc(rx+sz*13,ry-sz*5,sz*2.5,0,Math.PI*2);g.fill();// eye
+    // Briefcase above water
+    g.fillStyle='#3a2a0a';g.fillRect(rx-sz*2,ry-sz*16,sz*10,sz*7);
+    g.strokeStyle='#5a4218';g.lineWidth=1;g.strokeRect(rx-sz*2,ry-sz*16,sz*10,sz*7);
+    g.strokeStyle='#7a6030';g.beginPath();g.moveTo(rx+sz*3,ry-sz*16);g.lineTo(rx+sz*3,ry-sz*20);g.stroke();
+    // Tie visible
+    g.fillStyle='#cc1a1a';g.beginPath();g.moveTo(rx+sz*8,ry-sz*10);g.lineTo(rx+sz*6,ry-sz*3);g.lineTo(rx+sz*8,ry-sz*1);g.lineTo(rx+sz*10,ry-sz*3);g.closePath();g.fill();
+  }
+  swimRat(w*.05,h*.68,.9);swimRat(w*.22,h*.66,.85);swimRat(w*.42,h*.69,.92);
+  swimRat(w*.62,h*.67,.88);swimRat(w*.8,h*.7,.82);
+  // Island — right side
+  g.beginPath();g.moveTo(w*.7,h*.88);g.quadraticCurveTo(w*.82,h*.82,w*.92,h*.84);
+  g.quadraticCurveTo(w*.97,h*.86,w,h*.84);g.lineTo(w,h);g.lineTo(w*.7,h);g.closePath();
+  g.fillStyle='#1a3808';g.fill();
+  // Marcus watching in horror from island
+  g.fillStyle='#c87840';g.beginPath();g.arc(w*.88,h*.8,w*.012,0,Math.PI*2);g.fill();
+  g.fillStyle='#1e4488';g.fillRect(w*.875,h*.812,w*.02,h*.045);
+  // Arms up in alarm
+  g.strokeStyle='#c87840';g.lineWidth=3;g.lineCap='round';
+  g.beginPath();g.moveTo(w*.875,h*.83);g.lineTo(w*.855,h*.815);g.stroke();
+  g.beginPath();g.moveTo(w*.895,h*.83);g.lineTo(w*.915,h*.815);g.stroke();
+  // Eviction notice floating in air
+  g.fillStyle='rgba(255,50,0,.9)';
+  g.save();g.translate(w*.35,h*.48);g.rotate(-.15);
+  g.fillRect(-w*.07,-h*.05,w*.14,h*.1);
+  g.fillStyle='#fff';g.font=`bold ${w*.016}px sans-serif`;g.textAlign='center';
+  g.fillText('EVICTION',0,-h*.012);g.fillText('NOTICE',0,h*.018);g.textAlign='left';
+  g.restore();
+}},
+
+{cap:"Marcus found his old ship behind the coconut trees.\nRusty. Dented. Still covered in rat graffiti. The engine fired on the third try.",
+draw(cv){
+  const w=cv.width,h=cv.height,g=cv.getContext('2d');
+  // Pre-dawn dark green sky
+  const sky=g.createLinearGradient(0,0,0,h*.55);
+  sky.addColorStop(0,'#020a02');sky.addColorStop(1,'#071408');
+  g.fillStyle=sky;g.fillRect(0,0,w,h);
+  for(let i=0;i<120;i++){
+    const sx=(Math.sin(i*131)*0.5+0.5)*w,sy=(Math.cos(i*89)*0.5+0.5)*h*.45;
+    g.beginPath();g.arc(sx,sy,.7+Math.random()*.5,0,Math.PI*2);
+    g.fillStyle=`rgba(200,230,200,${.25+Math.random()*.4})`;g.fill();
+  }
+  // Ground
+  g.beginPath();g.moveTo(0,h*.6);g.quadraticCurveTo(w*.4,h*.55,w*.7,h*.57);
+  g.quadraticCurveTo(w*.85,h*.58,w,h*.56);g.lineTo(w,h);g.lineTo(0,h);g.closePath();
+  const gd=g.createLinearGradient(0,h*.55,0,h);
+  gd.addColorStop(0,'#1a4008');gd.addColorStop(1,'#0d2204');
+  g.fillStyle=gd;g.fill();
+  // Dense tropical foliage background
+  for(let t=0;t<8;t++){
+    const tx=w*(t/8+.05),tsize=w*.06+Math.random()*w*.04;
+    g.fillStyle=`rgba(${10+t*3},${50+t*8},${10+t*3},.7)`;
+    g.beginPath();g.arc(tx,h*.52,tsize,0,Math.PI*2);g.fill();
+  }
+  // Palm trees — prominent
+  function bigPalm(px,py,lean,sz){
+    const trunkG=g.createLinearGradient(px,py,px+lean*10,py-h*.4*sz);
+    trunkG.addColorStop(0,'#5d3818');trunkG.addColorStop(1,'#3d2208');
+    g.strokeStyle=trunkG;g.lineWidth=sz*w*.022;g.lineCap='round';
+    g.beginPath();g.moveTo(px,py);g.quadraticCurveTo(px+lean*w*.06,py-h*.25*sz,px+lean*w*.1,py-h*.42*sz);g.stroke();
+    const tx=px+lean*w*.1,ty=py-h*.42*sz;
+    for(let a=0;a<360;a+=36){
+      const rad=a*Math.PI/180,len=.5+Math.abs(Math.sin(rad))*.5;
+      g.strokeStyle=`rgba(${20+Math.floor(len*30)},${100+Math.floor(len*40)},${10+Math.floor(len*15)},.9)`;
+      g.lineWidth=sz*w*.009;
+      g.beginPath();g.moveTo(tx,ty);
+      g.bezierCurveTo(tx+Math.cos(rad)*w*.06*sz*len,ty+Math.sin(rad)*h*.03*sz*len,
+                      tx+Math.cos(rad)*w*.1*sz*len,ty+Math.sin(rad)*h*.05*sz*len,
+                      tx+Math.cos(rad)*w*.13*sz*len,ty+Math.sin(rad)*h*.08*sz*len+h*.02);g.stroke();
+    }
+  }
+  bigPalm(w*.08,h*.72,-.3,1.1);bigPalm(w*.18,h*.68,.4,.95);bigPalm(w*.88,h*.7,-.35,1.0);bigPalm(w*.96,h*.72,.2,.85);
+  // THE SHIP — center, detailed
+  function drawShip(sx,sy,sw){
+    const sh=sw*.35;
+    // Engine glow behind
+    const eg=g.createRadialGradient(sx,sy+sh*.8,0,sx,sy+sh*.8,sw*.4);
+    eg.addColorStop(0,'rgba(0,150,255,.3)');eg.addColorStop(1,'transparent');
+    g.fillStyle=eg;g.fillRect(sx-sw*.5,sy,sw,sw*.6);
+    // Wing L
+    g.beginPath();g.moveTo(sx,sy+sh*.2);g.lineTo(sx-sw*.5,sy+sh*.6);g.lineTo(sx-sw*.35,sy+sh);g.lineTo(sx-sw*.1,sy+sh*.5);g.closePath();
+    const wg=g.createLinearGradient(sx-sw*.5,sy,sx,sy+sh);wg.addColorStop(0,'#1a2535');wg.addColorStop(1,'#0d1520');
+    g.fillStyle=wg;g.fill();g.strokeStyle='#2a3a50';g.lineWidth=1.5;g.stroke();
+    // Wing R
+    g.beginPath();g.moveTo(sx,sy+sh*.2);g.lineTo(sx+sw*.5,sy+sh*.6);g.lineTo(sx+sw*.35,sy+sh);g.lineTo(sx+sw*.1,sy+sh*.5);g.closePath();
+    g.fillStyle=wg;g.fill();g.strokeStyle='#2a3a50';g.lineWidth=1.5;g.stroke();
+    // Hull spine
+    g.beginPath();g.moveTo(sx-sw*.12,sy-sh*.12);g.lineTo(sx+sw*.12,sy-sh*.12);
+    g.lineTo(sx+sw*.14,sy+sh);g.lineTo(sx-sw*.14,sy+sh);g.closePath();
+    const hg=g.createLinearGradient(sx-sw*.15,sy,sx+sw*.15,sy+sh);
+    hg.addColorStop(0,'#2a3d58');hg.addColorStop(.5,'#3d5570');hg.addColorStop(1,'#1a2535');
+    g.fillStyle=hg;g.fill();g.strokeStyle='#4a6688';g.lineWidth=1.5;g.stroke();
+    // Cockpit
+    const cg2=g.createRadialGradient(sx-sw*.02,sy-sh*.1,0,sx,sy,sw*.1);
+    cg2.addColorStop(0,'#88ddff');cg2.addColorStop(.5,'#0077cc');cg2.addColorStop(1,'#003366');
+    g.fillStyle=cg2;g.beginPath();g.ellipse(sx,sy-sh*.05,sw*.12,sh*.1,0,0,Math.PI*2);g.fill();
+    g.strokeStyle='#44aadd';g.lineWidth=1;g.stroke();
+    // Engine nozzles
+    [-sw*.3,0,sw*.3].forEach(ox=>{
+      g.fillStyle='#0a1520';g.beginPath();g.ellipse(sx+ox,sy+sh,sw*.06,sh*.04,0,0,Math.PI*2);g.fill();
+      g.strokeStyle='#1a3050';g.lineWidth=1;g.stroke();
+      // Idle glow
+      const ig=g.createRadialGradient(sx+ox,sy+sh+5,0,sx+ox,sy+sh+5,sw*.04);
+      ig.addColorStop(0,'rgba(0,100,200,.35)');ig.addColorStop(1,'transparent');
+      g.fillStyle=ig;g.fillRect(sx+ox-sw*.05,sy+sh,sw*.1,sh*.08);
+    });
+    // Rust patches
+    g.globalAlpha=.3;g.fillStyle='#884422';
+    [[sx-sw*.2,sy+sh*.3,sw*.04,sh*.03],[sx+sw*.15,sy+sh*.5,sw*.03,sh*.03]].forEach(([rx,ry,rw,rh])=>{
+      g.beginPath();g.ellipse(rx,ry,rw,rh,.3,0,Math.PI*2);g.fill();
+    });
+    g.globalAlpha=1;
+    // Graffiti text
+    g.fillStyle='rgba(255,50,0,.7)';g.font=`bold ${sw*.06}px sans-serif`;
+    g.textAlign='center';g.fillText('RATS RULE',sx,sy+sh*.45);g.textAlign='left';
+  }
+  drawShip(w*.48,h*.28,w*.45);
+  // Marcus admiring it
+  g.fillStyle='#c87840';g.beginPath();g.arc(w*.82,h*.56,w*.013,0,Math.PI*2);g.fill();
+  g.fillStyle='#2244aa';g.fillRect(w*.814,h*.573,w*.018,h*.05);
+  // Raised arms excitement
+  g.strokeStyle='#c87840';g.lineWidth=3;g.lineCap='round';
+  g.beginPath();g.moveTo(w*.814,h*.59);g.lineTo(w*.79,h*.57);g.stroke();
+  g.beginPath();g.moveTo(w*.832,h*.59);g.lineTo(w*.852,h*.57);g.stroke();
+}},
+
+{cap:"Launch day. Banhattan glowed red and horrible behind him.\nMarcus pointed the ship away and pushed the throttle to the floor.",
+draw(cv){
+  const w=cv.width,h=cv.height,g=cv.getContext('2d');
+  // Split sky — red horror left, dark blue freedom right
+  const sky2=g.createLinearGradient(0,0,w,0);
+  sky2.addColorStop(0,'#1a0005');sky2.addColorStop(.45,'#0d0318');sky2.addColorStop(.55,'#020510');sky2.addColorStop(1,'#010310');
+  g.fillStyle=sky2;g.fillRect(0,0,w,h);
+  // Red evil glow left
+  const rg=g.createRadialGradient(0,h*.3,0,0,h*.3,w*.5);
+  rg.addColorStop(0,'rgba(100,5,15,.4)');rg.addColorStop(1,'transparent');
+  g.fillStyle=rg;g.fillRect(0,0,w,h);
+  // Stars right side only
+  for(let i=0;i<100;i++){
+    const sx=w*(.5+Math.random()*.5),sy=Math.random()*h*.5;
+    g.beginPath();g.arc(sx,sy,.5+Math.random(),0,Math.PI*2);
+    g.fillStyle=`rgba(200,210,255,${.2+Math.random()*.5})`;g.fill();
+  }
+  // Banhattan left — dense glowing red towers
+  [[0,.38,.065],[.065,.26,.055],[.12,.42,.065],[.185,.22,.06],[.245,.35,.07],
+   [.315,.20,.055],[.37,.32,.06],[.43,.24,.065],[.495,.38,.055]].forEach(([bx,by,bw2])=>{
+    const bg2=g.createLinearGradient(bx*w,by*h,bx*w,h*.55);
+    bg2.addColorStop(0,'#250010');bg2.addColorStop(1,'#150008');
+    g.fillStyle=bg2;g.fillRect(bx*w,by*h,bw2*w,(h*.55-by*h));
+    for(let wy=0;wy<12;wy++)for(let wx=0;wx<3;wx++)
+      if((bx*77+wy*13+wx*9)%5<3){
+        const lit=(bx*77+wy*13+wx*9)%5;
+        g.fillStyle=`rgba(255,${50+lit*30},0,${.08+lit*.06})`;
+        g.fillRect((bx+.01+wx*bw2*.28)*w,(by+.05+wy*.062)*h,bw2*w*.17,h*.026);
+      }
+  });
+  // Zombie silhouettes on rooftops
+  [.08,.22,.36,.44].forEach(zx=>{
+    g.fillStyle='rgba(20,0,10,.9)';
+    g.beginPath();g.arc(zx*w,h*.2+Math.sin(zx*20)*h*.03,w*.008,0,Math.PI*2);g.fill();
+    g.fillRect(zx*w-w*.006,h*.2+Math.sin(zx*20)*h*.03,w*.012,h*.03);
+    // Outstretched arms
+    g.strokeStyle='rgba(20,0,10,.9)';g.lineWidth=2;
+    g.beginPath();g.moveTo(zx*w-w*.006,h*.22+Math.sin(zx*20)*h*.03);
+    g.lineTo(zx*w-w*.02,h*.21+Math.sin(zx*20)*h*.03);g.stroke();
+    g.beginPath();g.moveTo(zx*w+w*.006,h*.22+Math.sin(zx*20)*h*.03);
+    g.lineTo(zx*w+w*.02,h*.21+Math.sin(zx*20)*h*.03);g.stroke();
+  });
+  // Water
+  g.fillStyle='#030612';g.fillRect(0,h*.55,w,h*.45);
+  for(let wi=0;wi<10;wi++){
+    const wy=h*(.56+wi*.025);g.strokeStyle=`rgba(10,20,50,${.2+wi*.03})`;g.lineWidth=1.5;
+    g.beginPath();g.moveTo(0,wy);
+    for(let wx2=0;wx2<w;wx2+=25)g.quadraticCurveTo(wx2+12,wy+((wx2/25+wi)%2?1.5:-1.5),wx2+25,wy);g.stroke();
+  }
+  // Island tiny behind / below
+  g.beginPath();g.moveTo(w*.55,h*.9);g.quadraticCurveTo(w*.7,h*.83,w*.85,h*.85);
+  g.quadraticCurveTo(w*.93,h*.86,w,h*.84);g.lineTo(w,h);g.lineTo(w*.55,h);g.closePath();
+  g.fillStyle='#0d2204';g.fill();
+  // THE SHIP — launching upward, bright engine fire
+  const shipX=w*.65,shipY=h*.2,shipW=w*.28;
+  // Engine fire
+  const fire1=g.createRadialGradient(shipX,shipY+shipW*.45,0,shipX,shipY+shipW*.45,shipW*.25);
+  fire1.addColorStop(0,'#ffffff');fire1.addColorStop(.2,'#ffee44');fire1.addColorStop(.5,'#ff8800');fire1.addColorStop(1,'transparent');
+  g.fillStyle=fire1;g.fillRect(shipX-shipW*.25,shipY+shipW*.2,shipW*.5,shipW*.5);
+  // Exhaust trail
+  for(let ti=0;ti<8;ti++){
+    const ty=shipY+shipW*.42+ti*h*.04,ta=.7-ti*.085;
+    const tg=g.createRadialGradient(shipX,ty,0,shipX,ty,shipW*.15-ti*4);
+    tg.addColorStop(0,`rgba(80,160,255,${ta*.4})`);tg.addColorStop(1,'transparent');
+    g.fillStyle=tg;g.fillRect(shipX-shipW*.2,ty-5,shipW*.4,20);
+  }
+  // Wings
+  g.beginPath();g.moveTo(shipX,shipY+shipW*.1);g.lineTo(shipX-shipW*.48,shipY+shipW*.38);g.lineTo(shipX-shipW*.32,shipY+shipW*.48);g.lineTo(shipX-shipW*.08,shipY+shipW*.25);g.closePath();
+  g.fillStyle='#1a2535';g.fill();g.strokeStyle='#2a3a50';g.lineWidth=1.5;g.stroke();
+  g.beginPath();g.moveTo(shipX,shipY+shipW*.1);g.lineTo(shipX+shipW*.48,shipY+shipW*.38);g.lineTo(shipX+shipW*.32,shipY+shipW*.48);g.lineTo(shipX+shipW*.08,shipY+shipW*.25);g.closePath();
+  g.fillStyle='#1a2535';g.fill();g.strokeStyle='#2a3a50';g.lineWidth=1.5;g.stroke();
+  // Hull
+  g.beginPath();g.moveTo(shipX-shipW*.11,shipY-shipW*.1);g.lineTo(shipX+shipW*.11,shipY-shipW*.1);
+  g.lineTo(shipX+shipW*.13,shipY+shipW*.45);g.lineTo(shipX-shipW*.13,shipY+shipW*.45);g.closePath();
+  const hg2=g.createLinearGradient(shipX-shipW*.14,0,shipX+shipW*.14,0);
+  hg2.addColorStop(0,'#1a2535');hg2.addColorStop(.5,'#3d5570');hg2.addColorStop(1,'#1a2535');
+  g.fillStyle=hg2;g.fill();g.strokeStyle='#4a6688';g.lineWidth=2;g.stroke();
+  // Cockpit glow
+  const cg3=g.createRadialGradient(shipX,shipY+shipW*.02,0,shipX,shipY+shipW*.05,shipW*.1);
+  cg3.addColorStop(0,'#aaddff');cg3.addColorStop(.6,'#0077cc');cg3.addColorStop(1,'#002244');
+  g.fillStyle=cg3;g.beginPath();g.ellipse(shipX,shipY+shipW*.05,shipW*.1,shipW*.08,0,0,Math.PI*2);g.fill();
+}},
+
+{cap:"Sector by sector the horrible city crumbled before him.\nEvery broken block: one less zombie, one less rat, one step closer to somewhere normal.",
+draw(cv){
+  const w=cv.width,h=cv.height,g=cv.getContext('2d');
+  // Space — deep black with stars
+  g.fillStyle='#000';g.fillRect(0,0,w,h);
+  for(let i=0;i<250;i++){
+    const sx=Math.random()*w,sy=Math.random()*h;
+    g.beginPath();g.arc(sx,sy,Math.random()*.8+.1,0,Math.PI*2);
+    g.fillStyle=`rgba(200,210,255,${.15+Math.random()*.6})`;g.fill();
+  }
+  // Distant nebula / planet glow
+  const neb=g.createRadialGradient(w*.15,h*.3,0,w*.15,h*.3,w*.25);
+  neb.addColorStop(0,'rgba(40,0,80,.35)');neb.addColorStop(1,'transparent');
+  g.fillStyle=neb;g.fillRect(0,0,w,h);
+  // LEFT: crumbling Banhattan blocks — exploding apart
+  const blockColors=['#2a0a18','#330d22','#220818','#3d1028','#1a0610'];
+  for(let bi=0;bi<22;bi++){
+    const bx=Math.random()*w*.45, by=h*.1+Math.random()*h*.65;
+    const bw2=w*.02+Math.random()*w*.07, bh=h*.03+Math.random()*h*.06;
+    const rot=(Math.random()-.5)*.8;
+    g.save();g.translate(bx+bw2/2,by+bh/2);g.rotate(rot);
+    g.fillStyle=blockColors[bi%5];g.fillRect(-bw2/2,-bh/2,bw2,bh);
+    g.strokeStyle='rgba(100,50,80,.4)';g.lineWidth=1;g.strokeRect(-bw2/2,-bh/2,bw2,bh);
+    g.restore();
+  }
+  // Explosion particles
+  [[w*.12,h*.25],[w*.28,h*.4],[w*.18,h*.55],[w*.38,h*.3],[w*.08,h*.6]].forEach(([ex,ey])=>{
+    const eg2=g.createRadialGradient(ex,ey,0,ex,ey,w*.06);
+    eg2.addColorStop(0,'rgba(255,180,50,.5)');eg2.addColorStop(.4,'rgba(255,80,0,.25)');eg2.addColorStop(1,'transparent');
+    g.fillStyle=eg2;g.fillRect(ex-w*.06,ey-w*.06,w*.12,w*.12);
+    // Spark lines
+    for(let s=0;s<8;s++){
+      const sa=s/8*Math.PI*2,sl=w*.03+Math.random()*w*.04;
+      g.strokeStyle=`rgba(255,${140+Math.floor(Math.random()*100)},20,.7)`;g.lineWidth=1.5;
+      g.beginPath();g.moveTo(ex,ey);g.lineTo(ex+Math.cos(sa)*sl,ey+Math.sin(sa)*sl);g.stroke();
+    }
+  });
+  // CENTER/RIGHT: The ship flying through debris
+  const shipX=w*.68,shipY=h*.38,shipW=w*.32;
   // Speed lines
-  for(let y=6;y<11;y++){B('─',6,y,'#002244');B('─',5,y,'#001133');B('─',4,y,'#000a22');}
-  // Open space right - freedom stars getting closer
-  [[18,4,'#00ff88'],[20,3,'#44ffaa'],[22,5,'#00dd66'],[24,4,'#00ff44'],[25,6,'#44ff88']].forEach(([x,y,col])=>B('★',x,y,col));
-  // Green glow ahead
-  for(let y=5;y<12;y++)for(let x=19;x<26;x++)B('░',x,y,'#001a00');
-  // Score flash
-  cx.fillStyle='#ffff00';cx.font=`bold ${Math.floor(cw*.75)}px monospace`;cx.fillText('+500 PTS',18*cw,8*ch);
-  cx.fillStyle='#00ff88';cx.fillText('KEEP GOING',17*cw,9*ch);
-  // Ground/space border
-  for(let x=0;x<26;x++)B('▄',x,18,'#001100');
+  for(let sl=0;sl<12;sl++){
+    const ly=h*(.15+sl*.06),ll=w*.08+Math.random()*w*.12;
+    g.strokeStyle=`rgba(100,160,220,${.08+sl*.01})`;g.lineWidth=1;
+    g.beginPath();g.moveTo(shipX-shipW*.6-ll,ly);g.lineTo(shipX-shipW*.6,ly);g.stroke();
+  }
+  // Engine trail
+  for(let ti=0;ti<10;ti++){
+    const tx=shipX-shipW*.15-ti*w*.03,tg2=g.createRadialGradient(tx,shipY+shipW*.38,0,tx,shipY+shipW*.38,w*.04-ti*3);
+    tg2.addColorStop(0,`rgba(0,${100+ti*10},255,${.5-ti*.04})`);tg2.addColorStop(1,'transparent');
+    g.fillStyle=tg2;g.fillRect(tx-w*.05,shipY+shipW*.28,w*.1,w*.1);
+  }
+  // Wings  
+  g.beginPath();g.moveTo(shipX,shipY+shipW*.15);g.lineTo(shipX-shipW*.48,shipY+shipW*.42);g.lineTo(shipX-shipW*.3,shipY+shipW*.52);g.lineTo(shipX-shipW*.08,shipY+shipW*.28);g.closePath();
+  g.fillStyle='#1a2535';g.fill();g.strokeStyle='#3a5570';g.lineWidth=1.5;g.stroke();
+  g.beginPath();g.moveTo(shipX,shipY+shipW*.15);g.lineTo(shipX+shipW*.48,shipY+shipW*.42);g.lineTo(shipX+shipW*.3,shipY+shipW*.52);g.lineTo(shipX+shipW*.08,shipY+shipW*.28);g.closePath();
+  g.fillStyle='#1a2535';g.fill();g.strokeStyle='#3a5570';g.lineWidth=1.5;g.stroke();
+  // Hull
+  g.beginPath();g.moveTo(shipX-shipW*.1,shipY);g.lineTo(shipX+shipW*.1,shipY);
+  g.lineTo(shipX+shipW*.12,shipY+shipW*.48);g.lineTo(shipX-shipW*.12,shipY+shipW*.48);g.closePath();
+  const hg3=g.createLinearGradient(shipX-shipW*.12,0,shipX+shipW*.12,0);
+  hg3.addColorStop(0,'#1a2535');hg3.addColorStop(.5,'#3d5570');hg3.addColorStop(1,'#1a2535');
+  g.fillStyle=hg3;g.fill();g.strokeStyle='#4a6688';g.lineWidth=2;g.stroke();
+  const cg4=g.createRadialGradient(shipX,shipY+shipW*.1,0,shipX,shipY+shipW*.1,shipW*.1);
+  cg4.addColorStop(0,'#88ddff');cg4.addColorStop(.6,'#0077cc');cg4.addColorStop(1,'#002244');
+  g.fillStyle=cg4;g.beginPath();g.ellipse(shipX,shipY+shipW*.1,shipW*.1,shipW*.08,0,0,Math.PI*2);g.fill();
+  // Bright green stars ahead (freedom)
+  [[w*.82,h*.12],[w*.9,h*.22],[w*.78,h*.3],[w*.95,h*.35],[w*.85,h*.48]].forEach(([sx,sy])=>{
+    const sg=g.createRadialGradient(sx,sy,0,sx,sy,w*.025);
+    sg.addColorStop(0,'rgba(100,255,150,.8)');sg.addColorStop(1,'transparent');
+    g.fillStyle=sg;g.fillRect(sx-w*.025,sy-w*.025,w*.05,w*.05);
+    g.beginPath();g.arc(sx,sy,3,0,Math.PI*2);g.fillStyle='#aaffcc';g.fill();
+  });
 }},
 
-{cap:"Marcus touched down on green grass under a clean sky.\nNo zombies. No rats. No $9,000 studio apartments. He made it.",
+{cap:"Marcus touched down on green grass under a wide open sky.\nNo zombies. No rats. No $9,000 studios. He made it. He was finally free.",
 draw(cv){
-  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
-  cx.fillStyle='#001a33';cx.fillRect(0,0,w,h);
-  const cw=Math.floor(w/26),ch=Math.floor(h/20);
-  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
-  // Blue sky
-  for(let x=0;x<26;x++){B('█',x,0,'#003366');B('█',x,1,'#004488');}
-  // Sun!
-  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)B('█',12+dx,dy+1,'#ffee00');
-  B('▀',10,1,'#ffee00');B('▀',14,1,'#ffee00');B('▄',11,3,'#ffee00');B('▄',13,3,'#ffee00');
-  B('▌',10,2,'#ffee00');B('▐',14,2,'#ffee00');
-  // White clouds
-  [[2,2],[3,2],[4,2],[3,1]].forEach(([x,y])=>B('█',x,y,'#ccddff'));
-  [[19,3],[20,3],[21,3],[22,3],[20,2],[21,2]].forEach(([x,y])=>B('█',x,y,'#bbccee'));
-  // Green hills background
-  for(let x=0;x<26;x++)B('█',x,9,'#004400');
-  for(let x=0;x<26;x++)B('▀',x,8,'#006600');
-  // Rolling hills
-  [0,1,2,3,24,25].forEach(x=>B('█',x,8,'#005500'));
-  [4,5,23].forEach(x=>B('▀',x,7,'#007700'));
-  // Flowers!!
-  [[1,9,'#ff88ff'],[3,9,'#ffff44'],[5,9,'#ff88ff'],[8,9,'#ffff44'],[11,9,'#ff44ff'],
-   [14,9,'#ffff44'],[17,9,'#ff88ff'],[20,9,'#ffff44'],[23,9,'#ff44ff'],[25,9,'#ffff44']].forEach(([x,y,col])=>B('✿',x,y,col));
-  // Ground - lush green
-  for(let x=0;x<26;x++){B('█',x,10,'#115511');B('█',x,11,'#0d4a0d');B('█',x,12,'#0a3d0a');}
-  // THE SHIP landed
-  for(let x=9;x<17;x++)B('█',x,9,'#2a3a4a');
-  B('▀',8,9,'#1a2a3a');B('▀',17,9,'#1a2a3a');
-  B('█',10,8,'#334455');B('█',11,8,'#004488');B('█',12,8,'#0066cc');B('█',13,8,'#0066cc');B('█',14,8,'#004488');B('█',15,8,'#334455');
+  const w=cv.width,h=cv.height,g=cv.getContext('2d');
+  // Beautiful blue day sky
+  const sky3=g.createLinearGradient(0,0,0,h*.55);
+  sky3.addColorStop(0,'#1a6abb');sky3.addColorStop(.5,'#3a9add');sky3.addColorStop(1,'#88c8f0');
+  g.fillStyle=sky3;g.fillRect(0,0,w,h*.55);
+  // Sun — brilliant
+  const sun=g.createRadialGradient(w*.72,h*.12,0,w*.72,h*.12,w*.18);
+  sun.addColorStop(0,'#fffde0');sun.addColorStop(.15,'#ffee88');sun.addColorStop(.4,'rgba(255,220,80,.3)');sun.addColorStop(1,'transparent');
+  g.fillStyle=sun;g.fillRect(0,0,w,h*.4);
+  g.beginPath();g.arc(w*.72,h*.12,w*.055,0,Math.PI*2);g.fillStyle='#fffde0';g.fill();
+  // Sun rays
+  g.strokeStyle='rgba(255,240,150,.25)';g.lineWidth=w*.018;g.lineCap='round';
+  for(let ra=0;ra<12;ra++){
+    const rad=ra/12*Math.PI*2;
+    g.beginPath();g.moveTo(w*.72+Math.cos(rad)*w*.07,h*.12+Math.sin(rad)*h*.06);
+    g.lineTo(w*.72+Math.cos(rad)*w*.12,h*.12+Math.sin(rad)*h*.1);g.stroke();
+  }
+  // Fluffy white clouds
+  function cloud2(cx3,cy3,cw2){
+    g.fillStyle='rgba(255,255,255,.9)';
+    [[0,0,.5],[cw2*.35,-.15,.4],[cw2*.7,0,.45],[-cw2*.25,-.1,.35],[cw2*.95,-.08,.38]].forEach(([dx,dy,r])=>{
+      g.beginPath();g.arc(cx3+dx,cy3+dy,cw2*r,0,Math.PI*2);g.fill();
+    });
+  }
+  cloud2(w*.12,h*.18,w*.1);cloud2(w*.42,h*.12,w*.12);cloud2(w*.82,h*.22,w*.09);
+  // Rolling green hills — background
+  const hill1=g.createLinearGradient(0,h*.45,0,h*.65);
+  hill1.addColorStop(0,'#2d8a2d');hill1.addColorStop(1,'#1a6618');
+  g.fillStyle=hill1;g.beginPath();g.moveTo(0,h*.65);
+  g.quadraticCurveTo(w*.2,h*.42,w*.4,h*.48);g.quadraticCurveTo(w*.6,h*.54,w*.8,h*.44);
+  g.quadraticCurveTo(w*.9,h*.40,w,h*.46);g.lineTo(w,h*.65);g.closePath();g.fill();
+  // Foreground lush grass
+  const grass=g.createLinearGradient(0,h*.55,0,h);
+  grass.addColorStop(0,'#3aaa3a');grass.addColorStop(.3,'#2d8a2d');grass.addColorStop(1,'#1a5518');
+  g.fillStyle=grass;g.fillRect(0,h*.55,w,h*.45);
+  // Rolling foreground hill shape
+  g.beginPath();g.moveTo(0,h*.65);
+  g.quadraticCurveTo(w*.25,h*.52,w*.5,h*.56);
+  g.quadraticCurveTo(w*.75,h*.60,w,h*.55);g.lineTo(w,h*.65);g.closePath();
+  g.fillStyle='#4acc4a';g.fill();
+  // Wildflowers scattered
+  const flowers=[['#ff88cc',.05,.7],['#ffff44',.15,.73],['#ff66aa',.25,.68],['#fff',.35,.75],
+    ['#ffff44',.45,.72],['#ff88cc',.58,.69],['#fff',.68,.74],['#ffff44',.78,.7],
+    ['#ff66aa',.88,.73],['#ff88cc',.95,.68]];
+  flowers.forEach(([col,fx,fy])=>{
+    g.fillStyle=col;g.beginPath();g.arc(fx*w,fy*h,w*.008,0,Math.PI*2);g.fill();
+    g.strokeStyle='rgba(0,100,0,.5)';g.lineWidth=1.5;g.beginPath();g.moveTo(fx*w,fy*h+w*.008);g.lineTo(fx*w,fy*h+w*.025);g.stroke();
+  });
+  // Some trees in distance
+  [.05,.15,.85,.92].forEach(tx=>{
+    const ty=h*.5;
+    g.fillStyle='#1a5a1a';g.beginPath();g.arc(tx*w,ty,w*.025,0,Math.PI*2);g.fill();
+    g.strokeStyle='#4a2a08';g.lineWidth=w*.008;g.beginPath();g.moveTo(tx*w,ty+w*.025);g.lineTo(tx*w,ty+h*.06);g.stroke();
+  });
+  // THE SHIP — landed, engines cooling
+  const shipX=w*.5,shipY=h*.56,shipW=w*.38;
   // Landing legs
-  B('▌',9,10,'#223344');B('▐',16,10,'#223344');
-  // MARCUS - arms wide open, celebrating!
-  B('▀',12,6,'#ffcc88');// head
-  B('─',10,7,'#2244aa');B('█',11,7,'#2244aa');B('█',12,7,'#2244aa');B('█',13,7,'#2244aa');B('─',14,7,'#2244aa');// body+arms spread
-  B('▌',11,8,'#2244aa');B('▐',13,8,'#2244aa');// legs
-  // Celebration text
-  cx.fillStyle='#ffff00';cx.font=`bold ${Math.floor(cw*1.0)}px monospace`;cx.fillText('FREE!!!',17*cw,5*ch);
-  cx.fillStyle='#00ff88';cx.font=`bold ${Math.floor(cw*.65)}px monospace`;cx.fillText('NO ZOMBIES',17*cw,6*ch);
-  cx.fillStyle='#44ffff';cx.fillText('NO RATS',17*cw,7*ch);
-  cx.fillStyle='#ff88ff';cx.fillText('NO $9K RENT',17*cw,8*ch);
+  g.strokeStyle='#1a2a3a';g.lineWidth=w*.012;g.lineCap='round';
+  g.beginPath();g.moveTo(shipX-shipW*.25,shipY+shipW*.4);g.lineTo(shipX-shipW*.35,shipY+shipW*.55);g.stroke();
+  g.beginPath();g.moveTo(shipX+shipW*.25,shipY+shipW*.4);g.lineTo(shipX+shipW*.35,shipY+shipW*.55);g.stroke();
+  g.beginPath();g.moveTo(shipX,shipY+shipW*.42);g.lineTo(shipX,shipY+shipW*.55);g.stroke();
+  // Engine steam
+  for(let s=0;s<3;s++){
+    const sg2=g.createRadialGradient(shipX+[-shipW*.3,0,shipW*.3][s],shipY+shipW*.44,0,shipX+[-shipW*.3,0,shipW*.3][s],shipY+shipW*.44,w*.04);
+    sg2.addColorStop(0,'rgba(200,220,255,.25)');sg2.addColorStop(1,'transparent');
+    g.fillStyle=sg2;g.fillRect(shipX+[-shipW*.3,0,shipW*.3][s]-w*.04,shipY+shipW*.38,w*.08,h*.06);
+  }
+  // Wings
+  g.beginPath();g.moveTo(shipX,shipY+shipW*.18);g.lineTo(shipX-shipW*.5,shipY+shipW*.42);g.lineTo(shipX-shipW*.35,shipY+shipW*.52);g.lineTo(shipX-shipW*.08,shipY+shipW*.3);g.closePath();
+  g.fillStyle='#1a2535';g.fill();g.strokeStyle='#3a5570';g.lineWidth=2;g.stroke();
+  g.beginPath();g.moveTo(shipX,shipY+shipW*.18);g.lineTo(shipX+shipW*.5,shipY+shipW*.42);g.lineTo(shipX+shipW*.35,shipY+shipW*.52);g.lineTo(shipX+shipW*.08,shipY+shipW*.3);g.closePath();
+  g.fillStyle='#1a2535';g.fill();g.strokeStyle='#3a5570';g.lineWidth=2;g.stroke();
+  g.beginPath();g.moveTo(shipX-shipW*.1,shipY+shipW*.05);g.lineTo(shipX+shipW*.1,shipY+shipW*.05);
+  g.lineTo(shipX+shipW*.12,shipY+shipW*.44);g.lineTo(shipX-shipW*.12,shipY+shipW*.44);g.closePath();
+  const hgf=g.createLinearGradient(shipX-shipW*.12,0,shipX+shipW*.12,0);
+  hgf.addColorStop(0,'#1a2535');hgf.addColorStop(.5,'#3d5570');hgf.addColorStop(1,'#1a2535');
+  g.fillStyle=hgf;g.fill();g.strokeStyle='#4a6688';g.lineWidth=2;g.stroke();
+  // Cockpit
+  const cgf=g.createRadialGradient(shipX,shipY+shipW*.15,0,shipX,shipY+shipW*.15,shipW*.1);
+  cgf.addColorStop(0,'#88ddff');cgf.addColorStop(.6,'#0077cc');cgf.addColorStop(1,'#002244');
+  g.fillStyle=cgf;g.beginPath();g.ellipse(shipX,shipY+shipW*.15,shipW*.1,shipW*.08,0,0,Math.PI*2);g.fill();
+  // MARCUS — standing with arms wide open
+  const mx=w*.32,my=h*.62;
+  // Shadow
+  g.fillStyle='rgba(0,80,0,.3)';g.beginPath();g.ellipse(mx,my+h*.04,w*.04,h*.01,0,0,Math.PI*2);g.fill();
+  // Legs
+  g.strokeStyle='#1e3a88';g.lineWidth=w*.014;g.lineCap='round';
+  g.beginPath();g.moveTo(mx,my);g.lineTo(mx-w*.02,my+h*.07);g.stroke();
+  g.beginPath();g.moveTo(mx,my);g.lineTo(mx+w*.018,my+h*.07);g.stroke();
+  // Body
+  g.fillStyle='#1e4488';g.fillRect(mx-w*.018,my-h*.07,w*.036,h*.07);
+  // Arms wide — celebrating
+  g.strokeStyle='#1e4488';g.lineWidth=w*.013;
+  g.beginPath();g.moveTo(mx-w*.018,my-h*.04);g.lineTo(mx-w*.07,my-h*.065);g.stroke();
+  g.beginPath();g.moveTo(mx+w*.018,my-h*.04);g.lineTo(mx+w*.07,my-h*.065);g.stroke();
+  // Head
+  g.fillStyle='#d4884a';g.beginPath();g.arc(mx,my-h*.088,w*.022,0,Math.PI*2);g.fill();
+  // Big smile (arc)
+  g.strokeStyle='#7a4420';g.lineWidth=2;g.lineCap='round';
+  g.beginPath();g.arc(mx,my-h*.082,w*.01,0.2,Math.PI-.2);g.stroke();
+  // Eyes happy
+  g.fillStyle='#3a2010';
+  g.beginPath();g.arc(mx-w*.008,my-h*.093,w*.003,0,Math.PI*2);g.fill();
+  g.beginPath();g.arc(mx+w*.008,my-h*.093,w*.003,0,Math.PI*2);g.fill();
+  // FREE text — big glowing
+  g.shadowBlur=22;g.shadowColor='#ffee22';
+  g.fillStyle='#ffee22';g.font=`bold ${w*.065}px sans-serif`;g.textAlign='center';
+  g.fillText('FINALLY FREE',w*.68,h*.42);
+  g.shadowBlur=0;g.textAlign='left';
+  // NO MORE signs
+  g.fillStyle='rgba(255,60,60,.85)';g.font=`${w*.022}px sans-serif`;g.textAlign='center';
+  g.fillText('✓ No zombies',w*.78,h*.5);
+  g.fillText('✓ No giant rats',w*.78,h*.53);
+  g.fillText('✓ No $9K rent',w*.78,h*.56);
+  g.textAlign='left';
 }}
 ];
 const LCAPS=[
-"Marcus has stared at Banhattan his whole life.\nTonight he decides: one way or another, he is leaving.",
-"The zombies of Banhattan don't even know the island exists.\nMarcus plans to keep it that way — from far, far away.",
-"Somewhere out there is a place without zombies and $9K studios.\nMarcus dreams of it every single night.",
-"The rats arrived in tiny suits with eviction notices.\nThat was absolutely the last straw.",
-"Every block he smashes is one sector closer to somewhere normal.\nThe ship is ugly. It will do.",
-"Banhattan shrinks in the rear mirror, red and horrible.\nMarcus doesn't look back. Not once.",
-"One sector at a time the walls of the horrible city crumble.\nThe clean air is so close he can almost smell it.",
-"He made it. Green grass. Clean sky. No zombies.\nMarcus is finally, gloriously, completely FREE."
+"Marcus grew up on a tiny island, always staring across the water at Banhattan.\nOn the other side: towers, smog, dread, and zombies in business casual.",
+"Banhattan — $9,000 a month for a studio with a hot plate.\nZombies shuffle past the Starbucks. Rats the size of terriers work in finance.",
+"Marcus lay in his hammock dreaming of somewhere far, far away.\nGreen. Quiet. Not next to Banhattan.",
+"Then the rats crossed the water in tiny suits with eviction notices.\nMarcus decided: that was the last straw. Time to leave.",
+"His ship was rusty, dented, and covered in rat graffiti.\nThe engine fired on the third try. Close enough.",
+"Launch day. Banhattan glowed red and horrible in the mirror.\nMarcus pushed the throttle and never looked back.",
+"Sector by sector the city crumbled before him.\nEvery broken block: one less zombie landlord, one step closer to somewhere sane.",
+"He landed on green grass under a wide open sky.\nNo zombies. No rats. No $9,000 studios. Marcus was free."
 ];
 
 function showCutscene(done,onDone){
