@@ -15,6 +15,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Or
 .mbtn:hover{background:rgba(0,247,255,.14);box-shadow:0 0 36px rgba(0,247,255,.6);transform:translateY(-1px)}
 .mbtn.pink{border-color:#ff00c8;box-shadow:0 0 18px rgba(255,0,200,.3)}
 .mbtn.pink:hover{background:rgba(255,0,200,.12);box-shadow:0 0 36px rgba(255,0,200,.6)}
+#overlay{
+  position:fixed;inset:0;z-index:60;
+  display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.88);
+  padding:20px;overflow-y:auto;
+  box-sizing:border-box;
+}
+#overlay-inner{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;
+  max-width:480px;width:100%;
+  margin:auto;
+  padding:24px 16px;
+}
 #cutscene{position:fixed;inset:0;z-index:45;display:none;flex-direction:column;align-items:center;justify-content:center;background:#000;padding:16px;}
 #cs-canvas{width:min(96vw,calc(70vh*16/9));height:min(70vh,calc(96vw*9/16));border:1px solid rgba(0,247,255,.35);border-radius:3px;display:block;background:#000;flex-shrink:0;}
 #cs-caption{margin-top:14px;width:min(96vw,calc(70vh*16/9));color:#cce4ff;font-size:clamp(11px,1.7vw,16px);line-height:1.7;text-align:center;text-shadow:0 0 8px rgba(100,180,255,.5);min-height:52px;white-space:pre-line;}
@@ -58,10 +73,13 @@ canvas#gc{position:relative;z-index:1;display:block;width:min(100vw,calc(100vh *
 <div id="touch-zone"></div>
 <div id="ann"></div>
 <div id="pill-flash"></div>
-<div id="overlay" style="display:none;flex-direction:column;align-items:center;justify-content:center;">
-  <h2 id="overlay-title"></h2>
-  <p id="overlay-sub"></p>
-  <button class="mbtn" id="overlay-btn"></button>
+<div id="overlay">
+  <div id="overlay-inner">
+    <h2 id="overlay-title"></h2>
+    <div id="overlay-score" style="display:none;margin-bottom:16px;"></div>
+    <p id="overlay-sub"></p>
+    <div id="overlay-btns" style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:18px;width:100%;"></div>
+  </div>
 </div>
 <script>
 // ── CONSTANTS ──
@@ -90,17 +108,87 @@ function flashPill(label,color){
   pillFlashTO=setTimeout(()=>{el.style.opacity='0'},1800);
 }
 
-// Game over / win overlay
-function showOverlay(title,titleColor,sub,btnTxt,btnFn){
-  const el=document.getElementById('overlay');
-  document.getElementById('overlay-title').textContent=title;
-  document.getElementById('overlay-title').style.cssText=`font-size:clamp(32px,6vw,80px);font-weight:900;letter-spacing:.08em;text-align:center;line-height:1.2;margin-bottom:16px;color:${titleColor};text-shadow:0 0 40px ${titleColor}88;`;
-  document.getElementById('overlay-sub').textContent=sub;
-  const btn=document.getElementById('overlay-btn');
-  btn.textContent=btnTxt;btn.onclick=btnFn;
-  el.style.display='flex';
+// Bind button for instant response on both mobile (touchend) and desktop (click)
+function bindBtn(btn,fn){
+  btn.onclick=null;btn.ontouchend=null;
+  const go=e=>{if(e)e.preventDefault();if(e)e.stopPropagation();btn.onclick=null;btn.ontouchend=null;fn();};
+  btn.ontouchend=go;
+  btn.onclick=go;
 }
-function hideOverlay(){document.getElementById('overlay').style.display='none';}
+
+// ── GAME OVER screen ──
+function showGameOver(finalScore,finalLevel){
+  const hi=getHi();
+  const isNewHi=finalScore>0&&finalScore>hi;
+  if(isNewHi)setHi(finalScore);
+  refreshHiDisplay();
+
+  document.getElementById('overlay-title').textContent='GAME OVER';
+  document.getElementById('overlay-title').style.cssText='font-size:clamp(32px,6vw,72px);font-weight:900;letter-spacing:.08em;line-height:1.2;margin-bottom:14px;color:#ff0044;text-shadow:0 0 40px #ff004488;';
+
+  const scoreEl=document.getElementById('overlay-score');
+  scoreEl.style.display='block';
+  scoreEl.innerHTML=
+    '<div class="score-row" style="color:#aaddff;margin-bottom:4px">FINAL SCORE</div>'+
+    '<div class="score-big" style="color:#fff;text-shadow:0 0 20px #00f7ff">'+String(finalScore).padStart(6,'0')+'</div>'+
+    '<div class="score-row" style="color:#88aacc;margin-bottom:10px">SECTOR REACHED: '+finalLevel+'</div>'+
+    '<div class="score-row" style="color:#aaddff;margin-bottom:4px">BEST SCORE</div>'+
+    '<div class="score-big" style="color:#ffee00;text-shadow:0 0 20px #ffee00;font-size:clamp(22px,3.5vw,44px)">'+String(Math.max(finalScore,hi)).padStart(6,'0')+'</div>'+
+    (isNewHi?'<div class="hiscore-new" style="margin-top:8px">&#9733; NEW HIGH SCORE! &#9733;</div>':'');
+
+  document.getElementById('overlay-sub').textContent='';
+
+  const btnsEl=document.getElementById('overlay-btns');
+  btnsEl.innerHTML='';
+
+  // Button 1: Play Again — back to start screen
+  const btn1=document.createElement('button');
+  btn1.className='mbtn';
+  btn1.textContent='PLAY AGAIN';
+  btn1.style.cssText='width:100%;max-width:280px;min-height:52px;padding:14px 24px;touch-action:manipulation;font-size:clamp(13px,1.8vw,17px);';
+  bindBtn(btn1,()=>{hideOverlay();location.reload();});
+  btnsEl.appendChild(btn1);
+
+  // Button 2: Joe's Rides
+  const btn2=document.createElement('button');
+  btn2.className='mbtn pink';
+  btn2.textContent="JOE'S RIDES — HOME";
+  btn2.style.cssText='width:100%;max-width:280px;min-height:52px;padding:14px 24px;touch-action:manipulation;font-size:clamp(12px,1.6vw,15px);border-color:#ff00c8;box-shadow:0 0 18px rgba(255,0,200,.3);';
+  bindBtn(btn2,()=>{window.location.href='https://joesrides.github.io/joes-rides/index.html';});
+  btnsEl.appendChild(btn2);
+
+  document.getElementById('overlay').style.display='flex';
+}
+
+// Win screen overlay
+function showOverlay(title,titleColor,sub,btnTxt,btnFn){
+  document.getElementById('overlay-title').textContent=title;
+  document.getElementById('overlay-title').style.cssText='font-size:clamp(28px,5vw,72px);font-weight:900;letter-spacing:.08em;line-height:1.2;margin-bottom:12px;color:'+titleColor+';text-shadow:0 0 40px '+titleColor+'88;';
+  document.getElementById('overlay-sub').textContent=sub;
+  document.getElementById('overlay-score').style.display='none';
+
+  const btnsEl=document.getElementById('overlay-btns');
+  btnsEl.innerHTML='';
+
+  const btn=document.createElement('button');
+  btn.className='mbtn';btn.textContent=btnTxt;
+  btn.style.cssText='width:100%;max-width:280px;min-height:52px;padding:14px 24px;touch-action:manipulation;font-size:clamp(13px,1.8vw,17px);';
+  bindBtn(btn,btnFn);
+  btnsEl.appendChild(btn);
+
+  const btn2=document.createElement('button');
+  btn2.className='mbtn pink';btn2.textContent="JOE'S RIDES — HOME";
+  btn2.style.cssText='width:100%;max-width:280px;min-height:52px;padding:14px 24px;touch-action:manipulation;font-size:clamp(12px,1.6vw,15px);border-color:#ff00c8;box-shadow:0 0 18px rgba(255,0,200,.3);';
+  bindBtn(btn2,()=>{window.location.href='https://joesrides.github.io/joes-rides/index.html';});
+  btnsEl.appendChild(btn2);
+
+  document.getElementById('overlay').style.display='flex';
+}
+function hideOverlay(){
+  document.getElementById('overlay').style.display='none';
+  document.getElementById('overlay-btns').innerHTML='';
+  document.getElementById('overlay-score').style.display='none';
+}
 function freq(n,oct){const m={C:0,Cs:1,D:2,Ds:3,E:4,F:5,Fs:6,G:7,Gs:8,A:9,As:10,B:11};return 440*Math.pow(2,(m[n]+(oct-4)*12-9)/12)}
 
 // ── STARFIELD ──
@@ -237,9 +325,51 @@ function initAudio(){
   startMusic(true);
 }
 function sfxPing(bf,v){if(!AC)return;const t=AC.currentTime;[[bf,.95],[bf*2,.4],[bf*1.5,.2]].forEach(([f,fv],i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type='square';o.frequency.value=f+i*4;g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(v*fv,t+.005);g.gain.exponentialRampToValueAtTime(.001,t+.18+i*.05);o.connect(g);g.connect(sfxG);o.start(t);o.stop(t+.25)});const os=AC.createOscillator(),gs=AC.createGain();os.type='sine';os.frequency.value=bf*.5;gs.gain.setValueAtTime(.001,t);gs.gain.linearRampToValueAtTime(v*.6,t+.006);gs.gain.exponentialRampToValueAtTime(.001,t+.2);os.connect(gs);gs.connect(sfxG);os.start(t);os.stop(t+.25)}
-function sfxPaddle(){sfxPing(240,.22)}
-function sfxBrick(p){sfxPing(480*(p||1),.17)}
-function sfxWall(){if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=900;g.gain.setValueAtTime(.04,t);g.gain.exponentialRampToValueAtTime(.001,t+.04);o.connect(g);g.connect(sfxG);o.start(t);o.stop(t+.05)}
+// SFX tuned to Em chord tones (E=164Hz, G=196Hz, B=247Hz, D=293Hz)
+// so hits always land on a note that belongs to the music
+function sfxPaddle(){
+  // E3 — root of Em chord — satisfying thump on paddle
+  if(!AC)return;
+  const t=AC.currentTime;
+  // Fundamental E with decaying harmonics
+  [[164,.22],[328,.10],[492,.05]].forEach(([f,v],i)=>{
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type=i===0?'square':'triangle';
+    o.frequency.value=f;
+    g.gain.setValueAtTime(.001,t);
+    g.gain.linearRampToValueAtTime(v,t+.005);
+    g.gain.setValueAtTime(v,t+.022);
+    g.gain.exponentialRampToValueAtTime(.001,t+.18+i*.04);
+    o.connect(g);g.connect(sfxG);o.start(t);o.stop(t+.24);
+  });
+}
+function sfxBrick(p){
+  // B3 (fifth of Em) pitched by p — bright, sits above the pads
+  if(!AC)return;
+  const t=AC.currentTime;
+  const base=247*(p||1);
+  [[base,.18],[base*2,.08],[base*1.5,.04]].forEach(([f,v],i)=>{
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type=i===0?'square':'triangle';
+    o.frequency.value=f;
+    g.gain.setValueAtTime(.001,t);
+    g.gain.linearRampToValueAtTime(v,t+.003);
+    g.gain.exponentialRampToValueAtTime(.001,t+.10+i*.02);
+    o.connect(g);g.connect(sfxG);o.start(t);o.stop(t+.14);
+  });
+}
+function sfxWall(){
+  // G3 — minor third of Em — softer side-wall ping
+  if(!AC)return;
+  const t=AC.currentTime;
+  [[196,.06],[392,.025]].forEach(([f,v])=>{
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type='sine';o.frequency.value=f;
+    g.gain.setValueAtTime(v,t);
+    g.gain.exponentialRampToValueAtTime(.001,t+.06);
+    o.connect(g);g.connect(sfxG);o.start(t);o.stop(t+.07);
+  });
+}
 function sfxPowerup(){if(!AC)return;const t=AC.currentTime;[440,550,660,880].forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;const tt=t+i*.06;g.gain.setValueAtTime(.1,tt);g.gain.exponentialRampToValueAtTime(.001,tt+.12);o.connect(g);g.connect(sfxG);o.start(tt);o.stop(tt+.14)})}
 function sfxVictory(){if(!AC)return;const t=AC.currentTime;[523,659,784,1047].forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;const tt=t+i*.18;g.gain.setValueAtTime(.14,tt);g.gain.exponentialRampToValueAtTime(.001,tt+.4);o.connect(g);g.connect(sfxG);o.start(tt);o.stop(tt+.5)})}
 function sfxDeath(){if(!AC)return;const t=AC.currentTime;[440,330,220,110].forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.value=f;const tt=t+i*.15;g.gain.setValueAtTime(.15,tt);g.gain.exponentialRampToValueAtTime(.001,tt+.3);o.connect(g);g.connect(sfxG);o.start(tt);o.stop(tt+.35)})}
@@ -560,13 +690,8 @@ function update(){
     lives--;spawnDP();sfxDeath();
     if(lives<=0){
       gs=ST.OVER;say('');stopMusic();
-      const hi=getHi();if(score>hi)setHi(score);
-      refreshHiDisplay();
-      setTimeout(()=>{
-        showOverlay('SYSTEM SHUTDOWN','#ff0044',
-          `SCORE: ${String(score).padStart(6,'0')}   SECTOR: ${level}   BEST: ${String(Math.max(score,hi)).padStart(6,'0')}`,
-          'TRY AGAIN',()=>{hideOverlay();location.reload()});
-      },600);
+      const finalScore=score,finalLevel=level;
+      setTimeout(()=>showGameOver(finalScore,finalLevel),700);
     }else{
       startTurn();
     }
@@ -653,19 +778,21 @@ function nextSector(){
   const done=level;
   level++;
   baseSpeed=Math.min(BASE_SPD+(level-1)*.35,BASE_SPD*1.9);
-  gs=ST.OVER;       // block all input
-  bricks=[];        // clear immediately so level-clear check can't re-fire
-  balls=[];         // clear balls too
-  powerups=[];bullets=[];
-  if(AC)startMusic(false);
+  gs=ST.OVER;
+  bricks=[];balls=[];powerups=[];bullets=[];
+  stopMusic();           // stop level music before cutscene
   if(score>getHi())setHi(score);
   refreshHiDisplay();
   score+=done*500;
   say('');
-  showCutscene(done,()=>{genBricks();startTurn()});
+  showCutscene(done,()=>{
+    startMusic(false);   // restart music only after CONTINUE is pressed
+    genBricks();
+    startTurn();
+  });
 }
 function beginGame(){
-  initAudio();document.getElementById('menu').style.display='none';document.getElementById('cutscene').style.display='none';hideOverlay();
+  initAudio();stopMusic();document.getElementById('menu').style.display='none';document.getElementById('cutscene').style.display='none';hideOverlay();
   score=0;level=1;lives=3;baseSpeed=BASE_SPD;startMusic(false);genBricks();startTurn();
 }
 function handleAction(){
@@ -676,35 +803,336 @@ function handleAction(){
 
 // ── CUTSCENE / STORY ──
 const CHAPTERS=[
-{cap:"YEAR 2099. Marcus has lived his whole life in the city's grip.\nTonight, staring at the wall of concrete and neon, something inside him breaks.",
-draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');const sky=c.createLinearGradient(0,0,0,h*.6);sky.addColorStop(0,'#08040f');sky.addColorStop(1,'#1a0828');c.fillStyle=sky;c.fillRect(0,0,w,h);c.fillStyle='#0a0a12';c.fillRect(0,h*.6,w,h*.4);[[0,.55,.09],[.08,.38,.07],[.16,.45,.11],[.28,.30,.08],[.37,.42,.10],[.48,.22,.07],[.56,.35,.12],[.69,.28,.08],[.78,.40,.09],[.88,.32,.11]].forEach(([bx,by,bw])=>{c.fillStyle='#0d0c1a';c.fillRect(bx*w,by*h,bw*w,(1-by)*h);for(let wy=0;wy<8;wy++)for(let wx=0;wx<3;wx++)if((bx*31+wy*7+wx*13)%3!==0){c.fillStyle='rgba(255,210,80,.3)';c.fillRect((bx+.008+wx*bw*.28)*w,(by+.04+wy*.07)*h,bw*w*.18,h*.04)}});c.fillStyle='rgba(220,210,180,.9)';c.beginPath();c.arc(w*.82,h*.12,w*.03,0,Math.PI*2);c.fill();c.shadowBlur=18;c.shadowColor='#f05';c.fillStyle='rgba(255,0,80,.85)';c.font=`bold ${w*.028}px monospace`;c.fillText('NO EXIT',w*.18,h*.48);c.shadowBlur=0;const fx=w*.5,fy=h*.72;c.fillStyle='#222';c.beginPath();c.arc(fx,fy,w*.012,0,Math.PI*2);c.fill();c.fillRect(fx-w*.008,fy+w*.012,w*.016,h*.07);}},
-{cap:"Every morning. Every night. The same gridlock.\nHis ship sits idle — he wonders if it could fly again.",
-draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');c.fillStyle='#070610';c.fillRect(0,0,w,h);const rd=c.createLinearGradient(0,h*.45,0,h);rd.addColorStop(0,'#111120');rd.addColorStop(1,'#1a1928');c.fillStyle=rd;c.fillRect(0,h*.45,w,h*.55);for(let i=0;i<8;i++){c.fillStyle='rgba(255,200,0,.4)';c.fillRect(i*(w/7),h*.68,w*.055,h*.008)}[['#8a0000',.03],['#003580',.18],['#004400',.33],['#552200',.50],['#440044',.65]].forEach(([col,cx],i)=>{const cy=i%2===0?.5:.58;c.fillStyle=col;c.fillRect(cx*w,cy*h,w*.12,h*.1);c.fillStyle='rgba(255,80,0,.7)';c.fillRect(cx*w+w*.003,(cy+.075)*h,w*.02,h*.018);c.fillRect(cx*w+w*.097,(cy+.075)*h,w*.02,h*.018)});c.save();c.translate(w*.78,h*.78);c.fillStyle='#1a2a3a';c.beginPath();c.moveTo(0,-h*.06);c.lineTo(-w*.08,h*.03);c.lineTo(w*.08,h*.03);c.closePath();c.fill();c.restore();c.strokeStyle='rgba(100,140,200,.12)';c.lineWidth=1;for(let r=0;r<40;r++){const rx=(r*97.3)%w,ry=(r*53.7)%h;c.beginPath();c.moveTo(rx,ry);c.lineTo(rx-3,ry+14);c.stroke()}}},
-{cap:"In a drawer he finds a map. Beyond the Wall — the Green Sector.\nThey said it was a myth. The coordinates are real.",
-draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');c.fillStyle='#0c0a08';c.fillRect(0,0,w,h);const tbl=c.createLinearGradient(0,h*.4,0,h);tbl.addColorStop(0,'#1a1408');tbl.addColorStop(1,'#0e0c06');c.fillStyle=tbl;c.fillRect(0,h*.4,w,h*.6);const lmp=c.createRadialGradient(w*.5,h*.35,0,w*.5,h*.6,w*.4);lmp.addColorStop(0,'rgba(255,220,120,.18)');lmp.addColorStop(1,'transparent');c.fillStyle=lmp;c.fillRect(0,0,w,h);c.fillStyle='rgba(220,200,150,.9)';c.fillRect(w*.2,h*.42,w*.6,h*.42);c.strokeStyle='rgba(140,110,60,.8)';c.lineWidth=2;c.strokeRect(w*.22,h*.44,w*.56,h*.38);c.strokeStyle='rgba(80,60,40,.35)';c.lineWidth=1;for(let i=0;i<6;i++){c.beginPath();c.moveTo(w*(.22+i*.09),h*.44);c.lineTo(w*(.22+i*.09),h*.82);c.stroke();c.beginPath();c.moveTo(w*.22,h*(.44+i*.063));c.lineTo(w*.78,h*(.44+i*.063));c.stroke()}c.fillStyle='rgba(0,180,80,.22)';c.fillRect(w*.58,h*.46,w*.17,h*.14);c.strokeStyle='rgba(0,200,80,.7)';c.lineWidth=1.5;c.strokeRect(w*.58,h*.46,w*.17,h*.14);c.fillStyle='rgba(0,180,80,.9)';c.font=`${w*.016}px monospace`;c.fillText('GREEN',w*.60,h*.515);c.fillText('SECTOR',w*.60,h*.535);c.setLineDash([4,6]);c.strokeStyle='rgba(255,100,0,.8)';c.lineWidth=2;c.beginPath();c.moveTo(w*.35,h*.66);c.lineTo(w*.5,h*.58);c.lineTo(w*.62,h*.52);c.stroke();c.setLineDash([])}},
-{cap:"Through the night Marcus brings his ship back to life.\nOne sector at a time, he will break through.",
-draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');c.fillStyle='#050508';c.fillRect(0,0,w,h);c.fillStyle='#0e0e14';c.fillRect(0,h*.65,w,h*.35);c.save();c.translate(w*.5,h*.6);const sc=w*.28;c.shadowBlur=18;c.shadowColor='rgba(0,180,255,.4)';c.fillStyle='#1a2535';c.beginPath();c.moveTo(0,-sc*.08);c.lineTo(-sc*.45,sc*.25);c.lineTo(-sc,sc*.45);c.lineTo(-sc*.18,sc*.45);c.closePath();c.fill();c.beginPath();c.moveTo(0,-sc*.08);c.lineTo(sc*.45,sc*.25);c.lineTo(sc,sc*.45);c.lineTo(sc*.18,sc*.45);c.closePath();c.fill();c.fillStyle='#243050';c.beginPath();c.moveTo(-sc*.12,-sc*.1);c.lineTo(sc*.12,-sc*.1);c.lineTo(sc*.14,sc*.45);c.lineTo(-sc*.14,sc*.45);c.closePath();c.fill();c.fillStyle='rgba(0,100,200,.3)';[-0.35,0,.35].forEach(ex=>{c.beginPath();c.ellipse(ex*sc,sc*.5,sc*.06,sc*.08,0,0,Math.PI*2);c.fill()});c.fillStyle='rgba(0,180,255,.55)';c.beginPath();c.ellipse(0,sc*.08,sc*.1,sc*.07,0,0,Math.PI*2);c.fill();c.shadowBlur=0;c.restore();c.fillStyle='rgba(255,200,50,.8)';for(let s=0;s<5;s++)c.fillRect(w*(.68+s*.005),h*(.66-s*.012),2,2)}},
-{cap:"The engines ignite. For the first time in years Marcus leaves the ground.\nThe city shrinks below — a grey maze he is finally escaping.",
-draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#020208');sky.addColorStop(.5,'#080518');sky.addColorStop(1,'#1a1228');c.fillStyle=sky;c.fillRect(0,0,w,h);for(let s=0;s<60;s++){c.fillStyle=`rgba(200,210,255,${.3+(s%3)*.2})`;c.beginPath();c.arc((s*137.5)%w,(s*97.3)%h*.5,1,0,Math.PI*2);c.fill()}c.fillStyle='#0a0a14';c.fillRect(0,h*.72,w,h*.28);c.strokeStyle='rgba(0,150,200,.18)';c.lineWidth=1;for(let i=0;i<8;i++){c.beginPath();c.moveTo(w*.5,h*.72);c.lineTo(i*(w/7),h);c.stroke()}c.save();c.translate(w*.5,h*.38);const sc=w*.14;c.shadowBlur=24;c.shadowColor='#00c8ff';c.fillStyle='#1a2a40';c.beginPath();c.moveTo(0,-sc*.3);c.lineTo(-sc,sc*.3);c.lineTo(sc,sc*.3);c.closePath();c.fill();const ef=c.createRadialGradient(0,sc*.45,0,0,sc*.45,sc*.6);ef.addColorStop(0,'rgba(100,220,255,.95)');ef.addColorStop(1,'transparent');c.fillStyle=ef;c.fillRect(-sc*.4,sc*.3,sc*.8,sc*.8);c.shadowBlur=0;c.restore()}},
-{cap:"The Wall. A thousand layers of the city's refusal.\nHe pushes the throttle forward. He will not turn back.",
-draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');c.fillStyle='#030308';c.fillRect(0,0,w,h);for(let s=0;s<50;s++){c.fillStyle='rgba(180,190,255,.35)';c.beginPath();c.arc((s*113)%w,(s*79)%h*.6,1,0,Math.PI*2);c.fill()}const wg=c.createLinearGradient(0,h*.1,0,h);wg.addColorStop(0,'#1a0a22');wg.addColorStop(1,'#0a0612');c.fillStyle=wg;c.fillRect(0,h*.1,w,h*.9);for(let row=0;row<12;row++)for(let col=0;col<16;col++){const off=row%2*.03,bx=(col/16+off)*w,by=h*(.12+row*.065);c.strokeStyle=`hsla(${250+row*5},50%,18%,.8)`;c.lineWidth=1;c.strokeRect(bx+1,by+1,w/16-2,h*.055);if((row*16+col)%7===0){c.fillStyle='rgba(180,0,255,.07)';c.fillRect(bx+2,by+2,w/16-4,h*.045)}}c.strokeStyle='rgba(200,100,255,.28)';c.lineWidth=2;c.beginPath();c.moveTo(w*.4,h*.15);c.lineTo(w*.45,h*.45);c.lineTo(w*.38,h*.7);c.stroke();c.save();c.translate(w*.5,h*.85);c.shadowBlur=14;c.shadowColor='#00c8ff';c.fillStyle='#1a2a40';c.beginPath();c.moveTo(0,-16);c.lineTo(-40,8);c.lineTo(40,8);c.closePath();c.fill();c.fillStyle='rgba(0,200,255,.7)';c.beginPath();c.ellipse(0,12,28,6,0,0,Math.PI*2);c.fill();c.shadowBlur=0;c.restore()}},
-{cap:"Through the gaps he smashes open, he sees it — green and light.\nIt's real. The Green Sector is real.",
-draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');c.fillStyle='#040408';c.fillRect(0,0,w,h);c.fillStyle='#0a0810';c.fillRect(0,0,w*.3,h);c.fillRect(w*.7,0,w*.3,h);const gg=c.createRadialGradient(w*.5,h*.4,0,w*.5,h*.5,w*.35);gg.addColorStop(0,'rgba(80,255,120,.45)');gg.addColorStop(.4,'rgba(40,180,80,.22)');gg.addColorStop(1,'transparent');c.fillStyle=gg;c.fillRect(0,0,w,h);c.fillStyle='rgba(60,220,100,.1)';c.beginPath();c.moveTo(w*.42,0);c.lineTo(w*.58,0);c.lineTo(w*.68,h);c.lineTo(w*.32,h);c.closePath();c.fill();[[.38,.55],[.44,.45],[.50,.42],[.56,.47],[.62,.54]].forEach(([tx,ty])=>{c.fillStyle='rgba(0,140,60,.65)';c.beginPath();c.moveTo(tx*w,h);c.lineTo((tx-.04)*w,ty*h);c.lineTo((tx+.04)*w,ty*h);c.closePath();c.fill();c.fillStyle='rgba(20,180,60,.45)';c.beginPath();c.arc(tx*w,ty*h-h*.05,w*.035,0,Math.PI*2);c.fill()})}},
-{cap:"The last block crumbles. Marcus lands in silence.\nHe stands in the Green Sector at last. He is free.",
-draw(cv){const w=cv.width,h=cv.height,c=cv.getContext('2d');const dawn=c.createLinearGradient(0,0,0,h);dawn.addColorStop(0,'#0d1a35');dawn.addColorStop(.35,'#1a3060');dawn.addColorStop(.65,'#2a6090');dawn.addColorStop(1,'#4aaa60');c.fillStyle=dawn;c.fillRect(0,0,w,h);const sun=c.createRadialGradient(w*.5,h*.62,0,w*.5,h*.62,w*.3);sun.addColorStop(0,'rgba(255,230,120,.85)');sun.addColorStop(.3,'rgba(255,180,60,.35)');sun.addColorStop(1,'transparent');c.fillStyle=sun;c.fillRect(0,0,w,h);c.fillStyle='#2a6830';c.beginPath();c.moveTo(0,h);c.quadraticCurveTo(w*.25,h*.55,w*.5,h*.62);c.quadraticCurveTo(w*.75,h*.68,w,h*.58);c.lineTo(w,h);c.closePath();c.fill();c.fillStyle='#3a8840';c.beginPath();c.moveTo(0,h);c.quadraticCurveTo(w*.3,h*.72,w*.65,h*.75);c.quadraticCurveTo(w*.82,h*.78,w,h*.72);c.lineTo(w,h);c.closePath();c.fill();const fx=w*.5,fy=h*.6;c.fillStyle='rgba(30,20,10,.85)';c.beginPath();c.arc(fx,fy-h*.03,w*.014,0,Math.PI*2);c.fill();c.fillRect(fx-w*.008,fy-h*.01,w*.016,h*.06);c.strokeStyle='rgba(30,20,10,.85)';c.lineWidth=w*.008;c.lineCap='round';c.beginPath();c.moveTo(fx-w*.008,fy+h*.01);c.lineTo(fx-w*.045,fy-h*.01);c.stroke();c.beginPath();c.moveTo(fx+w*.008,fy+h*.01);c.lineTo(fx+w*.045,fy-h*.01);c.stroke();[[.35,.28],[.40,.25],[.60,.27],[.65,.31]].forEach(([bx,by])=>{c.strokeStyle='rgba(20,20,40,.55)';c.lineWidth=1.5;c.beginPath();c.moveTo(bx*w,by*h);c.quadraticCurveTo((bx+.02)*w,(by-.02)*h,(bx+.04)*w,by*h);c.stroke()});c.shadowBlur=16;c.shadowColor='#fff';c.fillStyle='rgba(255,255,255,.7)';c.font=`bold ${w*.04}px Orbitron,monospace`;c.textAlign='center';c.fillText('FREEDOM',w/2,h*.44);c.shadowBlur=0;c.textAlign='left'}}
-];
-const LCAPS=["The first wall falls. Marcus grips the controls.\nThe city howls behind him. He doesn't look back.","Deeper in — the blocks are thicker, older, angrier.\nBut his ship holds. He holds.","A memory: grass under his feet, as a child.\nHe keeps that memory alive and flies toward it.","The machine city sends everything it has.\nHe breaks it. Block by block.","He can feel warmth bleeding through the hull.\nThe other side is not a myth.","Every block he shatters is another chain broken.\nHe is lighter with every level left behind.","The Wall thins. Light bleeds through the cracks.\nHe is nearly through.","One last wall. One last push.\nBeyond this — silence. Green. Freedom."];
+// Each scene uses a grid of Unicode block chars rendered in a monospace font.
+// Palette per scene defined inline. Grid drawn row by row.
+// Helper: draw a full block-art scene from a rows array of [char,color] strings
 
-// Bind button for instant response on both mobile (touchend) and desktop (click)
-function bindBtn(btn,fn){
-  btn.onclick=null;
-  btn.ontouchend=null;
-  const go=e=>{e.preventDefault();e.stopPropagation();btn.onclick=null;btn.ontouchend=null;fn();};
-  btn.ontouchend=go;
-  btn.onclick=go;
-}
+{cap:"Little Marcus grew up on a tiny island, always staring across the water.\nOn the other side sat Banhattan — dark, smelly, and full of zombies.",
+draw(cv){
+  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
+  cx.fillStyle='#0a0a1a';cx.fillRect(0,0,w,h);
+  const cw=Math.floor(w/26),ch=Math.floor(h/20);
+  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
+  // Sky gradient blocks
+  for(let x=0;x<26;x++){B('█',x,0,'#0a0a2a');B('█',x,1,'#0d0d33');}
+  // Stars
+  [[2,0,'#ffffff'],[7,1,'#ddddff'],[12,0,'#ffffff'],[17,1,'#aaaaff'],[22,0,'#ffffff'],[25,1,'#ddddff']].forEach(([x,y,col])=>B('·',x,y,col));
+  // Moon
+  B('◐',23,0,'#ffffcc');
+  // Banhattan skyline - left half, dark purple/grey towers
+  const sky=[[0,14],[1,11],[2,15],[3,9],[4,13],[5,10],[6,14],[7,8],[8,12],[9,11],[10,14],[11,7],[12,13]];
+  sky.forEach(([x,top])=>{for(let y=top;y<16;y++)B('█',x,y,y===top?'#2a0033':'#1a0022');});
+  // Skull windows in towers
+  [[1,12,'#440044'],[3,11,'#440044'],[5,12,'#440044'],[7,10,'#440044'],[11,9,'#440044']].forEach(([x,y,c2])=>B('▓',x,y,c2));
+  // Water - dark blue
+  for(let x=0;x<26;x++){B('▓',x,16,'#001a4d');B('█',x,17,'#001133');}
+  // Waves
+  for(let x=0;x<26;x++)B(x%2===0?'▀':'▄',x,16,'#003366');
+  // Island - green strip right half
+  for(let x=13;x<26;x++){B('█',x,15,'#1a4400');B('█',x,16,'#1a3300');}
+  // Palm trees on island
+  B('▄',17,12,'#00aa00');B('▀',18,12,'#00aa00');B('█',18,13,'#553300');B('█',18,14,'#443300');
+  B('▄',22,11,'#00cc00');B('▀',23,11,'#00cc00');B('▀',21,12,'#008800');B('█',22,12,'#553300');B('█',22,13,'#443300');
+  // Marcus - tiny silhouette on island
+  B('▀',20,13,'#ffcc88');B('█',20,14,'#2244aa');
+  // Thought bubble
+  B('·',21,12,'#88aaff');B('·',22,11,'#88aaff');B('?',23,10,'#aaccff');
+  // Ground
+  for(let x=13;x<26;x++)B('▄',x,18,'#112200');
+  // "BANHATTAN" label on skyline
+  cx.fillStyle='#330022';cx.font=`bold ${Math.floor(cw*.8)}px monospace`;cx.fillText('BANHATTAN',0,8*ch);
+}},
+
+{cap:"Banhattan was full of zombies in business casual.\nThe rents were $9,000 a month for a closet with a hot plate.",
+draw(cv){
+  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
+  cx.fillStyle='#0a0005';cx.fillRect(0,0,w,h);
+  const cw=Math.floor(w/26),ch=Math.floor(h/20);
+  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
+  // Dark red sky
+  for(let x=0;x<26;x++){B('█',x,0,'#150005');B('█',x,1,'#1a0008');}
+  // Buildings - tall dark blocks
+  [[0,7],[1,5],[2,8],[3,4],[4,6],[5,5],[6,7],[7,3],[8,5],[9,7],[10,4],[11,6],[12,8],[13,5],[14,6],[15,4],[16,7],[17,5],[18,6],[19,8],[20,4],[21,6],[22,5],[23,7],[24,4],[25,6]].forEach(([x,top])=>{
+    for(let y=top;y<13;y++)B('█',x,y,y===top?'#330011':'#220008');
+  });
+  // Yellow windows (some lit)
+  for(let x=0;x<26;x++)for(let y=4;y<12;y++)if((x*3+y*7)%5===0)B('▪',x,y,'#443300');
+  // Rent sign on big building
+  cx.fillStyle='#ff2200';cx.font=`bold ${Math.floor(cw*.75)}px monospace`;cx.fillText('$9,000/mo',3*cw,4*ch);
+  cx.fillStyle='#ff6600';cx.font=`${Math.floor(cw*.65)}px monospace`;cx.fillText('for a CLOSET',3*cw,5*ch);
+  // Zombie horde - street level
+  for(let x=0;x<26;x++)B('█',x,13,'#111111');
+  // Zombie characters
+  [[1,12],[4,12],[7,12],[10,12],[14,12],[18,12],[22,12],[25,12]].forEach(([x,y])=>{
+    B('▀',x,y,'#44ff00');B('▄',x,y+1,'#226600');
+  });
+  // Rats on sidewalk
+  [[2,13],[8,13],[15,13],[21,13]].forEach(([x,y])=>B('▬',x,y,'#888800'));
+  // Ground/street
+  for(let x=0;x<26;x++){B('█',x,14,'#111111');B('▀',x,14,'#1a1a1a');}
+  // Water and island glimpse
+  for(let x=0;x<26;x++)B('█',x,15,'#001133');
+  for(let x=18;x<26;x++)B('▀',x,15,'#1a4400');
+}},
+
+{cap:"Marcus lay in his hammock dreaming.\nSomewhere far away: green, quiet, no zombie neighbors.",
+draw(cv){
+  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
+  cx.fillStyle='#000811';cx.fillRect(0,0,w,h);
+  const cw=Math.floor(w/26),ch=Math.floor(h/20);
+  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
+  // Night sky
+  for(let x=0;x<26;x++){B('█',x,0,'#000811');B('█',x,1,'#00091a');}
+  [[1,0,'#fff'],[5,1,'#ddf'],[9,0,'#fff'],[14,1,'#aaf'],[19,0,'#fff'],[24,1,'#ddf'],[3,1,'#fff'],[11,0,'#aaf'],[22,0,'#fff']].forEach(([x,y,c2])=>B('•',x,y,c2));
+  B('◑',24,0,'#ffffaa');
+  // Dream cloud - top center (white/grey blocks)
+  [[9,3],[10,3],[11,3],[12,3],[13,3],[14,3],[15,3],[16,3],
+   [8,4],[9,4],[10,4],[11,4],[12,4],[13,4],[14,4],[15,4],[16,4],[17,4],
+   [8,5],[9,5],[10,5],[11,5],[12,5],[13,5],[14,5],[15,5],[16,5],[17,5],
+   [9,6],[10,6],[11,6],[12,6],[13,6],[14,6],[15,6],[16,6]].forEach(([x,y])=>B('█',x,y,'#ddeedd'));
+  // Dream scene inside cloud: green paradise
+  [9,10,11,12,13,14,15,16].forEach(x=>B('▀',x,6,'#00aa44'));
+  [9,10,11,12,13,14,15,16].forEach(x=>B('█',x,5,'#ddffdd'));
+  B('☀',12,3,'#ffee00');B('☀',13,3,'#ffee00');
+  // Trees in dream
+  B('▲',10,5,'#00aa00');B('▲',14,5,'#008800');
+  // Dream caption
+  cx.fillStyle='#006633';cx.font=`bold ${Math.floor(cw*.7)}px monospace`;cx.fillText('NO ZOMBIES',9*cw,4*ch);
+  cx.fillStyle='#004422';cx.fillText('FREE RENT!',9*cw,5*ch);
+  // Bubble trail from Marcus to dream
+  B('·',13,8,'#aaccaa');B('·',12,9,'#88aa88');B('·',12,10,'#668866');
+  // Island hut - bottom
+  for(let x=5;x<21;x++)B('█',x,16,'#1a3300');
+  B('▲',11,13,'#885500');B('▲',12,13,'#885500');B('▲',13,13,'#885500');
+  for(let x=10;x<16;x++)B('█',x,14,'#663300');for(let x=10;x<16;x++)B('█',x,15,'#553300');
+  // Hammock
+  B('▔',9,15,'#885500');B('▔',10,15,'#885500');B(')',11,14,'#885500');B('(',14,14,'#885500');B('▔',15,15,'#885500');B('▔',16,15,'#885500');
+  // Marcus in hammock
+  B('▀',12,14,'#ffcc88');B('▀',13,14,'#2244aa');
+  // ZZZ
+  B('z',14,13,'#aaffaa');B('z',15,12,'#88ee88');B('Z',16,11,'#66cc66');
+  // Water
+  for(let x=0;x<26;x++)B('█',x,18,'#001133');
+}},
+
+{cap:"The Banhattan rats crossed the water in tiny business suits.\nThey brought eviction notices, noise complaints, and a Starbucks.",
+draw(cv){
+  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
+  cx.fillStyle='#050505';cx.fillRect(0,0,w,h);
+  const cw=Math.floor(w/26),ch=Math.floor(h/20);
+  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
+  // Night sky
+  for(let x=0;x<26;x++)B('█',x,0,'#050505');
+  [[2,0],[8,0],[15,0],[20,0],[25,0]].forEach(([x,y])=>B('·',x,y,'#ffffff'));
+  // Banhattan silhouette left
+  [[0,9],[1,7],[2,10],[3,6],[4,8],[5,7],[6,9],[7,5]].forEach(([x,top])=>{
+    for(let y=top;y<13;y++)B('█',x,y,'#1a0011');
+  });
+  // Water - full middle band
+  for(let x=0;x<26;x++){B('█',x,13,'#001a44');B('▓',x,14,'#001133');B('█',x,15,'#000d22');}
+  // Wave tops
+  for(let x=0;x<26;x++)B(x%3===0?'▀':x%3===1?'▄':'▬',x,13,'#003366');
+  // RATS SWIMMING - in business suits crossing the water
+  // Rat 1
+  B('▀',4,13,'#888800');B('▄',4,14,'#555500');B('>',5,13,'#888800');
+  // Rat 2 with briefcase
+  B('▀',10,13,'#777700');B('▄',10,14,'#444400');B('>',11,13,'#777700');B('▪',12,13,'#444400');
+  // Rat 3 with eviction notice
+  B('▀',17,13,'#888800');B('>',18,13,'#888800');B('!',19,13,'#ff4400');
+  // Rat 4 in full suit
+  B('▀',22,13,'#666600');B('>',23,13,'#336633');
+  // Island shore - right
+  for(let x=14;x<26;x++)B('█',x,16,'#1a3300');
+  for(let x=14;x<26;x++)B('▀',x,16,'#224400');
+  // Rat horde arriving on island
+  B('▀',15,15,'#888800');B('▪',16,15,'#444400');
+  B('▀',18,15,'#777700');B('>',19,15,'#777700');
+  B('▀',21,15,'#888800');B('!',22,15,'#ff4400');
+  // EVICTION NOTICE sign
+  cx.fillStyle='#ff3300';cx.font=`bold ${Math.floor(cw*.65)}px monospace`;cx.fillText('EVICTION',15*cw,12*ch);
+  cx.fillStyle='#ff6600';cx.fillText('NOTICE',16*cw,13*ch);
+  // Marcus watching in horror
+  B('▀',25,14,'#ffcc88');B('█',25,15,'#2244aa');
+  cx.fillStyle='#ff0000';cx.font=`bold ${Math.floor(cw)}px monospace`;cx.fillText('!!',24*cw,13*ch);
+}},
+
+{cap:"Marcus sprinted to his ship behind the palm trees.\nDented. Rusty. Covered in rat graffiti. But the engine still fired.",
+draw(cv){
+  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
+  cx.fillStyle='#000a00';cx.fillRect(0,0,w,h);
+  const cw=Math.floor(w/26),ch=Math.floor(h/20);
+  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
+  // Night sky
+  for(let x=0;x<26;x++)B('█',x,0,'#000a00');
+  [[1,0],[6,0],[12,1],[18,0],[23,1]].forEach(([x,y])=>B('·',x,y,'#aaffaa'));
+  B('◑',24,0,'#ccffcc');
+  // Palm trees
+  B('▄',2,5,'#006600');B('▀',3,5,'#008800');B('▄',1,6,'#004400');
+  B('█',2,6,'#553300');B('█',2,7,'#442800');B('█',2,8,'#442800');
+  B('▄',22,4,'#007700');B('▀',23,4,'#009900');B('▄',23,5,'#005500');B('▀',21,5,'#004400');
+  B('█',22,5,'#553300');B('█',22,6,'#442800');B('█',22,7,'#442800');
+  // THE SHIP - center, big block art
+  // Nose cone
+  B('▄',12,5,'#445566');B('▀',13,5,'#556677');
+  // Main hull top
+  for(let x=8;x<18;x++)B('█',x,6,'#334455');
+  B('▀',7,6,'#223344');B('▀',18,6,'#223344');
+  // Cockpit window
+  B('█',11,6,'#004488');B('█',12,6,'#0066cc');B('█',13,6,'#0066cc');B('█',14,6,'#004488');
+  // Main hull body
+  for(let x=6;x<20;x++)B('█',x,7,'#2a3a4a');
+  B('▌',5,7,'#1a2a3a');B('▐',20,7,'#1a2a3a');
+  // Engine pods
+  for(let x=7;x<11;x++)B('█',x,8,'#1a2535');
+  for(let x=15;x<19;x++)B('█',x,8,'#1a2535');
+  B('▄',6,8,'#112030');B('▄',19,8,'#112030');
+  // Engine glow
+  B('▀',8,9,'#0088ff');B('▀',9,9,'#00aaff');B('▀',16,9,'#0088ff');B('▀',17,9,'#00aaff');
+  // RAT GRAFFITI on hull
+  cx.fillStyle='#ff2200';cx.font=`bold ${Math.floor(cw*.6)}px monospace`;cx.fillText('RATS WUZ HERE',7*cw,7*ch+2);
+  // Marcus running to ship
+  B('▀',23,7,'#ffcc88');B('█',23,8,'#2244aa');B('▄',22,8,'#2244aa');
+  // YES! thought bubble
+  cx.fillStyle='#ffff00';cx.font=`bold ${Math.floor(cw*.9)}px monospace`;cx.fillText('YES!!',20*cw,5*ch);
+  // Ground
+  for(let x=0;x<26;x++){B('█',x,10,'#1a3300');B('▄',x,11,'#0f2200');}
+}},
+
+{cap:"Launch day. Banhattan's zombie towers glowed red behind him.\nFor the first time in his life, Marcus pointed the ship AWAY.",
+draw(cv){
+  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
+  cx.fillStyle='#050008';cx.fillRect(0,0,w,h);
+  const cw=Math.floor(w/26),ch=Math.floor(h/20);
+  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
+  // Sky - left dark red, right dark blue
+  for(let x=0;x<26;x++)B('█',x,0,x<13?'#1a0000':'#000011');
+  for(let x=0;x<26;x++)B('█',x,1,x<13?'#140000':'#00000e');
+  // Stars right side
+  [[14,0],[18,1],[22,0],[25,1]].forEach(([x,y])=>B('·',x,y,'#aaaaff'));
+  // Banhattan left - ominous red glow
+  [[0,8],[1,6],[2,9],[3,5],[4,7],[5,6],[6,8],[7,4],[8,7],[9,6],[10,8],[11,5]].forEach(([x,top])=>{
+    for(let y=top;y<15;y++)B('█',x,y,'#1f0011');
+    B('▀',x,top,'#330022');
+  });
+  // Red skull windows
+  [[1,7],[3,7],[5,8],[7,6],[9,8],[11,7]].forEach(([x,y])=>B('▓',x,y,'#440022'));
+  // Red glow from Banhattan
+  for(let y=2;y<6;y++)for(let x=0;x<6;x++)B('░',x,y,'#1a0000');
+  // THE SHIP launching UP center
+  B('▄',12,3,'#445566');B('▀',13,3,'#556677');// nose
+  for(let x=10;x<16;x++)B('█',x,4,'#334455');
+  B('▀',9,4,'#223344');B('▀',16,4,'#223344');
+  B('█',11,4,'#005599');B('█',12,4,'#0077cc');B('█',13,4,'#0077cc');B('█',14,4,'#005599');
+  for(let x=8;x<18;x++)B('█',x,5,'#2a3a4a');
+  B('▌',7,5,'#1a2a3a');B('▐',18,5,'#1a2a3a');
+  for(let x=9;x<13;x++)B('█',x,6,'#1a2535');
+  for(let x=13;x<17;x++)B('█',x,6,'#1a2535');
+  // Engine fire  
+  B('█',10,7,'#ff8800');B('█',11,7,'#ffcc00');B('█',12,7,'#ffffff');B('█',13,7,'#ffcc00');B('█',14,7,'#ff8800');
+  B('▄',10,8,'#ff4400');B('▄',11,8,'#ff8800');B('▄',12,8,'#ffaa00');B('▄',13,8,'#ff8800');B('▄',14,8,'#ff4400');
+  B('▄',11,9,'#ff2200');B('▄',12,9,'#ff6600');B('▄',13,9,'#ff2200');
+  // Arrow pointing right (freedom direction)
+  cx.fillStyle='#00ff88';cx.font=`bold ${Math.floor(cw*1.1)}px monospace`;cx.fillText('→ FREEDOM',15*cw,3*ch);
+  // Water
+  for(let x=0;x<26;x++)B('█',x,15,'#001133');
+  // Island tiny below
+  for(let x=9;x<18;x++)B('▀',x,16,'#1a3300');
+}},
+
+{cap:"Block by block the horrible city crumbled before him.\nEvery broken wall: one less zombie landlord, one less rat in a suit.",
+draw(cv){
+  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
+  cx.fillStyle='#000';cx.fillRect(0,0,w,h);
+  const cw=Math.floor(w/26),ch=Math.floor(h/20);
+  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
+  // Space
+  for(let x=0;x<26;x++)B('█',x,0,'#000000');
+  [[1,0],[5,0],[11,0],[16,1],[21,0],[25,1]].forEach(([x,y])=>B('·',x,y,'#224422'));
+  // EXPLODING BLOCKS left - Banhattan crumbling
+  [[0,5,'#330011'],[0,6,'#220008'],[1,4,'#440022'],[1,7,'#220008'],[2,5,'#330011'],[3,4,'#440022']].forEach(([x,y,col])=>B('█',x,y,col));
+  // Explosion sparks
+  [[2,3,'#ff4400'],[4,4,'#ff8800'],[1,3,'#ffaa00'],[3,3,'#ff2200'],[5,5,'#ffcc00'],[4,3,'#ff6600']].forEach(([x,y,col])=>B('▪',x,y,col));
+  [[2,4,'#ff6600'],[3,5,'#ff4400'],[4,6,'#ffaa00']].forEach(([x,y,col])=>B('░',x,y,col));
+  // Debris flying
+  B('▄',5,3,'#2a0011');B('▀',6,4,'#1a0008');B('▌',5,5,'#330011');
+  // Ship in center flying through
+  for(let x=10;x<16;x++)B('█',x,7,'#334455');
+  B('▀',9,7,'#223344');B('▀',16,7,'#223344');
+  B('█',11,7,'#005599');B('█',12,7,'#0077cc');B('█',13,7,'#0077cc');B('█',14,7,'#005599');
+  for(let x=8;x<18;x++)B('█',x,8,'#2a3a4a');
+  // Engine trail
+  for(let x=5;x<9;x++)B('░',x,8,'#003366');
+  B('▪',4,8,'#002244');B('▪',3,8,'#001122');
+  // Speed lines
+  for(let y=6;y<11;y++){B('─',6,y,'#002244');B('─',5,y,'#001133');B('─',4,y,'#000a22');}
+  // Open space right - freedom stars getting closer
+  [[18,4,'#00ff88'],[20,3,'#44ffaa'],[22,5,'#00dd66'],[24,4,'#00ff44'],[25,6,'#44ff88']].forEach(([x,y,col])=>B('★',x,y,col));
+  // Green glow ahead
+  for(let y=5;y<12;y++)for(let x=19;x<26;x++)B('░',x,y,'#001a00');
+  // Score flash
+  cx.fillStyle='#ffff00';cx.font=`bold ${Math.floor(cw*.75)}px monospace`;cx.fillText('+500 PTS',18*cw,8*ch);
+  cx.fillStyle='#00ff88';cx.fillText('KEEP GOING',17*cw,9*ch);
+  // Ground/space border
+  for(let x=0;x<26;x++)B('▄',x,18,'#001100');
+}},
+
+{cap:"Marcus touched down on green grass under a clean sky.\nNo zombies. No rats. No $9,000 studio apartments. He made it.",
+draw(cv){
+  const w=cv.width,h=cv.height,cx=cv.getContext('2d');
+  cx.fillStyle='#001a33';cx.fillRect(0,0,w,h);
+  const cw=Math.floor(w/26),ch=Math.floor(h/20);
+  function B(ch2,x,y,fg){cx.fillStyle=fg;cx.font=`${cw}px monospace`;cx.textBaseline='top';cx.fillText(ch2,x*cw,y*ch);}
+  // Blue sky
+  for(let x=0;x<26;x++){B('█',x,0,'#003366');B('█',x,1,'#004488');}
+  // Sun!
+  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)B('█',12+dx,dy+1,'#ffee00');
+  B('▀',10,1,'#ffee00');B('▀',14,1,'#ffee00');B('▄',11,3,'#ffee00');B('▄',13,3,'#ffee00');
+  B('▌',10,2,'#ffee00');B('▐',14,2,'#ffee00');
+  // White clouds
+  [[2,2],[3,2],[4,2],[3,1]].forEach(([x,y])=>B('█',x,y,'#ccddff'));
+  [[19,3],[20,3],[21,3],[22,3],[20,2],[21,2]].forEach(([x,y])=>B('█',x,y,'#bbccee'));
+  // Green hills background
+  for(let x=0;x<26;x++)B('█',x,9,'#004400');
+  for(let x=0;x<26;x++)B('▀',x,8,'#006600');
+  // Rolling hills
+  [0,1,2,3,24,25].forEach(x=>B('█',x,8,'#005500'));
+  [4,5,23].forEach(x=>B('▀',x,7,'#007700'));
+  // Flowers!!
+  [[1,9,'#ff88ff'],[3,9,'#ffff44'],[5,9,'#ff88ff'],[8,9,'#ffff44'],[11,9,'#ff44ff'],
+   [14,9,'#ffff44'],[17,9,'#ff88ff'],[20,9,'#ffff44'],[23,9,'#ff44ff'],[25,9,'#ffff44']].forEach(([x,y,col])=>B('✿',x,y,col));
+  // Ground - lush green
+  for(let x=0;x<26;x++){B('█',x,10,'#115511');B('█',x,11,'#0d4a0d');B('█',x,12,'#0a3d0a');}
+  // THE SHIP landed
+  for(let x=9;x<17;x++)B('█',x,9,'#2a3a4a');
+  B('▀',8,9,'#1a2a3a');B('▀',17,9,'#1a2a3a');
+  B('█',10,8,'#334455');B('█',11,8,'#004488');B('█',12,8,'#0066cc');B('█',13,8,'#0066cc');B('█',14,8,'#004488');B('█',15,8,'#334455');
+  // Landing legs
+  B('▌',9,10,'#223344');B('▐',16,10,'#223344');
+  // MARCUS - arms wide open, celebrating!
+  B('▀',12,6,'#ffcc88');// head
+  B('─',10,7,'#2244aa');B('█',11,7,'#2244aa');B('█',12,7,'#2244aa');B('█',13,7,'#2244aa');B('─',14,7,'#2244aa');// body+arms spread
+  B('▌',11,8,'#2244aa');B('▐',13,8,'#2244aa');// legs
+  // Celebration text
+  cx.fillStyle='#ffff00';cx.font=`bold ${Math.floor(cw*1.0)}px monospace`;cx.fillText('FREE!!!',17*cw,5*ch);
+  cx.fillStyle='#00ff88';cx.font=`bold ${Math.floor(cw*.65)}px monospace`;cx.fillText('NO ZOMBIES',17*cw,6*ch);
+  cx.fillStyle='#44ffff';cx.fillText('NO RATS',17*cw,7*ch);
+  cx.fillStyle='#ff88ff';cx.fillText('NO $9K RENT',17*cw,8*ch);
+}}
+];
+const LCAPS=[
+"Marcus has stared at Banhattan his whole life.\nTonight he decides: one way or another, he is leaving.",
+"The zombies of Banhattan don't even know the island exists.\nMarcus plans to keep it that way — from far, far away.",
+"Somewhere out there is a place without zombies and $9K studios.\nMarcus dreams of it every single night.",
+"The rats arrived in tiny suits with eviction notices.\nThat was absolutely the last straw.",
+"Every block he smashes is one sector closer to somewhere normal.\nThe ship is ugly. It will do.",
+"Banhattan shrinks in the rear mirror, red and horrible.\nMarcus doesn't look back. Not once.",
+"One sector at a time the walls of the horrible city crumble.\nThe clean air is so close he can almost smell it.",
+"He made it. Green grass. Clean sky. No zombies.\nMarcus is finally, gloriously, completely FREE."
+];
+
 function showCutscene(done,onDone){
   say('');
+  stopMusic(); // silence music the moment cutscene opens
   const el=document.getElementById('cutscene'),cv=document.getElementById('cs-canvas'),cap=document.getElementById('cs-caption'),btn=document.getElementById('cs-btn');
   el.style.display='flex';
   cap.textContent='';btn.style.display='none';btn.textContent='CONTINUE \u25ba';
@@ -736,6 +1164,7 @@ function showCutscene(done,onDone){
 function showIntro(){
   initAudio();document.getElementById('menu').style.display='none';
   const el=document.getElementById('cutscene'),cv=document.getElementById('cs-canvas'),cap=document.getElementById('cs-caption'),btn=document.getElementById('cs-btn');
+  stopMusic();  // silence menu music while intro story shows
   el.style.display='flex';cap.textContent='';btn.style.display='none';btn.textContent='BEGIN';
   setTimeout(()=>{
     cv.width=cv.offsetWidth||900;cv.height=cv.offsetHeight||480;
@@ -745,7 +1174,7 @@ function showIntro(){
     function type(){if(ci<txt.length){cap.textContent=txt.slice(0,ci+1);ci++;setTimeout(type,24);}else btn.style.display='block';}
     setTimeout(type,400);
     setTimeout(()=>{
-      bindBtn(btn,()=>{el.style.display='none';beginGame();});
+      bindBtn(btn,()=>{stopMusic();el.style.display='none';beginGame();});
     },400);
   },60);
 }
@@ -781,8 +1210,8 @@ if(tz){
 // Stop music when app goes to background (tab hidden, phone locked)
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){stopMusic();}
-  else if(gs===ST.PLAY||gs===ST.INIT){startMusic(false);}
-  else if(gs===ST.MENU){startMusic(true);}
+  else if(gs===ST.PLAY||gs===ST.INIT){if(!musicPlaying)startMusic(false);}
+  else if(gs===ST.MENU){if(!musicPlaying)startMusic(true);}
 });
 // ── BOOT ──
 refreshHiDisplay();
