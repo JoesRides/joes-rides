@@ -23,6 +23,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Or
 canvas#bg{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 canvas#gc{position:relative;z-index:1;display:block;width:min(100vw,calc(100vh * 12 / 7));height:min(100vh,calc(100vw * 7 / 12));border:1.5px solid rgba(0,247,255,.45);box-shadow:0 0 32px rgba(0,247,255,.12),0 0 80px rgba(0,80,200,.1);cursor:none;flex-shrink:0;}
 @media(orientation:portrait){canvas#gc{width:100vw;height:calc(100vw * 7 / 12)}}
+#touch-zone{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  height:22vh;
+  z-index:8;
+  touch-action:none;
+  /* Subtle indicator so player knows it's there */
+  background:linear-gradient(to top,rgba(0,247,255,.04),transparent);
+  pointer-events:auto;
+}
+/* Hide on desktop — mouse users don't need it */
+@media(hover:hover){#touch-zone{display:none}}
 #ann{position:fixed;width:100%;top:50%;transform:translateY(-50%);text-align:center;pointer-events:none;z-index:10;font-size:clamp(18px,3.5vw,42px);font-weight:900;color:#fff;text-shadow:0 0 28px #ff00c8,0 0 56px #ff00c8;letter-spacing:.1em;line-height:1.5;}
 </style>
 </head>
@@ -43,6 +55,7 @@ canvas#gc{position:relative;z-index:1;display:block;width:min(100vw,calc(100vh *
   <button id="cs-btn" style="touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0);"></button>
 </div>
 <div id="wrap"><canvas id="gc" width="1200" height="700"></canvas></div>
+<div id="touch-zone"></div>
 <div id="ann"></div>
 <div id="pill-flash"></div>
 <div id="overlay" style="display:none;flex-direction:column;align-items:center;justify-content:center;">
@@ -102,138 +115,113 @@ initBg();animBg();
 // ── AUDIO ──
 let AC,masterG,musicG,sfxG,sfxDelay,sfxDelayFB,sfxDelayWet,sfxRev,sfxRevWet;
 let musicPlaying=false,musicSched=null,musicIsMenu=true;
-// ── MUSIC: slow spacey trance ──
-// Menu 68 BPM, Gameplay 82 BPM.
-// Both tracks: long swelling pads, sparse bass pulses, wide stereo detune.
-// Chord cycle: Bbm(2 bars) - Ab(2 bars) - Eb(2 bars) - F(2 bars) = 8 bars
-const BPM_MENU=68, BPM_GAME=82;
+// ── MUSIC: High-energy racing style ──
+// MENU 110BPM: Em-C-G-D driving arp
+// GAME 148BPM: Am-F-C-G-E-Am-Dm-E punchy banger with 16th hats and fat lead
+const BPM_MENU=110,BPM_GAME=148;
 let BPM=BPM_MENU,BEAT=60/BPM,BAR=BEAT*4;
-
 const f=freq;
 
-// Chord note clusters [root, 3rd, 5th, 7th]
-const CHORDS=[
-  [f('As',2),f('Cs',3),f('F',3),f('Gs',3)],  // Bbm
-  [f('As',2),f('Cs',3),f('F',3),f('Gs',3)],
-  [f('Gs',2),f('C',3), f('Ds',3),f('G',3)],  // Ab
-  [f('Gs',2),f('C',3), f('Ds',3),f('G',3)],
-  [f('Ds',2),f('G',3), f('As',3),f('Ds',4)], // Eb
-  [f('Ds',2),f('G',3), f('As',3),f('Ds',4)],
-  [f('F',2), f('A',3), f('C',4), f('Ds',4)], // F
-  [f('F',2), f('A',3), f('C',4), f('Ds',4)],
+const MN_CHORDS=[
+  [f('E',3),f('G',3),f('B',3)],
+  [f('C',3),f('E',3),f('G',3)],
+  [f('G',2),f('B',3),f('D',4)],
+  [f('D',3),f('Fs',3),f('A',3)],
 ];
-const BASS_ROOTS=[
-  f('As',1),f('As',1),f('Gs',1),f('Gs',1),
-  f('Ds',2),f('Ds',2),f('F',2), f('F',2),
+const MN_ROOTS=[f('E',2),f('C',2),f('G',2),f('D',2)];
+
+const GP_CHORDS=[
+  [f('A',2),f('C',3),f('E',3)],
+  [f('F',2),f('A',2),f('C',3)],
+  [f('C',2),f('E',3),f('G',3)],
+  [f('G',2),f('B',2),f('D',3)],
+  [f('E',2),f('Gs',2),f('B',3)],
+  [f('A',2),f('C',3),f('E',3)],
+  [f('D',2),f('F',3),f('A',3)],
+  [f('E',2),f('Gs',2),f('B',3)],
+];
+const GP_ROOTS=[f('A',1),f('F',1),f('C',2),f('G',1),f('E',2),f('A',1),f('D',2),f('E',2)];
+const GP_LEAD=[
+  [[f('E',5),.07,0],[f('A',5),.12,.5],[f('E',5),.07,1],[f('C',5),.07,1.25],[f('E',5),.12,1.5],[f('A',5),.07,2.25],[f('G',5),.07,2.5],[f('A',5),.18,3]],
+  [[f('F',5),.07,0],[f('A',5),.12,.25],[f('C',6),.12,.75],[f('A',5),.07,1.25],[f('F',5),.07,1.5],[f('A',5),.12,2],[f('F',5),.07,2.75],[f('A',5),.18,3.25]],
+  [[f('C',5),.07,0],[f('E',5),.07,.25],[f('G',5),.12,.5],[f('C',6),.12,1],[f('G',5),.07,1.5],[f('E',5),.07,1.75],[f('G',5),.12,2.5],[f('C',6),.18,3]],
+  [[f('D',5),.07,0],[f('G',5),.07,.25],[f('B',5),.12,.5],[f('D',6),.12,1],[f('B',5),.07,1.5],[f('G',5),.07,1.75],[f('B',5),.12,2.75],[f('G',5),.18,3.25]],
+  [[f('E',5),.07,0],[f('Gs',5),.07,.25],[f('B',5),.12,.5],[f('E',6),.18,.875],[f('B',5),.07,1.5],[f('Gs',5),.07,1.75],[f('B',5),.07,2.5],[f('E',6),.22,3]],
+  [[f('A',4),.07,0],[f('E',5),.07,.25],[f('A',5),.12,.5],[f('C',6),.12,1],[f('A',5),.07,1.5],[f('E',5),.07,1.75],[f('A',5),.12,2.5],[f('E',5),.18,3]],
+  [[f('D',5),.07,0],[f('F',5),.07,.25],[f('A',5),.12,.5],[f('D',6),.12,1],[f('A',5),.07,1.5],[f('F',5),.07,1.75],[f('A',5),.12,2.5],[f('D',5),.18,3]],
+  [[f('E',5),.07,0],[f('Gs',5),.07,.25],[f('B',5),.07,.5],[f('E',6),.15,.75],[f('B',5),.07,1.25],[f('Gs',5),.07,1.5],[f('E',5),.07,2],[f('Gs',5),.07,2.5],[f('E',6),.22,2.75]],
 ];
 
-// Sparse lead melody — long notes, many rests, deeply spacey feel
-// [note_freq, duration_in_beats, beat_offset]
-const MELODY=[
-  // Bar 0 Bbm — single held high note
-  [[f('As',4),3.5,0.25]],
-  // Bar 1 Bbm — rest, then flutter
-  [[f('F',4),1.5,1.5],[f('Cs',5),1.0,3.0]],
-  // Bar 2 Ab — one note landing
-  [[f('Ds',5),3.0,0.5]],
-  // Bar 3 Ab — rest
-  [],
-  // Bar 4 Eb — climbing phrase
-  [[f('G',4),1.0,0],[f('As',4),1.0,1.25],[f('Ds',5),2.0,2.5]],
-  // Bar 5 Eb — rest
-  [],
-  // Bar 6 F — descending two notes
-  [[f('C',5),1.5,0.5],[f('A',4),2.5,2.25]],
-  // Bar 7 F — held root, very sparse
-  [[f('F',4),3.5,0.5]],
-];
-
-function mkO(type,fq,vol,t0,t1,det){
+function mkO(type,fq,vol,t0,t1,det,fast){
   if(!AC)return;
   const o=AC.createOscillator(),g=AC.createGain();
   o.type=type;o.frequency.value=fq;if(det)o.detune.value=det;
-  // Slow attack and release for spacey feel
-  const atk=Math.min(.6,(t1-t0)*.25);
-  const rel=Math.min(.8,(t1-t0)*.35);
-  g.gain.setValueAtTime(.001,t0);
-  g.gain.linearRampToValueAtTime(vol,t0+atk);
-  g.gain.setValueAtTime(vol,t1-rel);
-  g.gain.linearRampToValueAtTime(.001,t1);
-  o.connect(g);g.connect(musicG);o.start(t0);o.stop(t1+.05);
+  const atk=fast?.006:.04;
+  g.gain.setValueAtTime(.001,t0);g.gain.linearRampToValueAtTime(vol,t0+atk);
+  g.gain.setValueAtTime(vol,t1-.015);g.gain.linearRampToValueAtTime(.001,t1);
+  o.connect(g);g.connect(musicG);o.start(t0);o.stop(t1+.02);
 }
 
 function schedBar(bi,t0,isMenu){
-  const bt = isMenu?(60/BPM_MENU):(60/BPM_GAME);
-  const bar = bt*4;
-  const idx = bi%8;
-  const chord = CHORDS[idx];
-  const root  = BASS_ROOTS[idx];
-  const mel   = MELODY[idx];
+  // Same track for both menu and gameplay — menu music plays throughout
+  const bt=60/BPM_MENU;
+  const bar=bt*4;
+  const idx=bi%4;
+  const chord=MN_CHORDS[idx];
+  const root=MN_ROOTS[idx];
 
-  // ── PADS: three detuned sawtooth layers — wide, lush, slow swell ──
-  chord.forEach(fn=>{
-    mkO('sawtooth',fn,.020,t0,t0+bar,  9);
-    mkO('sawtooth',fn,.016,t0,t0+bar, -9);
-    mkO('sine',    fn*.5,.011,t0,t0+bar,  0);
+  chord.forEach(fn=>{mkO('sawtooth',fn,.016,t0,t0+bar,7);mkO('sawtooth',fn,.011,t0,t0+bar,-7)});
+
+  // 8th-note arp
+  for(let s=0;s<8;s++){
+    const tt=t0+s*bt*.5,mult=[1,1.5,2,1.5,2,2.5,2,1.5][s];
+    mkO('square',root*mult,.028,tt,tt+bt*.18,4,true);
+  }
+
+  // Bass every beat
+  for(let b=0;b<4;b++){
+    const tt=t0+b*bt;
+    mkO('triangle',root,.20,tt,tt+bt*.6);
+    mkO('sine',root*.5,.12,tt,tt+bt*.7);
+  }
+
+  // Kick beats 1 & 3
+  [0,2].forEach(b=>{
+    const tt=t0+b*bt,ok=AC.createOscillator(),gk=AC.createGain();
+    ok.type='sine';ok.frequency.setValueAtTime(140,tt);
+    ok.frequency.exponentialRampToValueAtTime(40,tt+.12);
+    gk.gain.setValueAtTime(.30,tt);gk.gain.exponentialRampToValueAtTime(.001,tt+.20);
+    ok.connect(gk);gk.connect(musicG);ok.start(tt);ok.stop(tt+.22);
   });
 
-  // ── BASS: one soft pulse on beat 1, slow decay ──
-  const ob=AC.createOscillator(),gb=AC.createGain();
-  ob.type='sine';ob.frequency.value=root;
-  gb.gain.setValueAtTime(.001,t0);
-  gb.gain.linearRampToValueAtTime(.26,t0+.12);
-  gb.gain.exponentialRampToValueAtTime(.001,t0+bt*2.8);
-  ob.connect(gb);gb.connect(musicG);ob.start(t0);ob.stop(t0+bt*3);
-  // sub octave
-  const ob2=AC.createOscillator(),gb2=AC.createGain();
-  ob2.type='sine';ob2.frequency.value=root*.5;
-  gb2.gain.setValueAtTime(.001,t0);
-  gb2.gain.linearRampToValueAtTime(.16,t0+.18);
-  gb2.gain.exponentialRampToValueAtTime(.001,t0+bt*3.2);
-  ob2.connect(gb2);gb2.connect(musicG);ob2.start(t0);ob2.stop(t0+bt*3.4);
-
-  // ── MELODY: slow sine + triangle blend, breathy tone ──
-  if(mel&&mel.length){
-    mel.forEach(([fn,dur,delay])=>{
-      const tt=t0+delay*bt, te=tt+dur*bt;
-      mkO('sine',    fn,.062,tt,te, 3);
-      mkO('triangle',fn*.5,.02,tt,te,-3);
-    });
-  }
-
-  // ── KICK: very soft, beat 1 only ──
-  const ok=AC.createOscillator(),gk=AC.createGain();
-  ok.type='sine';ok.frequency.setValueAtTime(90,t0);
-  ok.frequency.exponentialRampToValueAtTime(32,t0+.22);
-  gk.gain.setValueAtTime(.18,t0);gk.gain.exponentialRampToValueAtTime(.001,t0+.35);
-  ok.connect(gk);gk.connect(musicG);ok.start(t0);ok.stop(t0+.38);
-
-  // ── GAMEPLAY ONLY: gentle beat 3 pulse + quarter-note hi-hat ──
-  if(!isMenu){
-    // Beat 3 bass accent
-    const t3=t0+2*bt;
-    const ob3=AC.createOscillator(),gb3=AC.createGain();
-    ob3.type='sine';ob3.frequency.value=root;
-    gb3.gain.setValueAtTime(.001,t3);
-    gb3.gain.linearRampToValueAtTime(.14,t3+.10);
-    gb3.gain.exponentialRampToValueAtTime(.001,t3+bt*1.4);
-    ob3.connect(gb3);gb3.connect(musicG);ob3.start(t3);ob3.stop(t3+bt*1.6);
-
-    // Quarter-note hi-hat — very soft, spacey shuffle feel
-    for(let s=0;s<4;s++){
-      const tt=t0+s*bt, v=s===0?.028:s===2?.022:.014;
-      const oh=AC.createOscillator(),gh=AC.createGain();
-      oh.type='square';oh.frequency.value=5800;
-      gh.gain.setValueAtTime(v,tt);gh.gain.exponentialRampToValueAtTime(.001,tt+.045);
-      oh.connect(gh);gh.connect(musicG);oh.start(tt);oh.stop(tt+.05);
-    }
+  // Hi-hats 8th notes
+  for(let s=0;s<8;s++){
+    const tt=t0+s*bt*.5,v=s%2===0?.038:.018;
+    const oh=AC.createOscillator(),gh=AC.createGain();
+    oh.type='square';oh.frequency.value=6200;
+    gh.gain.setValueAtTime(v,tt);gh.gain.exponentialRampToValueAtTime(.001,tt+.022);
+    oh.connect(gh);gh.connect(musicG);oh.start(tt);oh.stop(tt+.025);
   }
 }
-
-function stopMusic(){musicPlaying=false;if(musicSched){clearTimeout(musicSched);musicSched=null}}
+function stopMusic(){
+  musicPlaying=false;
+  if(musicSched){clearTimeout(musicSched);musicSched=null;}
+  // Mute music bus immediately so already-scheduled oscillators go silent
+  if(musicG&&AC){
+    musicG.gain.cancelScheduledValues(AC.currentTime);
+    musicG.gain.setValueAtTime(0,AC.currentTime);
+  }
+}
+function resumeMusicVolume(){
+  if(musicG&&AC){
+    musicG.gain.cancelScheduledValues(AC.currentTime);
+    musicG.gain.setValueAtTime(.65,AC.currentTime);
+  }
+}
 function startMusic(isMenu){
   stopMusic();if(!AC)return;
-  musicIsMenu=isMenu;BPM=isMenu?BPM_MENU:BPM_GAME;BEAT=60/BPM;BAR=BEAT*4;
+  musicIsMenu=isMenu;BPM=BPM_MENU;BEAT=60/BPM;BAR=BEAT*4;
+  resumeMusicVolume();
   musicPlaying=true;let nxt=AC.currentTime+.05,bi=0;
   function loop(){if(!musicPlaying)return;while(nxt<AC.currentTime+BAR*2){schedBar(bi,nxt,musicIsMenu);nxt+=BAR;bi++}musicSched=setTimeout(loop,500)}
   loop();
@@ -458,8 +446,11 @@ function drawHUD(){
 
   if(effects.length===0){ctx.restore();return;}
 
-  const bx=12, startY=66;
-  const bw=110, bh=28, gap=6;
+  const bw=118, bh=28, gap=6;
+  const totalH=effects.length*(bh+gap)-gap;
+  const startY=Math.floor((H-totalH)/2);  // vertically centred on right side
+  const bx=W-bw-14;  // right-aligned with 14px margin
+
   const pulse=.75+.25*Math.sin(frameN*.12);
 
   effects.forEach((ef,i)=>{
@@ -568,7 +559,7 @@ function update(){
   if(balls.every(b=>b.y>H+20)&&gs===ST.PLAY){
     lives--;spawnDP();sfxDeath();
     if(lives<=0){
-      gs=ST.OVER;say('');
+      gs=ST.OVER;say('');stopMusic();
       const hi=getHi();if(score>hi)setHi(score);
       refreshHiDisplay();
       setTimeout(()=>{
@@ -583,7 +574,7 @@ function update(){
   // Level clear — only when playing and bricks actually exist
   if(gs===ST.PLAY&&bricks.length>0&&bricks.every(b=>!b.s)){
     if(level>=10){
-      gs=ST.OVER;sfxVictory();say('');
+      gs=ST.OVER;sfxVictory();say('');stopMusic();
       if(score>getHi())setHi(score);refreshHiDisplay();
       setTimeout(()=>{
         showOverlay('FREEDOM','#00ff88',
@@ -777,6 +768,22 @@ document.addEventListener('touchstart',e=>{
   }
 },{passive:false});
 
+// Touch zone — thumb-friendly area below ship
+const tz=document.getElementById('touch-zone');
+if(tz){
+  tz.addEventListener('touchmove',e=>{
+    e.preventDefault();movePaddle(e.touches[0].clientX);
+  },{passive:false});
+  tz.addEventListener('touchstart',e=>{
+    e.preventDefault();movePaddle(e.touches[0].clientX);handleAction();
+  },{passive:false});
+}
+// Stop music when app goes to background (tab hidden, phone locked)
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){stopMusic();}
+  else if(gs===ST.PLAY||gs===ST.INIT){startMusic(false);}
+  else if(gs===ST.MENU){startMusic(true);}
+});
 // ── BOOT ──
 refreshHiDisplay();
 draw();
