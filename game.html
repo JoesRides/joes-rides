@@ -378,8 +378,10 @@ function sfxFire(){if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),
 // ── GAME STATE ──
 const ST={MENU:0,INIT:1,PLAY:2,OVER:3};
 const IS_MOBILE=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
-const BASE_SPD=IS_MOBILE?8.5:5.5;
+const BASE_SPD=IS_MOBILE?11:7.5;
 let gs=ST.MENU,score=0,level=1,lives=3,baseSpeed=BASE_SPD;
+let levelStartSpeed=BASE_SPD; // speed at beginning of each level
+let inLevelAccel=0;           // frames elapsed this level for acceleration
 const DEF_PW=130;
 let paddle={x:500,w:DEF_PW,h:18},balls=[],bricks=[],powerups=[],bullets=[],activeModes=[],particles=[],trails=[],keys={},frameN=0;
 let speedEffType=null,speedEffTimer=0,catchTimer=0,fireTimer=0,scoreTrickle=0;
@@ -422,7 +424,7 @@ function spawnDP(){for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,sp=Math
 //  FZ  FREEZE  — ball freezes mid-air for 2s then resumes (breathing room)
 const PILLS={
   C:{l:'CATCH', c1:'#00ff88',c2:'#007744',tx:'#000'},
-  P:{l:'POWER', c1:'#ff44ff',c2:'#880088',tx:'#fff'},
+  P:{l:'POWER', c1:'#ff8800',c2:'#884400',tx:'#fff'},
   F:{l:'FIRE',  c1:'#ff3300',c2:'#881100',tx:'#fc0'},
   3:{l:'MULTI', c1:'#44aaff',c2:'#0055aa',tx:'#fff'},
   N:{l:'SKIP',  c1:'#cc44ff',c2:'#660099',tx:'#fff'},
@@ -477,7 +479,33 @@ function drawNebula(){
 function drawGrid(){ctx.save();ctx.strokeStyle='rgba(0,247,255,.025)';ctx.lineWidth=1;for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.restore()}
 function drawBricks(){bricks.forEach(b=>{if(!b.s)return;const ph=Math.sin(frameN*.03+b.gp);ctx.save();ctx.translate(b.sx,b.sy);ctx.shadowBlur=8+ph*4;ctx.shadowColor=b.col;const g=ctx.createLinearGradient(b.x,b.y,b.x,b.y+b.h);const a=b.s<b.max?.6:1;g.addColorStop(0,b.col+'dd');g.addColorStop(.5,b.col);g.addColorStop(1,b.col+'88');ctx.fillStyle=g;ctx.globalAlpha=a;ctx.beginPath();ctx.roundRect(b.x+1,b.y+1,b.w-2,b.h-2,3);ctx.fill();ctx.globalAlpha=.28*a;ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(b.x+3,b.y+2,b.w-6,b.h*.35,[2,2,0,0]);ctx.fill();ctx.globalAlpha=.5*a;ctx.strokeStyle=b.col;ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(b.x+.5,b.y+.5,b.w-1,b.h-1,3);ctx.stroke();ctx.restore();if(b.st>0){b.st--;b.sx=(Math.random()-.5)*4;b.sy=(Math.random()-.5)*4}else{b.sx=0;b.sy=0}})}
 function drawTrails(){trails.forEach((tr,bi)=>{if(!tr)return;tr.forEach((pt,i)=>{const a=(1-i/tr.length)*.5,r2=balls[bi]?balls[bi].r*(1-i/tr.length)*.8:5;ctx.save();ctx.globalAlpha=a;ctx.shadowBlur=10;ctx.shadowColor='#00f7ff';ctx.fillStyle=`hsl(${180+i*3},100%,70%)`;ctx.beginPath();ctx.arc(pt.x,pt.y,Math.max(1,r2),0,Math.PI*2);ctx.fill();ctx.restore()})})}
-function drawBalls(){balls.forEach(b=>{ctx.save();ctx.shadowBlur=22;ctx.shadowColor='#00f7ff';const g=ctx.createRadialGradient(b.x-b.r*.3,b.y-b.r*.3,0,b.x,b.y,b.r);g.addColorStop(0,'#fff');g.addColorStop(.4,'#88eeff');g.addColorStop(1,'#0066cc');ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.65)';ctx.shadowBlur=0;ctx.beginPath();ctx.arc(b.x-b.r*.3,b.y-b.r*.3,b.r*.35,0,Math.PI*2);ctx.fill();ctx.restore()})}
+function drawBalls(){balls.forEach(b=>{
+  ctx.save();
+  const isGhost=ghostTimer>0,isPower=activeModes.includes('POWER');
+  if(isGhost){
+    ctx.globalAlpha=.32+.18*Math.sin(frameN*.18);
+    ctx.shadowBlur=16;ctx.shadowColor='#aaaaff';
+    const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    g.addColorStop(0,'#eeeeff');g.addColorStop(.6,'rgba(120,120,255,.5)');g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;
+  } else if(isPower){
+    ctx.shadowBlur=28+6*Math.sin(frameN*.12);ctx.shadowColor='#ffaa00';
+    const g=ctx.createRadialGradient(b.x-b.r*.3,b.y-b.r*.3,0,b.x,b.y,b.r);
+    g.addColorStop(0,'#ffffff');g.addColorStop(.3,'#ffee44');g.addColorStop(1,'#ff6600');
+    ctx.fillStyle=g;
+  } else {
+    ctx.shadowBlur=22;ctx.shadowColor='#00f7ff';
+    const g=ctx.createRadialGradient(b.x-b.r*.3,b.y-b.r*.3,0,b.x,b.y,b.r);
+    g.addColorStop(0,'#fff');g.addColorStop(.4,'#88eeff');g.addColorStop(1,'#0066cc');
+    ctx.fillStyle=g;
+  }
+  ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();
+  if(!isGhost){
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,.65)';
+    ctx.beginPath();ctx.arc(b.x-b.r*.3,b.y-b.r*.3,b.r*.35,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+})}
 function drawShip(){
   const x=paddle.x,y=H-46,w=paddle.w,h=paddle.h;
   ctx.save();ctx.translate(x,y);
@@ -501,7 +529,7 @@ function drawParticles(){particles.forEach(p=>{ctx.save();ctx.globalAlpha=Math.m
 const HUD_FX={
   CATCH: {col:'#00ff88', icon:'◉'},
   FIRE:  {col:'#ff3300', icon:'🔥'},
-  POWER: {col:'#ff44ff', icon:'⚡'},
+  POWER: {col:'#ff8800', icon:'⚡'},
   LONG:  {col:'#0088ff', icon:'◀▶'},
   FAST:  {col:'#ff9900', icon:'▶▶'},
   SLOW:  {col:'#00ddaa', icon:'▶◉'},
@@ -642,7 +670,15 @@ function update(){
   if(speedEffTimer>0){speedEffTimer--;if(speedEffTimer===0){if(speedEffType==='BF')baseSpeed/=1.2;if(speedEffType==='BS')baseSpeed/=.55;speedEffType=null}}
   if(catchTimer>0){catchTimer--;if(catchTimer===0)activeModes=activeModes.filter(m=>m!=='CATCH')}
   if(fireTimer>0){fireTimer--;if(fireTimer===0)activeModes=activeModes.filter(m=>m!=='FIRE')}
-  if(gs===ST.PLAY){scoreTrickle++;if(scoreTrickle>=120){scoreTrickle=0;score+=3}}
+  if(gs===ST.PLAY){
+    scoreTrickle++;if(scoreTrickle>=120){scoreTrickle=0;score+=3}
+    // Gradually speed up during the level — +15% over 90 seconds (5400 frames)
+    inLevelAccel++;
+    if(inLevelAccel%180===0){ // every 3 seconds
+      const maxLevelSpd=levelStartSpeed*1.15;
+      if(baseSpeed<maxLevelSpd)baseSpeed=Math.min(maxLevelSpd,baseSpeed+levelStartSpeed*.015);
+    }
+  }
   if(ghostTimer>0){ghostTimer--;};
   if(magnetTimer>0){magnetTimer--;}
   if(shieldTimer>0){shieldTimer--;}
@@ -674,6 +710,8 @@ function update(){
       if(!br.s)return;
       if(b.x+b.r>br.x&&b.x-b.r<br.x+br.w&&b.y+b.r>br.y&&b.y-b.r<br.y+br.h){
         const oL=(b.x+b.r)-br.x,oR=(br.x+br.w)-(b.x-b.r),oT=(b.y+b.r)-br.y,oB=(br.y+br.h)-(b.y-b.r),mn=Math.min(oL,oR,oT,oB);
+        // POWER: smash through, score points, no bounce
+        // GHOST: phase through silently, score points, no bounce — ball also rendered translucent
         if(!activeModes.includes('POWER')&&!ghostTimer){if(mn===oT||mn===oB)b.dy*=-1;else b.dx*=-1}
         br.s--;br.st=4;
         if(br.s<=0){score+=x2Timer>0?200:100;spawnBP(br);if(Math.random()<.10)spawnPill(br);sfxBrick(.8+Math.random()*.4)}else sfxBrick(.6);
@@ -744,7 +782,7 @@ function draw(){
 
 // ── GAME LOGIC ──
 function applyPower(t){
-  const PF={C:['CATCH — BALL STICKS','#00ff88'],P:['POWER — SMASH THROUGH','#ff44ff'],F:['FIRE — CANNONS ACTIVE','#ff3300'],3:['MULTI — 3 BALLS','#44aaff'],N:['SKIP — NEXT LEVEL','#cc44ff'],U:['1UP — EXTRA LIFE','#00ff88'],L:['WIDE — BIG PADDLE','#0044ff'],BF:['FAST — SPEED UP','#ff9900'],BS:['SLOW — CRAWL MODE','#00ddaa'],GH:['GHOST — PASS THROUGH','#aaaaff'],MG:['MAGNET — PULL BALL','#ff66aa'],ZK:['SHRINK — SMALL PADDLE','#ff2222'],SB:['SHIELD — PROTECTED','#00ffcc'],X2:['x2 PTS — DOUBLE SCORE','#ffee00'],FZ:['FREEZE — BREATHE','#88ddff']};
+  const PF={C:['CATCH — BALL STICKS','#00ff88'],P:['POWER — SMASH! (permanent)','#ff8800'],F:['FIRE — CANNONS ACTIVE','#ff3300'],3:['MULTI — 3 BALLS','#44aaff'],N:['SKIP — NEXT LEVEL','#cc44ff'],U:['1UP — EXTRA LIFE','#00ff88'],L:['WIDE — BIG PADDLE','#0044ff'],BF:['FAST — SPEED UP','#ff9900'],BS:['SLOW — CRAWL MODE','#00ddaa'],GH:['GHOST — INVISIBLE BALL','#aaaaff'],MG:['MAGNET — PULL BALL','#ff66aa'],ZK:['SHRINK — SMALL PADDLE','#ff2222'],SB:['SHIELD — PROTECTED','#00ffcc'],X2:['x2 PTS — DOUBLE SCORE','#ffee00'],FZ:['FREEZE — BREATHE','#88ddff']};
   if(PF[t])flashPill(PF[t][0],PF[t][1]);
   if(t==='N'){nextSector();return}if(t==='U'){lives=Math.min(lives+1,9);return}
   if(t==='BF'){if(speedEffType==='BF')return;if(speedEffType==='BS')baseSpeed/=.55;baseSpeed*=1.3;speedEffType='BF';speedEffTimer=600;return}
@@ -777,7 +815,9 @@ function nextSector(){
   sfxVictory();
   const done=level;
   level++;
-  baseSpeed=Math.min(BASE_SPD+(level-1)*.35,BASE_SPD*1.9);
+  levelStartSpeed=Math.min(levelStartSpeed*1.10, BASE_SPD*2.2);
+  baseSpeed=levelStartSpeed;
+  inLevelAccel=0;
   gs=ST.OVER;
   bricks=[];balls=[];powerups=[];bullets=[];
   stopMusic();           // stop level music before cutscene
@@ -793,7 +833,7 @@ function nextSector(){
 }
 function beginGame(){
   initAudio();stopMusic();document.getElementById('menu').style.display='none';document.getElementById('cutscene').style.display='none';hideOverlay();
-  score=0;level=1;lives=3;baseSpeed=BASE_SPD;startMusic(false);genBricks();startTurn();
+  score=0;level=1;lives=3;baseSpeed=BASE_SPD;levelStartSpeed=BASE_SPD;inLevelAccel=0;startMusic(false);genBricks();startTurn();
 }
 function handleAction(){
   if(gs===ST.OVER)return; // block during cutscene and game-over
