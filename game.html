@@ -82,6 +82,31 @@ canvas#gc{position:relative;z-index:1;display:block;width:min(100vw,calc(100vh *
   </div>
 </div>
 <script>
+// ═══════════════════════════════════════════════════════════════
+//  WEINSTEIN'S REVENGE  —  single-file browser game
+//
+//  SECTIONS (in order):
+//   1.  CONSTANTS          W, H, canvas refs, utility fns
+//   2.  GAME OVER SCREEN   showGameOver / showOverlay / hideOverlay
+//   3.  STARFIELD          animated star background
+//   4.  AUDIO              AudioContext, echo + reverb bus
+//   5.  MUSIC              BPM, chord data, schedBar, startMusic
+//   6.  SFX                sfxPaddle / sfxBrick / sfxWall / etc.
+//   7.  GAME STATE         all mutable game variables
+//   8.  BRICK COLOURS      palette per level
+//   9.  BRICK GENERATION   10 shaped layouts
+//  10.  PARTICLES          explosion & death particles
+//  11.  PILLS              pill definitions (color, label)
+//  12.  PILLS (spawn)      spawnPill, drop probabilities
+//  13.  DRAWING            all ctx draw functions
+//  14.  UPDATE             physics, collisions, timers
+//  15.  MAIN LOOP          draw(), rAF
+//  16.  GAME LOGIC         applyPower, startTurn, nextSector
+//  17.  CUTSCENE / STORY   CHAPTERS, LCAPS, showCutscene
+//  18.  INPUT              keyboard, mouse, touch
+//  19.  BOOT               init + first draw
+// ═══════════════════════════════════════════════════════════════
+
 // ── CONSTANTS ──
 const W=1200,H=700;
 const gc=document.getElementById('gc');
@@ -203,7 +228,7 @@ initBg();animBg();
 // ── AUDIO ──
 let AC,masterG,musicG,sfxG,sfxDelay,sfxDelayFB,sfxDelayWet,sfxRev,sfxRevWet;
 let musicPlaying=false,musicSched=null,musicIsMenu=true;
-// ── MUSIC: High-energy racing style ──
+// ── MUSIC ──
 // MENU 110BPM: Em-C-G-D driving arp
 // GAME 148BPM: Am-F-C-G-E-Am-Dm-E punchy banger with 16th hats and fat lead
 const BPM_MENU=110,BPM_GAME=148;
@@ -414,7 +439,7 @@ function spawnBP(br){for(let i=0;i<16;i++){const a=Math.random()*Math.PI*2,sp=Ma
 function spawnDP(){for(let i=0;i<30;i++){const a=Math.random()*Math.PI*2,sp=Math.random()*6+2;particles.push({x:paddle.x+paddle.w/2,y:H-50,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,life:1,decay:.025,r:Math.random()*5+2,col:'#f30'})}}
 
 // ── PILLS ──
-// ── PILLS: original 9 + 6 new ──
+// ── PILLS (spawn logic) ──
 // NEW PILLS:
 //  GH  GHOST   — ball passes through bricks without bouncing for 8s (racks up huge scores)
 //  MG  MAGNET  — paddle magnetically pulls ball toward centre of paddle, easier to control, 10s
