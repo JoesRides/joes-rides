@@ -55,22 +55,8 @@
             line-height: 1.4;
         }
 
-        textarea {
-            width: 100%;
-            height: 150px;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            box-sizing: border-box;
-            font-size: 1rem;
-            font-family: 'Inter', sans-serif;
-            resize: none;
-            margin-bottom: 20px;
-        }
-
         .btn-send {
+            display: block;
             width: 100%;
             padding: 16px;
             background: linear-gradient(45deg, #2563eb, #7c3aed);
@@ -81,23 +67,13 @@
             text-transform: uppercase;
             cursor: pointer;
             transition: 0.3s;
+            text-decoration: none;
+            box-sizing: border-box;
         }
 
         .btn-send:hover {
             transform: translateY(-2px);
             box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-        }
-
-        /* Success Message Styling */
-        #confirmation {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(34, 197, 94, 0.2);
-            border: 1px solid var(--success-green);
-            border-radius: 12px;
-            color: var(--success-green);
-            font-weight: 600;
         }
 
         .back-link {
@@ -107,6 +83,12 @@
             text-decoration: none;
             font-size: 0.9rem;
         }
+
+        .direct-label {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
@@ -114,51 +96,17 @@
     <div class="contact-panel" id="form-container">
         <h2>Talk to Us</h2>
         <p class="recommendation">
-            Use this space for anything! Send us suggestions to improve your ride, leave a review for a driver, or ask us a general question. We're listening.
+            Need a ride or have a question? Tap the button below to send us a text message directly. We're listening!
         </p>
         
-        <textarea id="userMessage" placeholder="Type your message here..."></textarea>
+        <a href="sms:+15162091518" class="btn-send">
+            📲 Tap to Text Us
+        </a>
 
-        <button class="btn-send" onclick="handleSubmission()">Send via Text</button>
-        
-        <div id="confirmation">
-            ✅ Message Sent! We have received your contact attempt and will get back to you shortly.
-        </div>
+        <p class="direct-label">Opens your messaging app automatically</p>
 
         <a href="index.html" class="back-link">← Back to Home</a>
     </div>
-
-    <script>
-        function handleSubmission() {
-            const userMsg = document.getElementById('userMessage').value;
-            
-            if (!userMsg.trim()) {
-                alert("Please enter a message before sending.");
-                return;
-            }
-
-            // Encode the message for the URL
-            const encodedMsg = encodeURIComponent("Joe's Rides Feedback/Review: " + userMsg);
-
-            // 1. Show the success message on screen
-            document.getElementById('confirmation').style.display = 'block';
-            
-            // 2. Clear the textarea
-            document.getElementById('userMessage').value = "";
-
-            // 3. Open the SMS app with device detection
-            setTimeout(() => {
-                // Detect if the user is on an iPhone/iPad
-                const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                
-                // iPhones often prefer '&' as the separator for the body, Android uses '?'
-                const separator = isiOS ? '&' : '?';
-                
-                // Trigger the text message
-                window.location.href = `sms:+15162091518${separator}body=${encodedMsg}`;
-            }, 800);
-        }
-    </script>
 
 </body>
 </html>
