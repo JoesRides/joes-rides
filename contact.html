@@ -146,10 +146,17 @@
             // 2. Clear the textarea
             document.getElementById('userMessage').value = "";
 
-            // 3. Open the SMS app after a tiny delay
+            // 3. Open the SMS app with device detection
             setTimeout(() => {
-                window.location.href = `sms:+15162091518?body=${encodedMsg}`;
-            }, 1000);
+                // Detect if the user is on an iPhone/iPad
+                const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                
+                // iPhones often prefer '&' as the separator for the body, Android uses '?'
+                const separator = isiOS ? '&' : '?';
+                
+                // Trigger the text message
+                window.location.href = `sms:+15162091518${separator}body=${encodedMsg}`;
+            }, 800);
         }
     </script>
 
